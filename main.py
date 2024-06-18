@@ -2,8 +2,9 @@ import ctypes
 from ctypes import POINTER, wintypes, c_void_p, c_char_p, c_uint, c_int, c_byte, c_bool, c_ulong, c_ushort
 from ctypes.wintypes import HWND, LPCWSTR, UINT, BYTE, WORD, DWORD, CHAR, BOOL, LPBYTE
 
-import sys
 import time
+import sys
+import threading
 
 # Importing the definitions of the Python DLL wrapper, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
@@ -25,29 +26,30 @@ def cb_error_handler(cb_error):
     if cb_error == BCM_CALLBACK_Enum.BCM_CB_ERR:
         # No Exception/Error is raised on callbacks.
         # We only log them
-        cb_error_logger(cb_error)
-
+        raise Exception(f"Callback Error ({cb_error}) occurred")
+    
+callback_received_evt = threading.Event()
 # As those callback functions are directly called by the internal thread which is
 # managing the communication with the beacon, they should return as
 # quickly as possible
 def callback(reg_ptr, callback_type, error_code):
-    print("Callback notification received!")
-    #print(f"Callback type: {callback_type}. Error code: {error_code}")
-    cb_error_handler(callback_type)
-    bcm_error_handler(error_code)
-        
-    print("OK! No error occurred in callback: This means a VST was received!")
-    
+    print("\tCallback notification received!")
+    try:
+        cb_error_handler(callback_type)
+        bcm_error_handler(error_code)
+        print("\tOK! No error occurred in callback: This means a VST was received!")
+        print("\tWe thus set the callback_received_evt event")
+        callback_received_evt.set()
+    except:
+        return
 def alarm(reg_ptr, alarm_type, state):
-    print("Alarm")
-    
+    print("\tAlarm")
+
 # Defining the BeaconManager class
 class BeaconManager:
     def __init__(self):
-        #self.reg = ST_BCM_REG(0x01)
-        #self.reg_ptr = ctypes.pointer(self.reg)
-        #self.reg_ptr = LPVOID(0x0121)
         self.reg_ptr = ST_BCM_REG_PTR()
+        
         # PDU cannot be 0 or 1
         pdu = 0x2
         # PDU is at most 4 bits
@@ -59,8 +61,6 @@ class BeaconManager:
         self.c_alarm = BCM_ALARM_HANDLER(alarm)
         print(ctypes.byref(self.reg_ptr))
         
-        #print(self.reg_ptr.contents)
-
         result = bcm_init_manager_fnc(
             ctypes.byref(self.reg_ptr), 1, None, 1,
             BaudRate_Enum.BCM_CFG_115200, BCM_STATION_Enum.BCM_Secondary, 3000, False,
@@ -68,9 +68,14 @@ class BeaconManager:
             )
 
         bcm_error_handler(result)
-        #if error_code != 0:
-        #    print(f"[Error {error_code}]: {BCMError.get_error_description(error_code)}")
 
+    def cb_event_waiter(self):
+        print("\tWaiting for CB event...")
+        callback_received_evt.wait()
+        print("\tCB event!!!")
+        
+        print(self.get_vst())
+        
     def check_state(self):
         out_state = ST_BCM_STATE()
         
@@ -128,8 +133,6 @@ class BeaconManager:
         bst_datagram_buffer = ctypes.create_string_buffer(bytes(bst_datagram), size=len(bst_datagram))
         # Pointer to the buffered BST datagram
         lp_bst_datagram = ctypes.cast(bst_datagram_buffer, POINTER(BYTE))
-
-        #lp_bst_datagram = ctypes.cast(bytes(bst_datagram), POINTER(BYTE))
         
         print("BST to be sent in hex: ", bytes(bst_datagram).hex())
 
@@ -149,39 +152,40 @@ class BeaconManager:
     # BCM Init Manager
     def get_vst(self):
         print("Getting VST...")
-        #buffer_array = (BYTE * BCM_SIZEMAX_Enum.BCM_SIZEMAX_ANSWER)()
-        #buffer_pointer = ctypes.cast(bytes(buffer_array), POINTER(BYTE));
         
-        buffer_array = create_string_buffer(BCM_SIZEMAX_Enum.BCM_SIZEMAX_ANSWER)
-        buffer_size = DWORD()
-        max_size = BCM_SIZEMAX_Enum.BCM_SIZEMAX_ANSWER
-        dword_max_size = ctypes.cast(max_size, DWORD)
+        vst_max_size = BCM_SIZEMAX_Enum.BCM_SIZEMAX_ANSWER
+        vst_answer_buffer_array = ctypes.create_string_buffer(vst_max_size)
+        vst_answer_buffer_size = DWORD()
+        dword_max_size = DWORD(vst_max_size)
+        # Pointer where the VST datagram anwser will be stored by BCM
+        lp_vst_datagram = ctypes.cast(vst_answer_buffer_array, POINTER(BYTE))
         
         result = bcm_get_vst(self.reg_ptr,
-                             buffer_array,
-                             ctypes.byref(buffer_size),
+                             lp_vst_datagram,
+                             ctypes.byref(vst_answer_buffer_size),
                              dword_max_size)
-        print("VST result: ", result)
         bcm_error_handler(result)
-        #print("No error raised when receiving VST!")
-        print("VST response buffer pointer contents:", buffer_pointer.contents)
-        print("VST response buffer:", buffer_pointer.contents)
-        return buffer_array.value
+        print("VST response buffer:", lp_vst_datagram.contents)
+        print("VST response buffer:", bytes(lp_vst_datagram.contents))
+        print("VST response buffer:", lp_vst_datagram.contents.value)
+        print("VST response buffer pointer contents:", [lp_vst_datagram[i] for i in range(0, vst_answer_buffer_size.value)])
+        print("VST response buffer pointer contents:", bytes(lp_vst_datagram))
+        return vst_answer_buffer_array.value
     def set_mmi(self):
         # SetMMI ActionType is 0xA, or 10 in decimal
         set_mmi_datagram = [self.frag_header, 0x05, 0x00, 0x0A, 0x00, 0x00]
         set_mmi_datagram_buffer = ctypes.create_string_buffer(bytes(set_mmi_datagram), size=len(set_mmi_datagram))
 
-        buffer_array = create_string_buffer(BCM_SIZEMAX_Enum.BCM_SIZEMAX_ANSWER)
-        buffer_size = DWORD()
-        max_size = BCM_SIZEMAX_Enum.BCM_SIZEMAX_CMD
-        dword_max_size = ctypes.cast(max_size, DWORD)
+        cmd_max_size = BCM_SIZEMAX_Enum.BCM_SIZEMAX_CMD
+        cmd_buffer_array = create_string_buffer(cmd_max_size)
+        cmd_buffer_size = DWORD()
+        dword_max_size = DWORD(cmd_max_size)
         
         bcm_send_cmd(self.reg_ptr, set_mmi_datagram_buffer, DWORD(len(set_mmi_datagram)),
-		buffer_array, ctypes.byref(buffer_size), dword_max_size, True);    
+		cmd_buffer_array, ctypes.byref(cmd_buffer_size), dword_max_size, True);    
 
-# Main execution
-if __name__ == "__main__":
+
+def main():
     print("Initializing Beacon Manager...")
     beacon_manager = BeaconManager()
     print("Initialized BCM!!")
@@ -209,16 +213,16 @@ if __name__ == "__main__":
     print("Getting beacon state...")
     bcm_state = beacon_manager.check_state()
     print(bcm_state.state, bcm_state.mode, bcm_state.trxInProgress)
-    
+
     print("Starting BST...")
     beacon_manager.start_bst(0x00D0, 0xBA00, [0x01])
+    
+    print("No errors occurred: BST started! We now create a task that waits for a callback...")
+    event_thread = threading.Thread(target = beacon_manager.cb_event_waiter)
+    event_thread.start()
+    print("Number of threads:", threading.active_count())
 
-    #print(f"Error initializing BST: {result}: {BCMError.get_error_description(result)}")
-    # Handle error case if needed
-    #bcm_error_handler(result)
-    
-    print("No errors occurred: BST started!\n")
-    
-    #result = beacon_manager.stop_transaction(False, True);
-    #beacon_manager.close()
-    #print("Change mode result:", result)
+# Main execution
+if __name__ == "__main__":
+    main_thread = threading.Thread(target=main)
+    main_thread.start()
