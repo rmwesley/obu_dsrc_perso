@@ -77,6 +77,18 @@ class BCM_ERR_Enum(ctypes.c_int):
 class BCMError:
     errors = {
         0: "No error",
+        
+        # Layer 7 errors
+        0x01: "Command refused because the operating mode is not correct, or because the datagram sent is not correct",
+        0x02: "Command refused because there is a transaction in progress",
+        0x03: "Command refused because the beacon is out of order and the mode requested is not BCM_MOD_Stopped",
+        0x09: "The beacon has lost the OBE.",
+        0x0A: "The beacon has been reset.",
+        0x0B: "Command refused because a parameter is not correct",
+        0x0C: "Problem on the configuration file?",
+        0x1D: "Command refused because the beacon has not been configured",
+        
+        # Beacon Manager errors
         -100: "Bad parameter",
         -101: "Memory error",
         -104: "Busy",
@@ -144,8 +156,8 @@ BCM_ERR = c_int
 
 # Define enums for several constants
 class BCM_BST_TYPE_Enum:
-    BCM_BST_ChangeBID = BYTE(0x03)
-    BCM_BST_Normal = BYTE(0x17)
+    BCM_BST_ChangeBID = 0x03
+    BCM_BST_Normal = 0x17
 
 class BCM_MODE_Enum:
     BCM_MOD_Stopped = 0x00
@@ -207,22 +219,17 @@ class BCM_ALARMS_Enum:
 # Define the necessary structures based on the specs and BeaconManager.h
 
 # Define a pointer to the ST_BCM_REG structure
-ST_BCM_REG_PTR = LPVOID
+#ST_BCM_REG_PTR = LPVOID
 
-class ST_BCM_STATE(ctypes.Structure):
+class ST_BCM_REG(ctypes.Structure):
     pass
-
-ST_BCM_STATE_PTR = POINTER(ST_BCM_STATE)
+ST_BCM_REG_PTR = POINTER(ST_BCM_REG)
 
 class ST_BCM_STATE(ctypes.Structure):
     _fields_ = [("state", BYTE),
                 ("mode", BYTE),
                 ("trxInProgress", BYTE)]
-
-class ST_BCM_CONFIG(ctypes.Structure):
-    pass
-ST_BCM_CONFIG_PTR = POINTER(ST_BCM_CONFIG)
-ST_BCM_CONFIG = POINTER(ST_BCM_CONFIG_PTR)
+ST_BCM_STATE_PTR = POINTER(ST_BCM_STATE)
 
 class ST_BCM_CONFIG(ctypes.Structure):
     _fields_ = [("version", BYTE * 256),
@@ -239,13 +246,13 @@ class ST_BCM_CONFIG(ctypes.Structure):
                 ("nbBeacons", BYTE),
                 ("numLocation", WORD),
                 ("dummy", BYTE * 4)]
+ST_BCM_CONFIG_PTR = POINTER(ST_BCM_CONFIG)
 
 # Function prototype for callbacks
 BCM_CB_HANDLER = ctypes.WINFUNCTYPE(None,
                                     ST_BCM_REG_PTR,
                                     BCM_CALLBACK,
                                     DWORD)
-
 
 # Function prototype for alarms
 BCM_ALARM_HANDLER = ctypes.WINFUNCTYPE(None,
@@ -353,17 +360,17 @@ BCM_LPFN_SendCmd = ctypes.WINFUNCTYPE(BCM_ERR,
 BCM_LPFN_StopBST = ctypes.WINFUNCTYPE(BCM_ERR, ST_BCM_REG_PTR)
 BCM_LPFN_CheckState = ctypes.WINFUNCTYPE(BCM_ERR,
                                          ST_BCM_REG_PTR,
-                                         POINTER(ST_BCM_STATE))
-BCM_LPFN_Reset = ctypes.WINFUNCTYPE(BCM_ERR, POINTER(ST_BCM_REG_PTR))
-BCM_LPFN_ResetEx = ctypes.WINFUNCTYPE(BCM_ERR, POINTER(ST_BCM_REG_PTR), BYTE)
+                                         ST_BCM_STATE_PTR)
+BCM_LPFN_Reset = ctypes.WINFUNCTYPE(BCM_ERR, ST_BCM_REG_PTR)
+BCM_LPFN_ResetEx = ctypes.WINFUNCTYPE(BCM_ERR, ST_BCM_REG_PTR, BYTE)
 BCM_LPFN_SetConfig = ctypes.WINFUNCTYPE(BCM_ERR,
                                          POINTER(ST_BCM_REG_PTR),
                                          BYTE,
                                          BYTE,
                                          BYTE)
 BCM_LPFN_GetConfig = ctypes.WINFUNCTYPE(BCM_ERR,
-                                         POINTER(ST_BCM_REG_PTR),
-                                         POINTER(ST_BCM_CONFIG))
+                                         ST_BCM_REG_PTR,
+                                         ST_BCM_CONFIG_PTR)
 BCM_LPFN_GetBeaconID = ctypes.WINFUNCTYPE(BCM_ERR,
                                            POINTER(ST_BCM_REG_PTR),
                                            POINTER(BYTE))
@@ -418,13 +425,13 @@ bcm_get_beacon_id = BCM_LPFN_GetBeaconID(BCM_GetBeaconID_ptr)
 bcm_get_atlio = BCM_LPFN_GetATLIO(BCM_GetATLIO_ptr)
 
 # def callback(reg_ptr, callback_type, error_code):
-    # print("ai")
+    # print("VST Received!")
 # def alarm(reg_ptr, alarm_type, state):
-    # print("ai")
+    # print("Alarm")
 
 # c_callback = BCM_CB_HANDLER(callback)
 # c_alarm = BCM_ALARM_HANDLER(alarm)
 
 # reg_ptr = ST_BCM_REG_PTR()
-# error_code = bcm_init_manager_fnc(ctypes.byref(reg_ptr), 1, None, 1, BaudRate_Enum.BCM_CFG_9600, 0, 100, True, c_callback, c_alarm)
+# error_code = bcm_init_manager_fnc(ctypes.byref(reg_ptr), 1, None, 1, BaudRate_Enum.BCM_CFG_115200, BCM_STATION_Enum.BCM_Secondary, 3000, False, c_callback, c_alarm)
 # print(f"Error initializing manager: {error_code}: {BCMError.get_error_description(error_code)}")
