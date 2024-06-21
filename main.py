@@ -5,13 +5,18 @@ from ctypes.wintypes import HWND, LPCWSTR, UINT, BYTE, WORD, DWORD, CHAR, BOOL, 
 import time
 import sys
 import threading
+import logging
+
+logging.basicConfig(filename='beacon_manager_class_python.log', level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler(sys.stdout))
 
 # Importing the definitions of the Python DLL wrapper, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
 from python_dll_wrapper import *
 
 def bcm_error_logger(bcm_error):
-    print(f"Beacon Manager Error {bcm_error}: {BCMError.get_error_description(bcm_error)}")
+    logger.error(f"Beacon Manager Error {bcm_error}: {BCMError.get_error_description(bcm_error)}")
 
 def bcm_error_handler(bcm_error):
     if bcm_error != BCM_ERR_Enum.BCM_NoError:
@@ -20,7 +25,7 @@ def bcm_error_handler(bcm_error):
         raise Exception(f"Beacon Manager Error {bcm_error}: {BCMError.get_error_description(bcm_error)}")
 
 def cb_error_logger(cb_error):
-    print(f"Callback Error ({cb_error}) occurred")
+    logger.error(f"Callback Error ({cb_error}) occurred")
 
 def cb_error_handler(cb_error):
     if cb_error == BCM_CALLBACK_Enum.BCM_CB_ERR:
@@ -33,17 +38,18 @@ callback_received_evt = threading.Event()
 # managing the communication with the beacon, they should return as
 # quickly as possible
 def callback(reg_ptr, callback_type, error_code):
-    print("\tCallback notification received!")
+    logger.debug("\tCallback notification received!")
     try:
         cb_error_handler(callback_type)
         bcm_error_handler(error_code)
-        print("\tOK! No error occurred in callback: This means a VST was received!")
-        print("\tWe thus set the callback_received_evt event")
+        logger.debug("\tOK! No error occurred in callback: This means a VST was received!")
+        logger.debug("\tWe thus set the callback_received_evt event")
         callback_received_evt.set()
     except:
+        logger.debug("\tAn error occurred during the callback...")
         return
 def alarm(reg_ptr, alarm_type, state):
-    print("\tAlarm")
+    logger.debug("\tAlarm")
 
 # Defining the BeaconManager class
 class BeaconManager:
@@ -59,7 +65,11 @@ class BeaconManager:
         
         self.c_callback = BCM_CB_HANDLER(callback)
         self.c_alarm = BCM_ALARM_HANDLER(alarm)
-        print(ctypes.byref(self.reg_ptr))
+        
+        #logger.debug("ST_BCM_REG_PTR (Initialized as a pointer to NULL):")
+        #logger.debug(self.reg_ptr)
+        
+        logger.debug("Initializing GEA BCM...")
         
         result = bcm_init_manager_fnc(
             ctypes.byref(self.reg_ptr), 1, None, 1,
@@ -70,9 +80,9 @@ class BeaconManager:
         bcm_error_handler(result)
 
     def display_cb_event_trigger(self):
-        print("\tWaiting for CB event...")
+        logger.debug("\tWaiting for CB event...")
         callback_received_evt.wait()
-        print("\tCB event triggered!!! You can receive a VST now.")
+        logger.debug("\tCB event triggered!!! You can receive a VST now.")
         
     def check_state(self):
         out_state = ST_BCM_STATE()
@@ -119,7 +129,6 @@ class BeaconManager:
         # individualId has a size of 27 bits
         beacon_id_int |= individual_id
         
-        #print(hex(beacon_id_int))
         beacon_id = list(beacon_id_int.to_bytes(6))
         
         utc_timestamp = list(int(time.time()).to_bytes(4))
@@ -132,10 +141,11 @@ class BeaconManager:
         # Pointer to the buffered BST datagram
         lp_bst_datagram = ctypes.cast(bst_datagram_buffer, POINTER(BYTE))
         
-        print("BST to be sent in hex: ", bytes(bst_datagram).hex())
+        logger.debug("BST to be sent in hex:")
+        logger.debug(bytes(bst_datagram).hex())
 
         if len(bst_datagram) > BCM_SIZEMAX_Enum.BCM_SIZEMAX_BST:
-            print(f"Datagram is too big! Will probably cause a BST error")
+            logger.error(f"Datagram is too big! Will probably cause a BST error")
 
         byte_bst_type = BYTE(bst_type)
         
@@ -143,13 +153,18 @@ class BeaconManager:
                                lp_bst_datagram,
                                DWORD(len(bst_datagram)),
                                byte_bst_type)
+
+        logger.debug("ST_BCM_REG (dereferenced value):")
+        logger.debug(ctypes.cast(self.reg_ptr, ctypes.c_void_p).value)
+        logger.debug(self.reg_ptr.contents)
+        
         bcm_error_handler(result)
     
     # Get VST
     # This function should only be called inside the callback declared to the
     # BCM Init Manager
     def get_vst(self):
-        print("Getting VST...")
+        logger.debug("Getting VST...")
         
         vst_max_size = BCM_SIZEMAX_Enum.BCM_SIZEMAX_ANSWER
         vst_answer_buffer_array = ctypes.create_string_buffer(vst_max_size)
@@ -162,14 +177,14 @@ class BeaconManager:
                              lp_vst_response_datagram,
                              ctypes.byref(vst_answer_buffer_size),
                              dword_max_size)
-        print("Handling errors...")
+        logger.debug("Handling errors...")
         bcm_error_handler(result)
-        print("VST received!")
+        logger.debug("VST received!")
         # Slicing a ctypes array or pointer will automatically produce a Python list
         received_vst_list = lp_vst_response_datagram[:vst_answer_buffer_size.value]
-        # printing the VST in hex format
-        print("VST response buffer pointer contents in hex:")
-        print(bytes(received_vst_list).hex())
+        # Log the VST in hex format
+        logger.debug("VST response buffer pointer contents in hex:")
+        logger.debug(bytes(received_vst_list).hex())
         return vst_answer_buffer_array.value
     def set_mmi(self):
         # SetMMI ActionType is 0xA, or 10 in decimal
@@ -188,46 +203,51 @@ class BeaconManager:
 
 
 def main():
-    print("Initializing Beacon Manager...")
+    logger.debug("Instantiating BeaconManager class...")
     beacon_manager = BeaconManager()
-    print("Initialized BCM!!")
+    logger.debug("Initialized BCM!!")
 
-    print("Getting beacon state...")
+    logger.debug("Getting beacon state...")
     bcm_state = beacon_manager.check_state()
-    print(bcm_state.state, bcm_state.mode, bcm_state.trxInProgress)
+    logger.debug(bcm_state.state)
+    logger.debug(bcm_state.mode)
+    logger.debug(bcm_state.trxInProgress)
 
     if bcm_state.trxInProgress:
-        print("Previously unclosed transaction in progress!")
-        print("We will forcefully reset the beacon...")
+        logger.debug("Previously unclosed transaction in progress!")
+        logger.debug("We will forcefully reset the beacon...")
         beacon_manager.reset_manager()
-        print("Try executing the program again soon.")
+        logger.debug("Try executing the program again soon.")
         sys.exit(1)
     if bcm_state.mode != 0:
         beacon_manager.change_mode(BCM_MODE_Enum.BCM_MOD_Stopped)
-        print("Changed mode to stopped!")
+        logger.debug("Changed mode to stopped!")
         #beacon_manager.close()
     
-    print("Getting beacon configuration...")
-    print(beacon_manager.get_config())
+    logger.debug("Getting beacon configuration...")
+    logger.debug(beacon_manager.get_config())
     
     beacon_manager.change_mode(BCM_MODE_Enum.BCM_MOD_Transparent)
-    print("Changed mode to transparent!")
-    print("Getting beacon state...")
+    logger.debug("Changed mode to transparent!")
+    logger.debug("Getting beacon state...")
     bcm_state = beacon_manager.check_state()
-    print(bcm_state.state, bcm_state.mode, bcm_state.trxInProgress)
+    logger.debug(bcm_state.state)
+    logger.debug(bcm_state.mode)
+    logger.debug(bcm_state.trxInProgress)
 
-    print("Starting BST...")
+    logger.debug("Starting BST...")
     beacon_manager.start_bst(0x00D0, 0xBA00, [0x01])
     
-    print("No errors occurred: BST started!")
-    print("We now create a task that logs some text to the console upon receiving a callback...")
+    logger.debug("No errors occurred: BST started!")
+    logger.debug("We now create a task that logs some text to the console upon receiving a callback...")
     event_thread = threading.Thread(target = beacon_manager.display_cb_event_trigger)
     event_thread.start()
-    print("Number of threads:", threading.active_count())
+    logger.debug("Number of threads:")
+    logger.debug(threading.active_count())
     
-    print("We now get the VST on the main Thread")
+    logger.debug("We now get the VST on the main Thread")
     beacon_manager.get_vst()
-    print("We now send a SetMMI command on the main Thread")
+    logger.debug("We now send a SetMMI command on the main Thread")
     beacon_manager.set_mmi()
 
 # Main execution

@@ -2,6 +2,11 @@ import ctypes
 from ctypes import POINTER, wintypes, c_char_p, c_uint, c_int, c_byte, c_bool, c_ulong, c_ushort
 from ctypes.wintypes import HWND, LPCWSTR, UINT, BYTE, WORD, DWORD, CHAR, BOOL, LPVOID
 
+import sys
+import logging
+
+dll_wrapper_logger = logging.getLogger(__name__)
+dll_wrapper_logger.addHandler(logging.StreamHandler(sys.stdout))
 
 # Define the BCM_ERR enum
 class BCM_ERR_Enum(ctypes.c_int):
@@ -261,10 +266,11 @@ BCM_ALARM_HANDLER = ctypes.WINFUNCTYPE(None,
                                     DWORD)
 
 # Load the DLL
+dll_wrapper_logger.debug("Loading BeaconManager.dll...")
 beacon_manager_dll = ctypes.windll.kernel32.LoadLibraryW("BeaconManager.dll")
 getProcAddress = ctypes.windll.kernel32.GetProcAddress
 
-# Function protorypes
+# Function prototypes
 # These are functions that take a pointer of a function
 BCM_LPFN_GetLibVersion = ctypes.WINFUNCTYPE(DWORD)
 BCM_LPFN_InitManagerWND = ctypes.WINFUNCTYPE(BCM_ERR,
@@ -378,7 +384,8 @@ BCM_LPFN_GetATLIO = ctypes.WINFUNCTYPE(BCM_ERR,
                                         POINTER(ST_BCM_REG_PTR),
                                         POINTER(DWORD))
 
-# Get the addresses of the long pointers to the functions, LPFNs
+# Get the addresses of the long pointers to the foreign functions, LPFNs
+dll_wrapper_logger.debug("Getting the pointers to the addresses of the DLL's foreign functions...")
 BCM_InitManagerWND_ptr = getProcAddress(beacon_manager_dll, b"BCM_InitManagerWND")
 BCM_InitManagerTHD_ptr = getProcAddress(beacon_manager_dll, b"BCM_InitManagerTHD")
 BCM_InitManagerFNC_ptr = getProcAddress(beacon_manager_dll, b"BCM_InitManagerFNC")
@@ -401,7 +408,8 @@ BCM_GetConfig_ptr = getProcAddress(beacon_manager_dll, b"BCM_GetConfig")
 BCM_GetBeaconID_ptr = getProcAddress(beacon_manager_dll, b"BCM_GetBeaconID")
 BCM_GetATLIO_ptr = getProcAddress(beacon_manager_dll, b"BCM_GetATLIO")
 
-# Assign function pointers
+# Instantiating function prototypes
+dll_wrapper_logger.debug("Instantiating the ctypes function prototypes (to get Python callables)...")
 bcm_init_manager_wnd = BCM_LPFN_InitManagerWND(BCM_InitManagerWND_ptr)
 bcm_init_manager_thd = BCM_LPFN_InitManagerTHD(BCM_InitManagerTHD_ptr)
 bcm_init_manager_fnc = BCM_LPFN_InitManagerFNC(BCM_InitManagerFNC_ptr)
