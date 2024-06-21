@@ -69,12 +69,10 @@ class BeaconManager:
 
         bcm_error_handler(result)
 
-    def cb_event_waiter(self):
+    def display_cb_event_trigger(self):
         print("\tWaiting for CB event...")
         callback_received_evt.wait()
-        print("\tCB event!!!")
-        
-        print(self.get_vst())
+        print("\tCB event triggered!!! You can receive a VST now.")
         
     def check_state(self):
         out_state = ST_BCM_STATE()
@@ -105,7 +103,7 @@ class BeaconManager:
         bcm_error_handler(result)
 
     # Start sending a BST
-    def start_bst(self, manufacturer_id, individual_id, mandapplications, profile=0x00, profile_list=[0x00], non_mand_applications = []):
+    def start_bst(self, manufacturer_id, individual_id, mandapplications, profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
         # INITIALIZATION.request is 0b1000, shifted 4 bits
         init_request = 0x80
         
@@ -139,7 +137,7 @@ class BeaconManager:
         if len(bst_datagram) > BCM_SIZEMAX_Enum.BCM_SIZEMAX_BST:
             print(f"Datagram is too big! Will probably cause a BST error")
 
-        byte_bst_type = BYTE(BCM_BST_TYPE_Enum.BCM_BST_Normal)
+        byte_bst_type = BYTE(bst_type)
         
         result = bcm_start_bst(self.reg_ptr,
                                lp_bst_datagram,
@@ -158,31 +156,35 @@ class BeaconManager:
         vst_answer_buffer_size = DWORD()
         dword_max_size = DWORD(vst_max_size)
         # Pointer where the VST datagram anwser will be stored by BCM
-        lp_vst_datagram = ctypes.cast(vst_answer_buffer_array, POINTER(BYTE))
+        lp_vst_response_datagram = ctypes.cast(vst_answer_buffer_array, POINTER(BYTE))
         
         result = bcm_get_vst(self.reg_ptr,
-                             lp_vst_datagram,
+                             lp_vst_response_datagram,
                              ctypes.byref(vst_answer_buffer_size),
                              dword_max_size)
+        print("Handling errors...")
         bcm_error_handler(result)
-        print("VST response buffer:", lp_vst_datagram.contents)
-        print("VST response buffer:", bytes(lp_vst_datagram.contents))
-        print("VST response buffer:", lp_vst_datagram.contents.value)
-        print("VST response buffer pointer contents:", [lp_vst_datagram[i] for i in range(0, vst_answer_buffer_size.value)])
-        print("VST response buffer pointer contents:", bytes(lp_vst_datagram))
+        print("VST received!")
+        # Slicing a ctypes array or pointer will automatically produce a Python list
+        received_vst_list = lp_vst_response_datagram[:vst_answer_buffer_size.value]
+        # printing the VST in hex format
+        print("VST response buffer pointer contents in hex:")
+        print(bytes(received_vst_list).hex())
         return vst_answer_buffer_array.value
     def set_mmi(self):
         # SetMMI ActionType is 0xA, or 10 in decimal
         set_mmi_datagram = [self.frag_header, 0x05, 0x00, 0x0A, 0x00, 0x00]
         set_mmi_datagram_buffer = ctypes.create_string_buffer(bytes(set_mmi_datagram), size=len(set_mmi_datagram))
+        lp_vst_datagram = ctypes.cast(set_mmi_datagram_buffer, POINTER(BYTE))
 
         cmd_max_size = BCM_SIZEMAX_Enum.BCM_SIZEMAX_CMD
-        cmd_buffer_array = create_string_buffer(cmd_max_size)
+        cmd_buffer_array = ctypes.create_string_buffer(cmd_max_size)
         cmd_buffer_size = DWORD()
         dword_max_size = DWORD(cmd_max_size)
+        lp_cmd_response_datagram = ctypes.cast(cmd_buffer_array, POINTER(BYTE))
         
-        bcm_send_cmd(self.reg_ptr, set_mmi_datagram_buffer, DWORD(len(set_mmi_datagram)),
-		cmd_buffer_array, ctypes.byref(cmd_buffer_size), dword_max_size, True);    
+        bcm_send_cmd(self.reg_ptr, lp_vst_datagram, DWORD(len(set_mmi_datagram)),
+		lp_cmd_response_datagram, ctypes.byref(cmd_buffer_size), dword_max_size, True);    
 
 
 def main():
@@ -217,10 +219,16 @@ def main():
     print("Starting BST...")
     beacon_manager.start_bst(0x00D0, 0xBA00, [0x01])
     
-    print("No errors occurred: BST started! We now create a task that waits for a callback...")
-    event_thread = threading.Thread(target = beacon_manager.cb_event_waiter)
+    print("No errors occurred: BST started!")
+    print("We now create a task that logs some text to the console upon receiving a callback...")
+    event_thread = threading.Thread(target = beacon_manager.display_cb_event_trigger)
     event_thread.start()
     print("Number of threads:", threading.active_count())
+    
+    print("We now get the VST on the main Thread")
+    beacon_manager.get_vst()
+    print("We now send a SetMMI command on the main Thread")
+    beacon_manager.set_mmi()
 
 # Main execution
 if __name__ == "__main__":
