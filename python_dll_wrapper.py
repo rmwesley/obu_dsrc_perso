@@ -5,8 +5,14 @@ from ctypes.wintypes import HWND, LPCWSTR, UINT, BYTE, WORD, DWORD, CHAR, BOOL, 
 import sys
 import logging
 
+logging.basicConfig(
+    level=logging.DEBUG,
+    handlers=[
+        logging.FileHandler("gea_bcm_dll_python_wrapper.log"),
+        logging.StreamHandler()
+    ]
+)
 dll_wrapper_logger = logging.getLogger(__name__)
-dll_wrapper_logger.addHandler(logging.StreamHandler(sys.stdout))
 
 # Define the BCM_ERR enum
 class BCM_ERR_Enum(ctypes.c_int):

@@ -7,9 +7,16 @@ import sys
 import threading
 import logging
 
-logging.basicConfig(filename='beacon_manager_class_python.log', level=logging.DEBUG)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(name)s: [%(threadName)s] %(message)s ",
+    handlers=[
+        logging.FileHandler("gea_bcm_dll_python_wrapper.log"),
+        logging.StreamHandler()
+    ]
+)
+
 logger = logging.getLogger(__name__)
-logger.addHandler(logging.StreamHandler(sys.stdout))
 
 # Importing the definitions of the Python DLL wrapper, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
