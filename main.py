@@ -11,16 +11,16 @@ logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s [%(levelname)s] %(name)s: [%(threadName)s] %(message)s ",
     handlers=[
-        logging.FileHandler("gea_bcm_dll_python_wrapper.log"),
+        logging.FileHandler("gea_bcm_dll_python_loader.log"),
         logging.StreamHandler()
     ]
 )
 
 logger = logging.getLogger(__name__)
 
-# Importing the definitions of the Python DLL wrapper, mainly consisting of enums and foreign functions
+# Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
-from python_dll_wrapper import *
+from python_dll_loader import *
 
 def bcm_error_logger(bcm_error):
     logger.error(f"Beacon Manager Error {bcm_error}: {BCMError.get_error_description(bcm_error)}")

@@ -8,11 +8,11 @@ import logging
 logging.basicConfig(
     level=logging.DEBUG,
     handlers=[
-        logging.FileHandler("gea_bcm_dll_python_wrapper.log"),
+        logging.FileHandler("gea_bcm_dll_python_loader.log"),
         logging.StreamHandler()
     ]
 )
-dll_wrapper_logger = logging.getLogger(__name__)
+dll_loader_logger = logging.getLogger(__name__)
 
 # Define the BCM_ERR enum
 class BCM_ERR_Enum(ctypes.c_int):
@@ -272,7 +272,7 @@ BCM_ALARM_HANDLER = ctypes.WINFUNCTYPE(None,
                                     DWORD)
 
 # Load the DLL
-dll_wrapper_logger.debug("Loading BeaconManager.dll...")
+dll_loader_logger.debug("Loading BeaconManager.dll...")
 beacon_manager_dll = ctypes.windll.kernel32.LoadLibraryW("BeaconManager.dll")
 getProcAddress = ctypes.windll.kernel32.GetProcAddress
 
@@ -391,7 +391,10 @@ BCM_LPFN_GetATLIO = ctypes.WINFUNCTYPE(BCM_ERR,
                                         POINTER(DWORD))
 
 # Get the addresses of the long pointers to the foreign functions, LPFNs
-dll_wrapper_logger.debug("Getting the pointers to the addresses of the DLL's foreign functions...")
+dll_loader_logger.debug("Getting the pointers to the addresses of the DLL's foreign functions...")
+
+BCM_GetLibVersion_ptr = getProcAddress(beacon_manager_dll, b"BCM_GetLibVersion")
+
 BCM_InitManagerWND_ptr = getProcAddress(beacon_manager_dll, b"BCM_InitManagerWND")
 BCM_InitManagerTHD_ptr = getProcAddress(beacon_manager_dll, b"BCM_InitManagerTHD")
 BCM_InitManagerFNC_ptr = getProcAddress(beacon_manager_dll, b"BCM_InitManagerFNC")
@@ -415,7 +418,10 @@ BCM_GetBeaconID_ptr = getProcAddress(beacon_manager_dll, b"BCM_GetBeaconID")
 BCM_GetATLIO_ptr = getProcAddress(beacon_manager_dll, b"BCM_GetATLIO")
 
 # Instantiating function prototypes
-dll_wrapper_logger.debug("Instantiating the ctypes function prototypes (to get Python callables)...")
+dll_loader_logger.debug("Instantiating the ctypes function prototypes (to get Python callables)...")
+
+get_lib_version = BCM_LPFN_GetLibVersion(BCM_GetLibVersion_ptr)
+
 bcm_init_manager_wnd = BCM_LPFN_InitManagerWND(BCM_InitManagerWND_ptr)
 bcm_init_manager_thd = BCM_LPFN_InitManagerTHD(BCM_InitManagerTHD_ptr)
 bcm_init_manager_fnc = BCM_LPFN_InitManagerFNC(BCM_InitManagerFNC_ptr)
@@ -437,6 +443,23 @@ bcm_set_config = BCM_LPFN_SetConfig(BCM_SetConfig_ptr)
 bcm_get_config = BCM_LPFN_GetConfig(BCM_GetConfig_ptr)
 bcm_get_beacon_id = BCM_LPFN_GetBeaconID(BCM_GetBeaconID_ptr)
 bcm_get_atlio = BCM_LPFN_GetATLIO(BCM_GetATLIO_ptr)
+
+dll_loader_logger.info("Getting the DLL version...")
+#dll_version = bytes(get_lib_version())
+# The DLL version is represented in 3 bytes
+# We iterate over it like a list and then join it with dots
+#dll_loader_logger.debug(dll_version[1] + '.' + dll_version[2] + '.' + dll_version[3])
+#dll_version_dot_notation = ".".join(str(x) for x in dll_version[0:24])
+#dll_loader_logger.info("DLL version: " + dll_version_dot_notation)
+#dll_loader_logger.debug(bytes(get_lib_version())[:])
+#int_dll_version = get_lib_version()
+#dll_loader_logger.debug(hex(int_dll_version))
+#dll_loader_logger.debug(int_dll_version.to_bytes(4, 'big'))
+#bytes_dll_version = int_dll_version.to_bytes(4, 'big')
+bytes_dll_version = get_lib_version().to_bytes(4, 'big')
+dll_loader_logger.debug(bytes_dll_version)
+
+dll_loader_logger.info(f"Loaded DLL version: {bytes_dll_version[1]}.{bytes_dll_version[2]}.{bytes_dll_version[3]}")
 
 # def callback(reg_ptr, callback_type, error_code):
     # print("VST Received!")
