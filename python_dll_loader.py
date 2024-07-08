@@ -257,6 +257,23 @@ class ST_BCM_CONFIG(ctypes.Structure):
                 ("nbBeacons", BYTE),
                 ("numLocation", WORD),
                 ("dummy", BYTE * 4)]
+    def __repr__(self):
+        str_config = f"<ST_BCM_CONFIG:\n"
+        
+        for field_name, field_type in self._fields_:
+            if field_name == "version":
+                # Version is an ASCII-encoded NULL-terminated string
+                str_config += f"  version: {bytes(self.version).decode("ascii").split("\x00")[0]}\n"
+                continue
+            if field_name == "dummy":
+                # Dummy is 4-bytes variable free to be set by the user
+                str_config += f"  dummy: {self.dummy[:]}\n"
+                continue
+            str_config += f"  {field_name}: {getattr(self, field_name)}\n"
+        str_config += f">"
+        
+        return str_config
+
 ST_BCM_CONFIG_PTR = POINTER(ST_BCM_CONFIG)
 
 # Function prototype for callbacks
@@ -445,30 +462,8 @@ bcm_get_beacon_id = BCM_LPFN_GetBeaconID(BCM_GetBeaconID_ptr)
 bcm_get_atlio = BCM_LPFN_GetATLIO(BCM_GetATLIO_ptr)
 
 dll_loader_logger.info("Getting the DLL version...")
-#dll_version = bytes(get_lib_version())
-# The DLL version is represented in 3 bytes
-# We iterate over it like a list and then join it with dots
-#dll_loader_logger.debug(dll_version[1] + '.' + dll_version[2] + '.' + dll_version[3])
-#dll_version_dot_notation = ".".join(str(x) for x in dll_version[0:24])
-#dll_loader_logger.info("DLL version: " + dll_version_dot_notation)
-#dll_loader_logger.debug(bytes(get_lib_version())[:])
-#int_dll_version = get_lib_version()
-#dll_loader_logger.debug(hex(int_dll_version))
-#dll_loader_logger.debug(int_dll_version.to_bytes(4, 'big'))
-#bytes_dll_version = int_dll_version.to_bytes(4, 'big')
+
 bytes_dll_version = get_lib_version().to_bytes(4, 'big')
 dll_loader_logger.debug(bytes_dll_version)
 
 dll_loader_logger.info(f"Loaded DLL version: {bytes_dll_version[1]}.{bytes_dll_version[2]}.{bytes_dll_version[3]}")
-
-# def callback(reg_ptr, callback_type, error_code):
-    # print("VST Received!")
-# def alarm(reg_ptr, alarm_type, state):
-    # print("Alarm")
-
-# c_callback = BCM_CB_HANDLER(callback)
-# c_alarm = BCM_ALARM_HANDLER(alarm)
-
-# reg_ptr = ST_BCM_REG_PTR()
-# error_code = bcm_init_manager_fnc(ctypes.byref(reg_ptr), 1, None, 1, BaudRate_Enum.BCM_CFG_115200, BCM_STATION_Enum.BCM_Secondary, 3000, False, c_callback, c_alarm)
-# print(f"Error initializing manager: {error_code}: {BCMError.get_error_description(error_code)}")

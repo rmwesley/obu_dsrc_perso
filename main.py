@@ -45,18 +45,18 @@ callback_received_evt = threading.Event()
 # managing the communication with the beacon, they should return as
 # quickly as possible
 def callback(reg_ptr, callback_type, error_code):
-    logger.debug("\tCallback notification received!")
+    logger.debug("CB: Callback notification received!")
     try:
         cb_error_handler(callback_type)
         bcm_error_handler(error_code)
-        logger.debug("\tOK! No error occurred in callback: This means a VST was received!")
-        logger.debug("\tWe thus set the callback_received_evt event")
+        logger.debug("CB: OK! No error occurred in callback: This means a VST was received!")
+        logger.debug("CB: We thus set the callback_received_evt event")
         callback_received_evt.set()
     except:
-        logger.debug("\tAn error occurred during the callback...")
+        logger.debug("CB: An error occurred during the callback...")
         return
 def alarm(reg_ptr, alarm_type, state):
-    logger.debug("\tAlarm")
+    logger.debug("AL: Alarm")
 
 # Defining the BeaconManager class
 class BeaconManager:
@@ -92,21 +92,19 @@ class BeaconManager:
         logger.debug("\tCB event triggered!!! You can receive a VST now.")
         
     def check_state(self):
-        out_state = ST_BCM_STATE()
+        bcm_state = ST_BCM_STATE()
         
-        result = bcm_check_state(self.reg_ptr, ctypes.byref(out_state))
-        
+        result = bcm_check_state(self.reg_ptr, ctypes.byref(bcm_state))
         bcm_error_handler(result)
-        return out_state
-    def get_config(self):
-        config = ST_BCM_CONFIG()
-        config_pointer = ctypes.pointer(config)
         
-        bcm_get_config(self.reg_ptr, config_pointer)
-        str_config = "Config data:\n"
-        for field_name, field_type in config_pointer.contents._fields_:
-            str_config += f"\t{field_name}: {getattr(config_pointer.contents, field_name)}\n"
-        return str_config
+        return bcm_state
+    def get_config(self):
+        bcm_config = ST_BCM_CONFIG()
+        
+        result = bcm_get_config(self.reg_ptr, ctypes.byref(bcm_config))
+        bcm_error_handler(result)
+
+        return bcm_config
     
     def change_mode(self, mode_code):
         result = bcm_change_mode(self.reg_ptr, mode_code)
@@ -216,10 +214,9 @@ def main():
 
     logger.debug("Getting beacon state...")
     bcm_state = beacon_manager.check_state()
-    logger.debug(bcm_state.state)
-    logger.debug(bcm_state.mode)
-    logger.debug(bcm_state.trxInProgress)
+    logger.debug(bcm_state)
 
+    # If a previous transaction was not closed, we forcefully reset the beacon
     if bcm_state.trxInProgress:
         logger.debug("Previously unclosed transaction in progress!")
         logger.debug("We will forcefully reset the beacon...")
@@ -232,15 +229,13 @@ def main():
         #beacon_manager.close()
     
     logger.debug("Getting beacon configuration...")
-    logger.debug(beacon_manager.get_config())
+    logger.debug("Displaying config data...:\n" + repr(beacon_manager.get_config()))
     
     beacon_manager.change_mode(BCM_MODE_Enum.BCM_MOD_Transparent)
     logger.debug("Changed mode to transparent!")
     logger.debug("Getting beacon state...")
     bcm_state = beacon_manager.check_state()
-    logger.debug(bcm_state.state)
-    logger.debug(bcm_state.mode)
-    logger.debug(bcm_state.trxInProgress)
+    logger.debug(bcm_state)
 
     logger.debug("Starting BST...")
     beacon_manager.start_bst(0x00D0, 0xBA00, [0x01])
@@ -249,8 +244,7 @@ def main():
     logger.debug("We now create a task that logs some text to the console upon receiving a callback...")
     event_thread = threading.Thread(target = beacon_manager.display_cb_event_trigger)
     event_thread.start()
-    logger.debug("Number of threads:")
-    logger.debug(threading.active_count())
+    logger.debug("Number of threads: " + str(threading.active_count()))
     
     logger.debug("We now get the VST on the main Thread")
     beacon_manager.get_vst()
