@@ -62,6 +62,7 @@ def alarm(reg_ptr, alarm_type, state):
 class BeaconManager:
     def __init__(self):
         self.reg_ptr = ST_BCM_REG_PTR()
+        self.last_vst = []
         
         # PDU cannot be 0 or 1
         pdu = 0x2
@@ -118,7 +119,7 @@ class BeaconManager:
         bcm_error_handler(result)
 
     # Start sending a BST
-    def start_bst(self, manufacturer_id, individual_id, mandapplications, profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
+    def start_bst(self, manufacturer_id, individual_id, mandapplications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
         # INITIALIZATION.request is 0b1000, shifted 4 bits
         init_request = 0x80
         
@@ -148,6 +149,16 @@ class BeaconManager:
         
         logger.debug("BST to be sent in hex:")
         logger.debug(bytes(bst_datagram).hex())
+        
+        bst_repr = f'''
+        Init request + Non_mand_present_bool + Beacon ID: { hex(beacon_id_int)[2:].upper() }
+        Profile: {profile_list}
+        Requested AIDs: {mandapplications}
+        Requested optional AIDs: {non_mand_applications}
+        Profile List: {profile_list}'''
+
+        logger.debug("Detailed BST string representation:")
+        logger.debug(bst_repr)
 
         if len(bst_datagram) > BCM_SIZEMAX_Enum.BCM_SIZEMAX_BST:
             logger.error(f"Datagram is too big! Will probably cause a BST error")
@@ -165,37 +176,55 @@ class BeaconManager:
         
         bcm_error_handler(result)
     
-    # Get VST
+    # Wait for the application to be notified through a callback
+    def wait_for_notification(self):
+        callback_received_evt.wait()
+
+    # Wait for a notification then get the VST
+    def wait_for_vst(self):
+        self.wait_for_notification()
+        return self.get_vst()
+    
+    # Get the VST
     # This function should only be called inside the callback declared to the
     # BCM Init Manager
     def get_vst(self):
         logger.debug("Getting VST...")
         
         vst_max_size = BCM_SIZEMAX_Enum.BCM_SIZEMAX_ANSWER
-        vst_answer_buffer_array = ctypes.create_string_buffer(vst_max_size)
-        vst_answer_buffer_size = DWORD()
         dword_max_size = DWORD(vst_max_size)
-        # Pointer where the VST datagram anwser will be stored by BCM
+        vst_answer_buffer_array = ctypes.create_string_buffer(vst_max_size)
+        vst_answer_size = DWORD()
+
+        # Pointer where the VST datagram answer will be stored by BCM
         lp_vst_response_datagram = ctypes.cast(vst_answer_buffer_array, POINTER(BYTE))
         
         result = bcm_get_vst(self.reg_ptr,
                              lp_vst_response_datagram,
-                             ctypes.byref(vst_answer_buffer_size),
+                             ctypes.byref(vst_answer_size),
                              dword_max_size)
+        
         logger.debug("Handling errors...")
         bcm_error_handler(result)
         logger.debug("VST received!")
+
         # Slicing a ctypes array or pointer will automatically produce a Python list
-        received_vst_list = lp_vst_response_datagram[:vst_answer_buffer_size.value]
-        # Log the VST in hex format
-        logger.debug("VST response buffer pointer contents in hex:")
-        logger.debug(bytes(received_vst_list).hex())
-        return vst_answer_buffer_array.value
-    def set_mmi(self):
+        # We slice it at the given size, not the buffer's maximum size
+        received_vst_list = lp_vst_response_datagram[:vst_answer_size.value]
+
+        # Converting VST to bytes structure
+        self.last_vst = bytes(received_vst_list)
+
+        # Log the VST
+        logger.debug("VST response buffer pointer contents in hex format:")
+        logger.debug(self.last_vst.hex().upper())
+        return self.last_vst
+
+    def set_mmi(self, close = False):
         # SetMMI ActionType is 0xA, or 10 in decimal
         set_mmi_datagram = [self.frag_header, 0x05, 0x00, 0x0A, 0x00, 0x00]
         set_mmi_datagram_buffer = ctypes.create_string_buffer(bytes(set_mmi_datagram), size=len(set_mmi_datagram))
-        lp_vst_datagram = ctypes.cast(set_mmi_datagram_buffer, POINTER(BYTE))
+        lp_cmd_datagram = ctypes.cast(set_mmi_datagram_buffer, POINTER(BYTE))
 
         cmd_max_size = BCM_SIZEMAX_Enum.BCM_SIZEMAX_CMD
         cmd_buffer_array = ctypes.create_string_buffer(cmd_max_size)
@@ -203,8 +232,11 @@ class BeaconManager:
         dword_max_size = DWORD(cmd_max_size)
         lp_cmd_response_datagram = ctypes.cast(cmd_buffer_array, POINTER(BYTE))
         
-        bcm_send_cmd(self.reg_ptr, lp_vst_datagram, DWORD(len(set_mmi_datagram)),
-		lp_cmd_response_datagram, ctypes.byref(cmd_buffer_size), dword_max_size, True);    
+        bcm_send_cmd(self.reg_ptr, lp_cmd_datagram, DWORD(len(set_mmi_datagram)),
+		lp_cmd_response_datagram, ctypes.byref(cmd_buffer_size), dword_max_size, close)
+
+    def close_transaction(self, close_transaction = False):
+        self.set_mmi(True)
 
 
 def main():
@@ -246,10 +278,18 @@ def main():
     event_thread.start()
     logger.debug("Number of threads: " + str(threading.active_count()))
     
-    logger.debug("We now get the VST on the main Thread")
-    beacon_manager.get_vst()
-    logger.debug("We now send a SetMMI command on the main Thread")
-    beacon_manager.set_mmi()
+    logger.debug("We now spawn a thread to get the VST")
+    vst_result = 0
+    vst_thread = threading.Thread(target = beacon_manager.wait_for_vst)
+    vst_thread.start()
+
+    print("Press any key to close the transaction...")
+    input()
+    logger.debug("Last VST details in raw bytes format:")
+    logger.debug(beacon_manager.last_vst)
+
+    logger.debug("We now send a SetMMI command on the main Thread to close the transaction")
+    beacon_manager.set_mmi(True)
 
 # Main execution
 if __name__ == "__main__":
