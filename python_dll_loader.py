@@ -121,7 +121,7 @@ class BCMError:
         -1007: "Error setting priority",
         -1008: "Error setting event",
         -1009: "Port type error",
-        -1010: "Port open error",
+        -1010: "Port open error. This could mean the beacon is not connected or already in use.",
         -1011: "Port configuration error",
         -1012: "Port close error",
         -1013: "Port read error",
