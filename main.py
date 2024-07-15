@@ -43,11 +43,6 @@ def main():
     event_thread = threading.Thread(target = beacon_manager.display_cb_event_trigger)
     event_thread.start()
     root_logger.debug("Number of threads: " + str(threading.active_count()))
-    
-    root_logger.debug("We now spawn a thread to get the VST")
-    vst_result = 0
-    vst_thread = threading.Thread(target = beacon_manager.wait_for_vst)
-    vst_thread.start()
 
     root_logger.info("We now wait on the main thread until we receive a VST...")
     beacon_manager.wait_for_vst()
