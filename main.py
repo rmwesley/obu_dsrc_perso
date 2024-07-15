@@ -6,6 +6,7 @@ import time
 import sys
 import threading
 import logging
+import custom_der_decoders 
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -288,6 +289,9 @@ def main():
 
     logger.debug("Last VST details in raw bytes format:")
     logger.debug(beacon_manager.last_vst)
+    logger.debug("We now decode the VST")
+    vst_data = custom_der_decoders.decode_vst(beacon_manager.last_vst, logger)
+    logger.debug(vst_data)
 
     logger.debug("We now send a SetMMI command on the main Thread to close the transaction")
     beacon_manager.set_mmi(True)
