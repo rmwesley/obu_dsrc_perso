@@ -60,6 +60,29 @@ def alarm(reg_ptr, alarm_type, state):
 
 # Defining the BeaconManager class
 class BeaconManager:
+    
+    def handle_init_errors(self):
+        """This function handles initialization issues, like:
+            Unclosed transactions
+            Beacon not in stopped mode
+            etc."""
+
+        logger.debug("Getting beacon state...")
+        bcm_state = self.check_state()
+        logger.debug(bcm_state)
+
+        # If a previous transaction was not closed, we forcefully reset the beacon
+        if bcm_state.trxInProgress:
+            logger.debug("Previously unclosed transaction in progress!")
+            logger.debug("We will forcefully reset the beacon...")
+            self.reset_manager()
+            logger.debug("Try executing the program again soon.")
+            sys.exit(1)
+        if bcm_state.mode != 0:
+            self.change_mode(BCM_MODE_Enum.BCM_MOD_Stopped)
+            logger.debug("Changed mode to stopped!")
+            #self.close()
+
     def __init__(self):
         self.reg_ptr = ST_BCM_REG_PTR()
         self.last_vst = []
@@ -86,7 +109,9 @@ class BeaconManager:
             )
 
         bcm_error_handler(result)
+        self.handle_init_errors()
 
+    
     def display_cb_event_trigger(self):
         logger.debug("\tWaiting for CB event...")
         callback_received_evt.wait()
@@ -99,6 +124,7 @@ class BeaconManager:
         bcm_error_handler(result)
         
         return bcm_state
+    
     def get_config(self):
         bcm_config = ST_BCM_CONFIG()
         

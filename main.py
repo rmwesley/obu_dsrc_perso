@@ -19,27 +19,13 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+
+
 def main():
     logger.debug("Instantiating BeaconManager class...")
     beacon_manager = BeaconManager()
     logger.debug("Initialized BCM!!")
 
-    logger.debug("Getting beacon state...")
-    bcm_state = beacon_manager.check_state()
-    logger.debug(bcm_state)
-
-    # If a previous transaction was not closed, we forcefully reset the beacon
-    if bcm_state.trxInProgress:
-        logger.debug("Previously unclosed transaction in progress!")
-        logger.debug("We will forcefully reset the beacon...")
-        beacon_manager.reset_manager()
-        logger.debug("Try executing the program again soon.")
-        sys.exit(1)
-    if bcm_state.mode != 0:
-        beacon_manager.change_mode(BCM_MODE_Enum.BCM_MOD_Stopped)
-        logger.debug("Changed mode to stopped!")
-        #beacon_manager.close()
-    
     logger.debug("Getting beacon configuration...")
     logger.debug("Displaying config data...:\n" + repr(beacon_manager.get_config()))
     
