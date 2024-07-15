@@ -88,9 +88,6 @@ class BeaconManager:
         self.c_callback = BCM_CB_HANDLER(callback)
         self.c_alarm = BCM_ALARM_HANDLER(alarm)
         
-        #bcm_logger.debug("ST_BCM_REG_PTR (Initialized as a pointer to NULL):")
-        #bcm_logger.debug(self.reg_ptr)
-        
         bcm_logger.debug("Initializing GEA BCM...")
         
         result = bcm_init_manager_fnc(
