@@ -11,19 +11,10 @@ import logging
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
 from python_dll_loader import *
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s [%(levelname)s] %(name)s: [%(threadName)s] %(message)s ",
-    handlers=[
-        logging.FileHandler("gea_bcm_dll_python_loader.log"),
-        logging.StreamHandler()
-    ]
-)
-
-logger = logging.getLogger(__name__)
+bcm_logger = logging.getLogger(__name__)
 
 def bcm_error_logger(bcm_error):
-    logger.error(f"Beacon Manager Error {bcm_error}: {BCMError.get_error_description(bcm_error)}")
+    bcm_logger.error(f"Beacon Manager Error {bcm_error}: {BCMError.get_error_description(bcm_error)}")
 
 def bcm_error_handler(bcm_error):
     if bcm_error != BCM_ERR_Enum.BCM_NoError:
@@ -32,7 +23,7 @@ def bcm_error_handler(bcm_error):
         raise Exception(f"Beacon Manager Error {bcm_error}: {BCMError.get_error_description(bcm_error)}")
 
 def cb_error_logger(cb_error):
-    logger.error(f"Callback Error ({cb_error}) occurred")
+    bcm_logger.error(f"Callback Error ({cb_error}) occurred")
 
 def cb_error_handler(cb_error):
     if cb_error == BCM_CALLBACK_Enum.BCM_CB_ERR:
@@ -45,18 +36,18 @@ callback_received_evt = threading.Event()
 # managing the communication with the beacon, they should return as
 # quickly as possible
 def callback(reg_ptr, callback_type, error_code):
-    logger.debug("CB: Callback notification received!")
+    bcm_logger.debug("CB: Callback notification received!")
     try:
         cb_error_handler(callback_type)
         bcm_error_handler(error_code)
-        logger.debug("CB: OK! No error occurred in callback: This means a VST was received!")
-        logger.debug("CB: We thus set the callback_received_evt event")
+        bcm_logger.debug("CB: OK! No error occurred in callback: This means a VST was received!")
+        bcm_logger.debug("CB: We thus set the callback_received_evt event")
         callback_received_evt.set()
     except:
-        logger.debug("CB: An error occurred during the callback...")
+        bcm_logger.debug("CB: An error occurred during the callback...")
         return
 def alarm(reg_ptr, alarm_type, state):
-    logger.debug("AL: Alarm")
+    bcm_logger.debug("AL: Alarm")
 
 # Defining the BeaconManager class
 class BeaconManager:
@@ -67,20 +58,20 @@ class BeaconManager:
             Beacon not in stopped mode
             etc."""
 
-        logger.debug("Getting beacon state...")
+        bcm_logger.debug("Getting beacon state...")
         bcm_state = self.check_state()
-        logger.debug(bcm_state)
+        bcm_logger.debug(bcm_state)
 
         # If a previous transaction was not closed, we forcefully reset the beacon
         if bcm_state.trxInProgress:
-            logger.debug("Previously unclosed transaction in progress!")
-            logger.debug("We will forcefully reset the beacon...")
+            bcm_logger.debug("Previously unclosed transaction in progress!")
+            bcm_logger.debug("We will forcefully reset the beacon...")
             self.reset_manager()
-            logger.debug("Try executing the program again soon.")
+            bcm_logger.debug("Try executing the program again soon.")
             sys.exit(1)
         if bcm_state.mode != 0:
             self.change_mode(BCM_MODE_Enum.BCM_MOD_Stopped)
-            logger.debug("Changed mode to stopped!")
+            bcm_logger.debug("Changed mode to stopped!")
             #self.close()
 
     def __init__(self):
@@ -97,10 +88,10 @@ class BeaconManager:
         self.c_callback = BCM_CB_HANDLER(callback)
         self.c_alarm = BCM_ALARM_HANDLER(alarm)
         
-        #logger.debug("ST_BCM_REG_PTR (Initialized as a pointer to NULL):")
-        #logger.debug(self.reg_ptr)
+        #bcm_logger.debug("ST_BCM_REG_PTR (Initialized as a pointer to NULL):")
+        #bcm_logger.debug(self.reg_ptr)
         
-        logger.debug("Initializing GEA BCM...")
+        bcm_logger.debug("Initializing GEA BCM...")
         
         result = bcm_init_manager_fnc(
             ctypes.byref(self.reg_ptr), 1, None, 1,
@@ -113,9 +104,9 @@ class BeaconManager:
 
     
     def display_cb_event_trigger(self):
-        logger.debug("\tWaiting for CB event...")
+        bcm_logger.debug("\tWaiting for CB event...")
         callback_received_evt.wait()
-        logger.debug("\tCB event triggered!!! You can receive a VST now.")
+        bcm_logger.debug("\tCB event triggered!!! You can receive a VST now.")
         
     def check_state(self):
         bcm_state = ST_BCM_STATE()
@@ -173,8 +164,8 @@ class BeaconManager:
         # Pointer to the buffered BST datagram
         lp_bst_datagram = ctypes.cast(bst_datagram_buffer, POINTER(BYTE))
         
-        logger.debug("BST to be sent in hex:")
-        logger.debug(bytes(bst_datagram).hex())
+        bcm_logger.debug("BST to be sent in hex:")
+        bcm_logger.debug(bytes(bst_datagram).hex())
         
         bst_repr = f'''
         Init request + Non_mand_present_bool + Beacon ID: { hex(beacon_id_int)[2:].upper() }
@@ -183,11 +174,11 @@ class BeaconManager:
         Requested optional AIDs: {non_mand_applications}
         Profile List: {profile_list}'''
 
-        logger.debug("Detailed BST string representation:")
-        logger.debug(bst_repr)
+        bcm_logger.debug("Detailed BST string representation:")
+        bcm_logger.debug(bst_repr)
 
         if len(bst_datagram) > BCM_SIZEMAX_Enum.BCM_SIZEMAX_BST:
-            logger.error(f"Datagram is too big! Will probably cause a BST error")
+            bcm_logger.error(f"Datagram is too big! Will probably cause a BST error")
 
         byte_bst_type = BYTE(bst_type)
         
@@ -196,9 +187,9 @@ class BeaconManager:
                                DWORD(len(bst_datagram)),
                                byte_bst_type)
 
-        logger.debug("ST_BCM_REG (dereferenced value):")
-        logger.debug(ctypes.cast(self.reg_ptr, ctypes.c_void_p).value)
-        logger.debug(self.reg_ptr.contents)
+        bcm_logger.debug("ST_BCM_REG (dereferenced value):")
+        bcm_logger.debug(ctypes.cast(self.reg_ptr, ctypes.c_void_p).value)
+        bcm_logger.debug(self.reg_ptr.contents)
         
         bcm_error_handler(result)
     
@@ -215,7 +206,7 @@ class BeaconManager:
     # This function should only be called inside the callback declared to the
     # BCM Init Manager
     def get_vst(self):
-        logger.debug("Getting VST...")
+        bcm_logger.debug("Getting VST...")
         
         vst_max_size = BCM_SIZEMAX_Enum.BCM_SIZEMAX_ANSWER
         dword_max_size = DWORD(vst_max_size)
@@ -230,9 +221,9 @@ class BeaconManager:
                              ctypes.byref(vst_answer_size),
                              dword_max_size)
         
-        logger.debug("Handling errors...")
+        bcm_logger.debug("Handling errors...")
         bcm_error_handler(result)
-        logger.debug("VST received!")
+        bcm_logger.debug("VST received!")
 
         # Slicing a ctypes array or pointer will automatically produce a Python list
         # We slice it at the given size, not the buffer's maximum size
@@ -242,8 +233,8 @@ class BeaconManager:
         self.last_vst = bytes(received_vst_list)
 
         # Log the VST
-        logger.debug("VST response buffer pointer contents in hex format:")
-        logger.debug(self.last_vst.hex().upper())
+        bcm_logger.debug("VST response buffer pointer contents in hex format:")
+        bcm_logger.debug(self.last_vst.hex().upper())
         return self.last_vst
 
     def set_mmi(self, close = False):

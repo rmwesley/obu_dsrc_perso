@@ -1,14 +1,5 @@
 import logging
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s [%(levelname)s] %(name)s: [%(threadName)s] %(message)s ",
-    handlers=[
-        logging.FileHandler("gea_bcm_dll_python_loader.log"),
-        logging.StreamHandler()
-    ]
-)
-
 decoder_logger = logging.getLogger(__name__)
 
 def decode_vst(vst_bytes, logger=decoder_logger):
