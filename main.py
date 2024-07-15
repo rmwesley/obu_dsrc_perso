@@ -283,8 +283,9 @@ def main():
     vst_thread = threading.Thread(target = beacon_manager.wait_for_vst)
     vst_thread.start()
 
-    print("Press any key to close the transaction...")
-    input()
+    logger.info("We now wait on the main thread until we receive a VST...")
+    beacon_manager.wait_for_vst()
+
     logger.debug("Last VST details in raw bytes format:")
     logger.debug(beacon_manager.last_vst)
 
