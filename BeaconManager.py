@@ -22,36 +22,59 @@ def bcm_error_handler(bcm_error):
         # Handle error case if needed
         raise Exception(f"Beacon Manager Error {bcm_error}: {BCMError.get_error_description(bcm_error)}")
 
-def cb_error_logger(cb_error):
-    bcm_logger.error(f"Callback Error ({cb_error}) occurred")
+def callback_logger(cb_code, error_code):
+    if cb_code == BCM_CALLBACK_Enum.BCM_CB_ERR:
+        bcm_logger.error(f"Callback Error ({cb_code}) occurred, with error code {error_code}")
+        bcm_error_logger(error_code)
+        return
+    bcm_logger.debug(f"Callback IN ({cb_code})")
+    bcm_logger.debug(BCM_Callback.get_description(cb_code))
 
-def cb_error_handler(cb_error):
-    if cb_error == BCM_CALLBACK_Enum.BCM_CB_ERR:
+def cb_error_handler(callback_code, error_code):
+    if callback_code == BCM_CALLBACK_Enum.BCM_CB_ERR:
         # No Exception/Error is raised on callbacks.
         # We only log them
-        raise Exception(f"Callback Error ({cb_error}) occurred")
-    
-callback_received_evt = threading.Event()
-# As those callback functions are directly called by the internal thread which is
-# managing the communication with the beacon, they should return as
-# quickly as possible
-def callback(reg_ptr, callback_type, error_code):
-    bcm_logger.debug("CB: Callback notification received!")
-    try:
-        cb_error_handler(callback_type)
-        bcm_error_handler(error_code)
-        bcm_logger.debug("CB: OK! No error occurred in callback: This means a VST was received!")
-        bcm_logger.debug("CB: We thus set the callback_received_evt event")
-        callback_received_evt.set()
-    except:
-        bcm_logger.debug("CB: An error occurred during the callback...")
-        return
-def alarm(reg_ptr, alarm_type, state):
-    bcm_logger.debug("AL: Alarm")
+        raise Exception(f"Callback Error ({callback_code}) occurred! Error code: {error_code}")
 
+def alarm_logger(alarm_code):
+    if alarm_code == BCM_ALARMS_Enum.BCM_AlarmPeriph or alarm_code == BCM_ALARMS_Enum.BCM_AlarmBeacon:
+        bcm_logger.error(f"Alarm error! ({alarm_code})!")
+        bcm_logger.debug(f"Alarm description: {BCM_Alarm.get_description(alarm_code)}")
+        return
+    bcm_logger.debug(f"Alarm received ({alarm_code})!")
+    bcm_logger.debug(f"Alarm description: {BCM_Alarm.get_description(alarm_code)}")
+
+callback_received_evt = threading.Event()
 # Defining the BeaconManager class
 class BeaconManager:
-    
+    # Defining the Callback and Alarm (they are both callback functions)
+    # But alarm has a state
+    # As those callback functions are directly called by the internal thread which is
+    # managing the communication with the beacon they should return as
+    # quickly as possible
+    def bcm_callback(self):
+        def callback(reg_ptr, callback_type, error_code):
+            bcm_logger.debug("CB: Callback notification received!")
+            try:
+                cb_error_handler(callback_type, error_code)
+                bcm_error_handler(error_code)
+                bcm_logger.debug("CB: OK! No error occurred in callback: This means a VST was received!")
+                bcm_logger.debug("CB: We thus set the callback_received_evt event")
+                callback_received_evt.set()
+            except:
+                bcm_logger.debug("CB: An error occurred during the callback...")
+                return
+        return callback
+        
+    def bcm_alarm(self):
+        def alarm(reg_ptr, alarm_type, alarm_state):
+            alarm_logger(alarm_type)
+
+            self.last_alarm = {
+                "Alarm": alarm_type,
+                "State": alarm_state
+                }
+        return alarm
     def handle_init_errors(self):
         """This function handles initialization issues, like:
             Unclosed transactions
@@ -64,11 +87,11 @@ class BeaconManager:
 
         # If a previous transaction was not closed, we forcefully reset the beacon
         if bcm_state.trxInProgress:
-            bcm_logger.debug("Previously unclosed transaction in progress!")
-            bcm_logger.debug("We will forcefully reset the beacon...")
+            bcm_logger.error("Previously unclosed transaction in progress!")
+            bcm_logger.info("We will forcefully reset the beacon...")
             self.reset_manager()
-            bcm_logger.debug("Try executing the program again soon.")
-            sys.exit(1)
+            bcm_logger.debug("Polling the beacon state until it is OK again...")
+
         if bcm_state.mode != 0:
             self.change_mode(BCM_MODE_Enum.BCM_MOD_Stopped)
             bcm_logger.debug("Changed mode to stopped!")
@@ -85,14 +108,16 @@ class BeaconManager:
         # The fragmentation header is 0b1xxxx001, where xxxx is the PDU
         self.frag_header = 0x81 | (pdu << 3)
         
-        self.c_callback = BCM_CB_HANDLER(callback)
-        self.c_alarm = BCM_ALARM_HANDLER(alarm)
+        self.c_callback = BCM_CB_HANDLER(self.bcm_callback())
+        self.c_alarm = BCM_ALARM_HANDLER(self.bcm_alarm())
         
         bcm_logger.debug("Initializing GEA BCM...")
         
+        beacon_state_polling_ms = 100
+        send_event_polling_OK = True
         result = bcm_init_manager_fnc(
             ctypes.byref(self.reg_ptr), 1, None, 1,
-            BaudRate_Enum.BCM_CFG_115200, BCM_STATION_Enum.BCM_Secondary, 3000, False,
+            BaudRate_Enum.BCM_CFG_115200, BCM_STATION_Enum.BCM_Secondary, beacon_state_polling_ms, send_event_polling_OK,
             self.c_callback, self.c_alarm
             )
 

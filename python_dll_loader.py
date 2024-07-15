@@ -78,6 +78,7 @@ class BCM_ERR_Enum(ctypes.c_int):
 
 class BCMError:
     errors = {
+        None: "No error",
         0: "No error",
         
         # Layer 7 errors
@@ -149,9 +150,8 @@ class BCMError:
         -1080: "Socket get host error"
     }
     
-    @classmethod
-    def get_error_description(cls, error_code):
-        return cls.errors.get(error_code, "Unknown error")
+    def get_error_description(error_code):
+        return BCMError.errors.get(error_code, "Unknown error")
 
 # Define necessary types from ctypes and wintypes
 BCM_ERR = c_int
@@ -210,6 +210,15 @@ class BCM_CALLBACK_Enum:
     BCM_CB_IN = 0
     BCM_CB_ERR = 3
 
+class BCM_Callback:
+    cb_codes = {
+        0: "Callback IN! A VST has been received!",
+        3: "Callback Error occurred! Check the callback function's third argument. It contains the error code."
+    }
+
+    def get_description(callback_code):
+        return BCM_Callback.cb_codes.get(callback_code, "Unknown callback code")
+
 BCM_ALARMS = c_int
 class BCM_ALARMS_Enum:
     BCM_AlarmPeriph = 1
@@ -217,7 +226,20 @@ class BCM_ALARMS_Enum:
     BCM_EventReset = 3
     BCM_EventPollingOK = 4
     BCM_NotifyATLIO = 5
+    
+class BCM_Alarm:
+    al_codes = {
+        # Alarm code 1 is always enabled
+        1: "The beacon is not connected!",
+        # The following alarms are only sent if the beacon state polling is enabled (argCheckBeacon > 0)
+        2: "The beacon is out of order!",
+        3: "The beacon has been reset!",
+        # This last alarm is only sent if argSendEvtPollingOK is set to True
+        4: "The beacon is OK"
+    }
 
+    def get_description(alarm_code):
+        return BCM_Alarm.al_codes.get(alarm_code, "Unknown alarm code")
 # Define the necessary structures based on the specs and BeaconManager.h
 
 # Define a pointer to the ST_BCM_REG structure
