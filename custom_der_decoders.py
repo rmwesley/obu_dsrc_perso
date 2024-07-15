@@ -106,6 +106,7 @@ def decode_vst(vst_bytes, logger=decoder_logger):
         decoder_logger.debug("Obtaining Access Credentials details...")
         ac_mk_ref = vst_bytes[vst_byte_idx]
         ac_cr_diversifier = vst_bytes[vst_byte_idx+1]
+        vst_data["Ac_Cr-KeyRef"] = vst_bytes[vst_byte_idx : vst_byte_idx+2].hex()
         vst_byte_idx += 2
 
         container_type = vst_bytes[vst_byte_idx]
