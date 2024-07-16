@@ -53,8 +53,10 @@ def main():
     vst_data = custom_der_decoders.decode_vst(beacon_manager.last_vst)
     root_logger.debug(vst_data)
 
-    root_logger.debug("We now send a SetMMI command on the main Thread to close the transaction")
-    beacon_manager.set_mmi(True)
+    root_logger.debug("We should send a SetMMI command on the main Thread to close the transaction")
+    root_logger.debug("Otherwise, the transaction will remain unclosed and cause an error on the next execution")
+    #beacon_manager.set_mmi(True)
+
 
 # Main execution
 if __name__ == "__main__":
