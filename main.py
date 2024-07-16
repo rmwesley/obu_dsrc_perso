@@ -55,7 +55,7 @@ def main():
 
     root_logger.debug("We should send a SetMMI command on the main Thread to close the transaction")
     root_logger.debug("Otherwise, the transaction will remain unclosed and cause an error on the next execution")
-    #beacon_manager.set_mmi(True)
+    beacon_manager.set_mmi(True)
 
 
 # Main execution
