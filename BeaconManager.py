@@ -44,7 +44,6 @@ def alarm_logger(alarm_code):
     bcm_logger.debug(f"Alarm received ({alarm_code})!")
     bcm_logger.debug(f"Alarm description: {BCM_Alarm.get_description(alarm_code)}")
 
-callback_received_evt = threading.Event()
 # Defining the BeaconManager class
 class BeaconManager:
     # Defining the Callback and Alarm (they are both callback functions)
@@ -59,8 +58,9 @@ class BeaconManager:
                 cb_error_handler(callback_type, error_code)
                 bcm_error_handler(error_code)
                 bcm_logger.debug("CB: OK! No error occurred in callback: This means a VST was received!")
-                bcm_logger.debug("CB: We thus set the callback_received_evt event")
-                callback_received_evt.set()
+                bcm_logger.debug("CB: We thus notify all threads waiting on the callback_received_notifier condition")
+                with self.callback_received_notifier:
+                    self.callback_received_notifier.notify_all()
             except:
                 bcm_logger.debug("CB: An error occurred during the callback...")
                 return
@@ -110,6 +110,7 @@ class BeaconManager:
 
     def __init__(self):
         self.beacon_state_ok_trigger = threading.Event()
+        self.callback_received_notifier = threading.Condition()
 
         self.reg_ptr = ST_BCM_REG_PTR()
         self.last_vst = []
@@ -139,9 +140,10 @@ class BeaconManager:
 
     
     def display_cb_event_trigger(self):
-        bcm_logger.debug("\tWaiting for CB event...")
-        callback_received_evt.wait()
-        bcm_logger.debug("\tCB event triggered!!! You can receive a VST now.")
+        bcm_logger.debug("\tWaiting for CB notification...")
+        with self.callback_received_notifier:
+            self.callback_received_notifier.wait()
+        bcm_logger.debug("\tCB notification received!!! You can receive a VST now.")
         
     def check_state(self):
         bcm_state = ST_BCM_STATE()
@@ -230,7 +232,8 @@ class BeaconManager:
     
     # Wait for the application to be notified through a callback
     def wait_for_vst_notification(self):
-        callback_received_evt.wait()
+        with self.callback_received_notifier:
+            self.callback_received_notifier.wait()
 
     # Wait for a notification then get the VST
     def wait_and_get_vst(self):
