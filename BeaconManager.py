@@ -229,12 +229,12 @@ class BeaconManager:
         bcm_error_handler(result)
     
     # Wait for the application to be notified through a callback
-    def wait_for_notification(self):
+    def wait_for_vst_notification(self):
         callback_received_evt.wait()
 
     # Wait for a notification then get the VST
-    def wait_for_vst(self):
-        self.wait_for_notification()
+    def wait_and_get_vst(self):
+        self.wait_for_vst_notification()
         return self.get_vst()
     
     # Get the VST

@@ -45,7 +45,7 @@ def main():
     root_logger.debug("Number of threads: " + str(threading.active_count()))
 
     root_logger.info("We now wait on the main thread until we receive a VST...")
-    beacon_manager.wait_for_vst()
+    beacon_manager.wait_and_get_vst()
 
     root_logger.debug("Last VST details in raw bytes format:")
     root_logger.debug(beacon_manager.last_vst)
