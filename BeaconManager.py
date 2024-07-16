@@ -70,6 +70,9 @@ class BeaconManager:
         def alarm(reg_ptr, alarm_type, alarm_state):
             alarm_logger(alarm_type)
 
+            if alarm_type == BCM_ALARMS_Enum.BCM_EventPollingOK:
+                self.beacon_state_ok_trigger.set()
+
             self.last_alarm = {
                 "Alarm": alarm_type,
                 "State": alarm_state
@@ -90,14 +93,24 @@ class BeaconManager:
             bcm_logger.error("Previously unclosed transaction in progress!")
             bcm_logger.info("We will forcefully reset the beacon...")
             self.reset_manager()
+            
             bcm_logger.debug("Polling the beacon state until it is OK again...")
+            self.wait_until_ok()
+            bcm_logger.debug("Beacon is OK again!!!")
+
+
 
         if bcm_state.mode != 0:
             self.change_mode(BCM_MODE_Enum.BCM_MOD_Stopped)
             bcm_logger.debug("Changed mode to stopped!")
             #self.close()
 
+    def wait_until_ok(self):
+        self.beacon_state_ok_trigger.wait()
+
     def __init__(self):
+        self.beacon_state_ok_trigger = threading.Event()
+
         self.reg_ptr = ST_BCM_REG_PTR()
         self.last_vst = []
         
