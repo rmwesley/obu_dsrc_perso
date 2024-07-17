@@ -76,6 +76,8 @@ class BCM_ERR_Enum(ctypes.c_int):
     BCM_SocketCloseTimeoutError = -1079
     BCM_SocketGetHostError = -1080
 
+    CUSTOM_COULD_NOT_CONNECT_VIA_TCP_IP = 10060
+
 class BCMError:
     errors = {
         None: "No error",
@@ -147,7 +149,10 @@ class BCMError:
         -1077: "Socket close event error",
         -1078: "Socket close error",
         -1079: "Socket close timeout error",
-        -1080: "Socket get host error"
+        -1080: "Socket get host error",
+
+        10060: "CUSTOM: Couldn't connect via the TCP/IP. Check the provided ip and tcp port addresses.\n"
+        "Reminder: TGB v2 has no TCP/IP support"
     }
     
     def get_error_description(error_code):
@@ -346,7 +351,7 @@ BCM_LPFN_InitManagerWND_IP = ctypes.WINFUNCTYPE(BCM_ERR,
                                                 POINTER(ST_BCM_REG_PTR),
                                                 DWORD,
                                                 LPVOID,
-                                                CHAR,
+                                                POINTER(CHAR),
                                                 WORD,
                                                 BCM_STATION,
                                                 DWORD,
@@ -357,7 +362,7 @@ BCM_LPFN_InitManagerTHD_IP = ctypes.WINFUNCTYPE(BCM_ERR,
                                                 POINTER(ST_BCM_REG_PTR),
                                                 DWORD,
                                                 LPVOID,
-                                                CHAR,
+                                                POINTER(CHAR),
                                                 WORD,
                                                 BCM_STATION,
                                                 DWORD,
@@ -368,7 +373,7 @@ BCM_LPFN_InitManagerFNC_IP = ctypes.WINFUNCTYPE(BCM_ERR,
                                                 POINTER(ST_BCM_REG_PTR),
                                                 DWORD,
                                                 LPVOID,
-                                                CHAR,
+                                                POINTER(CHAR),
                                                 WORD,
                                                 BCM_STATION,
                                                 DWORD,
