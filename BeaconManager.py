@@ -10,6 +10,7 @@ import logging
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
 from python_dll_loader import *
+import custom_der_decoders
 
 bcm_logger = logging.getLogger(__name__)
 SERIAL_MODE = True
@@ -286,9 +287,8 @@ class BeaconManager:
     def get_vst(self):
         bcm_logger.debug("Getting VST...")
         
-        vst_max_size = BCM_SIZEMAX_Enum.BCM_SIZEMAX_ANSWER
-        dword_max_size = DWORD(vst_max_size)
-        vst_answer_buffer_array = ctypes.create_string_buffer(vst_max_size)
+        dword_max_size = DWORD(BCM_SIZEMAX_Enum.BCM_SIZEMAX_ANSWER)
+        vst_answer_buffer_array = ctypes.create_string_buffer(BCM_SIZEMAX_Enum.BCM_SIZEMAX_ANSWER)
         vst_answer_size = DWORD()
 
         # Pointer where the VST datagram answer will be stored by BCM
@@ -297,7 +297,8 @@ class BeaconManager:
         result = bcm_get_vst(self.reg_ptr,
                              lp_vst_response_datagram,
                              ctypes.byref(vst_answer_size),
-                             dword_max_size)
+                             dword_max_size
+                             )
         
         bcm_logger.debug("Handling errors...")
         bcm_error_handler(result)
@@ -314,21 +315,56 @@ class BeaconManager:
         bcm_logger.debug("VST response buffer pointer contents in hex format:")
         bcm_logger.debug(self.last_vst.hex().upper())
         return self.last_vst
+    
+    def send_command(self, datagram: bytes, close=False):
+        lp_cmd_datagram = ctypes.cast(datagram, POINTER(BYTE))
+        
+        # Buffers and pointers for command response datagrams
+        cmd_response_buffer_array = ctypes.create_string_buffer(BCM_SIZEMAX_Enum.BCM_SIZEMAX_CMD)
+        dword_cmd_resonse_max_size = DWORD(BCM_SIZEMAX_Enum.BCM_SIZEMAX_CMD)
+        lp_cmd_response_datagram = ctypes.cast(cmd_response_buffer_array, POINTER(BYTE))
+        cmd_response_size = DWORD()
+
+        bcm_logger.debug(f"Command to be sent in hex format: {datagram.hex().upper()}")
+
+        result = bcm_send_cmd(
+            self.reg_ptr,
+            lp_cmd_datagram,
+            DWORD(len(datagram)),
+            lp_cmd_response_datagram,
+            ctypes.byref(cmd_response_size),
+            dword_cmd_resonse_max_size,
+            close
+            )
+        bcm_error_handler(result)
+
+        # Iterating cmd response pointer to get its value/contents
+        response_as_list = lp_cmd_response_datagram[:cmd_response_size.value]
+        self.last_cmd_response = bytes(response_as_list)
+        bcm_logger.debug(f"Command response in hex format: {self.last_cmd_response.hex().upper()}")
+        return response_as_list
 
     def set_mmi(self, close = False):
         # SetMMI ActionType is 0xA, or 10 in decimal
         set_mmi_datagram = [self.frag_header, 0x05, 0x00, 0x0A, 0x00, 0x00]
         set_mmi_datagram_buffer = ctypes.create_string_buffer(bytes(set_mmi_datagram), size=len(set_mmi_datagram))
         lp_cmd_datagram = ctypes.cast(set_mmi_datagram_buffer, POINTER(BYTE))
-
-        cmd_max_size = BCM_SIZEMAX_Enum.BCM_SIZEMAX_CMD
-        cmd_buffer_array = ctypes.create_string_buffer(cmd_max_size)
-        cmd_buffer_size = DWORD()
-        dword_max_size = DWORD(cmd_max_size)
-        lp_cmd_response_datagram = ctypes.cast(cmd_buffer_array, POINTER(BYTE))
         
-        bcm_send_cmd(self.reg_ptr, lp_cmd_datagram, DWORD(len(set_mmi_datagram)),
-		lp_cmd_response_datagram, ctypes.byref(cmd_buffer_size), dword_max_size, close)
+        # Buffers and pointers for command datagrams
+        cmd_buffer_array = ctypes.create_string_buffer(BCM_SIZEMAX_Enum.BCM_SIZEMAX_CMD)
+        dword_cmd_max_size = DWORD(BCM_SIZEMAX_Enum.BCM_SIZEMAX_CMD)
+        lp_cmd_response_datagram = ctypes.cast(cmd_buffer_array, POINTER(BYTE))
+        cmd_buffer_size = DWORD()
+
+        bcm_send_cmd(
+            self.reg_ptr,
+            lp_cmd_datagram,
+            DWORD(len(set_mmi_datagram)),
+            lp_cmd_response_datagram,
+            ctypes.byref(cmd_buffer_size),
+            dword_cmd_max_size,
+            close
+            )
 
     def close_transaction(self, close_transaction = False):
         self.set_mmi(True)
