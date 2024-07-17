@@ -1,6 +1,30 @@
 import logging
+import time
+import datetime as dt
 
 decoder_logger = logging.getLogger(__name__)
+
+def encode_date_compact(datetime_timestamp):
+    return (datetime_timestamp.year - 1990 << 9) | (datetime_timestamp.month << 5) | (datetime_timestamp.day)
+def encode_time_compact(datetime_timestamp):
+    return (datetime_timestamp.hour << 11) | (datetime_timestamp.minute << 5) | (datetime_timestamp.second // 2)
+def encode_date_and_time(utc_timestamp=None) -> int:
+    if utc_timestamp is None:
+        utc_timestamp = time.time()
+    datetime_timestamp = dt.datetime.fromtimestamp(utc_timestamp)
+    date_and_time = encode_date_compact(datetime_timestamp) << 16 | encode_time_compact(datetime_timestamp)
+    return date_and_time
+
+def decode_date_and_time(date_and_time):
+    double_secs = date_and_time & 0b11111
+    mins = date_and_time & (0b111111 < 5)
+    hours = date_and_time & (0b11111 < 11)
+    days = date_and_time & (0b11111 < 16)
+    months = date_and_time & (0b1111 < 21)
+    years = date_and_time & (0b1111111 < 25)
+
+    return dt.datetime(1990 + years, months, days, hours, mins, 2*double_secs)
+
 
 def decode_vst(vst_bytes, logger=decoder_logger):
     vst_data = {}
@@ -104,9 +128,12 @@ def decode_vst(vst_bytes, logger=decoder_logger):
         vst_byte_idx += 2
 
         decoder_logger.debug("Obtaining Access Credentials details...")
-        ac_mk_ref = vst_bytes[vst_byte_idx]
+        ac_cr_mack_ref = vst_bytes[vst_byte_idx]
         ac_cr_diversifier = vst_bytes[vst_byte_idx+1]
-        vst_data["Ac_Cr-KeyRef"] = vst_bytes[vst_byte_idx : vst_byte_idx+2].hex()
+        #vst_data["AC_CR-Ref"] = vst_bytes[vst_byte_idx : vst_byte_idx+2].hex()
+        vst_data["AC_CR-Ref"] = {}
+        vst_data["AC_CR-Ref"]["AC_CR-MasterKeyRef"] = ac_cr_mack_ref
+        vst_data["AC_CR-Ref"]["AC_CR-Diversifier"] = ac_cr_diversifier
         vst_byte_idx += 2
 
         container_type = vst_bytes[vst_byte_idx]
