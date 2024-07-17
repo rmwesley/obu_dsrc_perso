@@ -63,7 +63,8 @@ class BeaconManager:
                 with self.callback_received_notifier:
                     self.callback_received_notifier.notify_all()
             except:
-                bcm_logger.debug("CB: An error occurred during the callback...")
+                bcm_logger.debug(f"CB: Error, with code {error_code}")
+                bcm_error_logger(error_code)
                 return
         return callback
         
@@ -86,34 +87,43 @@ class BeaconManager:
             etc."""
 
         bcm_logger.debug("Getting beacon state...")
-        bcm_state = self.check_state()
-        bcm_logger.debug(bcm_state)
+        result = self.check_state()
+        bcm_logger.debug(self.bcm_state)
+
+        if result == BCM_ERR_Enum.BCM_NoError:
+            pass
+        elif result == BCM_ERR_Enum.BCM_SocketNotConnected:
+            bcm_logger.error("Wait for socket to connect before sending commands!")
+            self.wait_until_ok()
+        else:
+            bcm_logger.error("We could not handle the error, so it will be raised")
+            bcm_error_handler(result)
 
         # If a previous transaction was not closed, we forcefully reset the beacon
-        if bcm_state.trxInProgress:
+        if self.bcm_state.trxInProgress:
             bcm_logger.error("Previously unclosed transaction in progress!")
             bcm_logger.info("We will forcefully reset the beacon...")
             self.reset_manager()
             
-            bcm_logger.debug("Polling the beacon state until it is OK again...")
             self.wait_until_ok()
-            bcm_logger.debug("Beacon is OK again!!!")
 
-
-
-        if bcm_state.mode != 0:
+        if self.bcm_state.mode != 0:
             self.change_mode(BCM_MODE_Enum.BCM_MOD_Stopped)
             bcm_logger.debug("Changed mode to stopped!")
             #self.close()
 
     def wait_until_ok(self):
+        bcm_logger.debug("Polling the beacon state until it is in an OK state...")
         self.beacon_state_ok_trigger.wait()
+        bcm_logger.debug("Beacon is OK!!!")
 
     def __init__(self):
         self.beacon_state_ok_trigger = threading.Event()
         self.callback_received_notifier = threading.Condition()
 
+        # This is the BCM structure pointer. It is managed by the DLL
         self.reg_ptr = ST_BCM_REG_PTR()
+        # Last received VST
         self.last_vst = []
         
         # PDU cannot be 0 or 1
@@ -177,12 +187,11 @@ class BeaconManager:
         bcm_logger.debug("\tCB notification received!!! You can receive a VST now.")
         
     def check_state(self):
-        bcm_state = ST_BCM_STATE()
+        self.bcm_state = ST_BCM_STATE()
         
-        result = bcm_check_state(self.reg_ptr, ctypes.byref(bcm_state))
-        bcm_error_handler(result)
+        result = bcm_check_state(self.reg_ptr, ctypes.byref(self.bcm_state))
         
-        return bcm_state
+        return result
     
     def get_config(self):
         bcm_config = ST_BCM_CONFIG()
