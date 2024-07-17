@@ -12,6 +12,7 @@ import logging
 from python_dll_loader import *
 
 bcm_logger = logging.getLogger(__name__)
+SERIAL_MODE = True
 
 def bcm_error_logger(bcm_error):
     bcm_logger.error(f"Beacon Manager Error {bcm_error}: {BCMError.get_error_description(bcm_error)}")
@@ -129,10 +130,40 @@ class BeaconManager:
         
         beacon_state_polling_ms = 100
         send_event_polling_OK = True
-        result = bcm_init_manager_fnc(
-            ctypes.byref(self.reg_ptr), 1, None, 1,
-            BaudRate_Enum.BCM_CFG_115200, BCM_STATION_Enum.BCM_Secondary, beacon_state_polling_ms, send_event_polling_OK,
-            self.c_callback, self.c_alarm
+        # The user registration number is not used internally by the BCM DLL
+        # It is thus free for use in our application
+        user_registration = 7
+        user_params = None
+        if SERIAL_MODE:
+            serial_port = 1
+            serial_port_speed = BaudRate_Enum.BCM_CFG_115200
+            result = bcm_init_manager_fnc(
+                ctypes.byref(self.reg_ptr),
+                user_registration,
+                user_params,
+                serial_port,
+                serial_port_speed,
+                BCM_STATION_Enum.BCM_Secondary,
+                beacon_state_polling_ms,
+                send_event_polling_OK,
+                self.c_callback,
+                self.c_alarm
+            )
+        else:
+            beacon_ip_address = '133.38.40.152'.encode('utf-8')
+            beacon_tcp_port = 10001
+
+            result = bcm_init_manager_fnc_ip(
+                ctypes.byref(self.reg_ptr),
+                user_registration,
+                user_params,
+                beacon_ip_address,
+                beacon_tcp_port,
+                BCM_STATION_Enum.BCM_Secondary,
+                beacon_state_polling_ms,
+                send_event_polling_OK,
+                self.c_callback,
+                self.c_alarm
             )
 
         bcm_error_handler(result)
