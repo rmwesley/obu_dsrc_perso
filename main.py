@@ -17,10 +17,36 @@ from BeaconManager import BeaconManager
 root_logger = logging.getLogger()
 
 console_handler = logging.StreamHandler()
-console_formatter = logging.Formatter("%(levelname)-8s - %(threadName)s - %(message)s")
+file_handler = logging.FileHandler('gea_bcm_dll_python_loader.log')
+
+class ColoredFormatterWrapper(logging.Formatter):
+    GRAY = "\033[38;20m"
+    YELLOW = "\033[33;20m"
+    RED = "\033[31;20m"
+    BOLD_RED = "\033[31;1m"
+    RESET_COLOR = "\033[0m"
+    default_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)")
+    formatter = None
+
+    LEVEL_COLORS = {
+        logging.DEBUG: GRAY,
+        logging.INFO: GRAY,
+        logging.WARNING: YELLOW,
+        logging.ERROR: RED,
+        logging.CRITICAL: BOLD_RED,
+    }
+
+    def __init__(self, formatter=default_formatter):
+        self.formatter = formatter
+
+    def format(self, record):
+        color = ColoredFormatterWrapper.LEVEL_COLORS.get(record.levelno)
+        colored_formatting = color + self.formatter.format(record) + ColoredFormatterWrapper.RESET_COLOR
+        return colored_formatting
+        
+console_formatter = ColoredFormatterWrapper(logging.Formatter("%(levelname)-8s - %(threadName)s - %(message)s"))
 console_handler.setFormatter(console_formatter)
 
-file_handler = logging.FileHandler('gea_bcm_dll_python_loader.log')
 file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
 file_handler.setFormatter(file_formatter)
 
