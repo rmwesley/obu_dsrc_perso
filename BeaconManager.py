@@ -343,6 +343,60 @@ class BeaconManager:
         self.last_cmd_response = bytes(response_as_list)
         bcm_logger.debug(f"Command response in hex format: {self.last_cmd_response.hex().upper()}")
         return response_as_list
+    
+    def get_request(self, eid, ac_cr=None, attribute_id_list=[0x20], close = False):
+        get_req_header = 0b01100000
+        if ac_cr:
+            get_req_header = get_req_header | 0b1000
+        
+        if attribute_id_list is None:
+            # AttributeIdList not present
+            get_request_data = [self.frag_header, eid, ac_cr]
+            return self.send_command(bytes(get_request_data))
+        else:
+            # AttributeIdList is present!
+            get_req_header = get_req_header | 0b10
+
+        if ac_cr is None:
+            get_request_data = [self.frag_header, get_req_header, eid] + [len(attribute_id_list)] + attribute_id_list
+            return self.send_command(bytes(get_request_data))
+        
+        get_request_data = [self.frag_header, eid, ac_cr] + [len(attribute_id_list)] + attribute_id_list
+        bcm_logger.debug(f"Get Request datalist: {get_request_data}")
+        return self.send_command(bytes(get_request_data))
+        
+    def get_stamped_request(self, eid, ac_cr, operator_auk_ref=111, attribute_id_list=[0x20], response_expected=True, close = False):
+        return self.presentation_request(eid, ac_cr, operator_auk_ref, attribute_id_list, response_expected, close)
+    
+    def presentation_request(self, eid:int, ac_cr:int, operator_auk_ref=111, attribute_id_list=[0x20], response_expected=True, close = False):
+        action_req_header = 0
+        if ac_cr:
+            action_req_header = action_req_header | 0b1000
+
+        # ActionParameter is present for a GET_STAMPED.request
+        # Its container type/choice is set to 17=GetStampedRq
+        GetStampedRq = 17
+        action_req_header = action_req_header | 0b0100
+
+        if response_expected:
+            action_req_header = action_req_header | 1
+        
+        # ActionType is a GET_STAMPED
+        action_type = 0
+        # Attribute 0x20 = 32 is the PAN, or PaymentMeans
+        # So the AttributeIdList is set by default to [0x20]
+
+        rnd_rse = custom_der_decoders.encode_date_and_time()
+
+        ac_cr_list = list(ac_cr.to_bytes(4, 'big'))
+        rnd_rse_list = list(rnd_rse.to_bytes(4, 'big'))
+        presentation_request = [self.frag_header, action_req_header, eid, action_type] + [len(ac_cr_list)] + ac_cr_list + [GetStampedRq] + [len(attribute_id_list)] + attribute_id_list +  [len(rnd_rse_list)] + rnd_rse_list + [operator_auk_ref]
+        
+        bcm_logger.debug(f"Presentation request: {presentation_request}")
+        
+        response_as_list = self.send_command(bytes(presentation_request))
+        # Converting last command request to bytes structure
+        self.last_cmd_req = bytes(response_as_list)
 
     def set_mmi(self, close = False):
         # SetMMI ActionType is 0xA, or 10 in decimal
