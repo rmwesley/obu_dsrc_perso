@@ -53,6 +53,11 @@ def main():
     vst_data = custom_der_decoders.decode_vst(beacon_manager.last_vst)
     root_logger.debug(vst_data)
 
+    eid = 4
+    root_logger.debug(f"Getting the attribute 32=0x20, PaymentMeans, for the instance with EID {eid}...")
+    response = beacon_manager.get_request(eid, attribute_id_list=[0x20])
+    root_logger.debug(f"BCM last command response in hex format: {beacon_manager.last_cmd_response.hex().upper()}")
+
     root_logger.debug("We should send a SetMMI command on the main Thread to close the transaction")
     root_logger.debug("Otherwise, the transaction will remain unclosed and cause an error on the next execution")
     beacon_manager.set_mmi(True)
