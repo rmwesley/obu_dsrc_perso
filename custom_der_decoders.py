@@ -2,6 +2,130 @@ import logging
 import time
 import datetime as dt
 
+class ContainerType:
+    INTEGER = 0
+    OCTET_STRING = 2
+    UNIVERSAL_STRING = 3
+    BEACON_ID = 4
+    T_APDU = 5
+    DSRC_APPLICATION_ENTITY_ID = 6
+    DSRC_ASE_ID = 7
+    ATTR_ID_LIST = 8
+    ATTR_LIST = 9
+    BROADCAST_POOL = 10
+    DIRECTORY = 11
+    FILE = 12
+    FILE_TYPE = 13
+    RECORD = 14
+    TIME = 15
+    VECTOR = 16
+    GSTRQ = 17
+    GSTRS = 18
+    SSTRQ = 19
+    GINRQ = 20
+    GINRS = 21
+    SINRQ = 22
+    CHARQ = 23
+    CHARS = 24
+    CPPRQ = 25
+    SUBRQ = 26
+    ADDRQ = 27
+    DEBRQ = 28
+    DEBRS = 29
+    CRERQ = 30
+    CRERS = 31
+    EFC_CONTEXT_MARK = 32
+    CONT_SER = 33
+    CONT_VAL = 34
+    CONT_VEH = 35
+    CONTAUTH = 36
+    REC_SPT = 37
+    SESSIONCLS = 38
+    RECSERVSERIALNO = 39
+    REC_FINPT_ENV = 40
+    REC_CONT = 41
+    REC_OBU_ID = 42
+    REC_ICC_ID = 43
+    REC_TEXT = 44
+    REC_AUTH = 45
+    REC_DIST = 46
+    VEHLPN = 47
+    VEHID = 48
+    VEHCLASS = 49
+    VEHDIMS = 50
+    VEHAXLES = 51
+    VEHWTLIMS = 52
+    VEHWTLADEN = 53
+    VEHSPCHARS = 54
+    VEHAUTH = 55
+    EQU_OBU_ID = 56
+    EQU_ICC_ID = 57
+    EQU_STAT = 58
+    DVRCHARS = 59
+    PAYMEANS_ENV = 60
+    PAYMBAL = 61
+    PAYMUNIT = 62
+    PAYSECDATA = 63
+    PAYMEANS = 64
+    RECDATA1 = 65
+    RECDATA2 = 66
+    VALOFCON = 67
+    REC_FINPT = 68
+    SETMMIRQ = 69
+    AWL = 70
+    PACA = 71
+    ENG = 72
+    SL = 73
+    EEV = 74
+    DEV = 75
+    CO2EV = 76
+    VTD = 77
+    TLPN = 78
+    TCH = 79
+    ANP = 80
+    RFUCENISO48 = 81
+    RFUCENISO49 = 82
+    RFUCENISO50 = 83
+    RFUCENISO51 = 84
+    RFUCENISO52 = 85
+    RFUCENISO53 = 86
+    # Container type values [87..127] are reserved for private EFC use and intended for the addressing of the corresponding private attribute identifiers.
+
+FIXED_SIZE_CONTAINER_TYPE_SIZES = {
+    ContainerType.EFC_CONTEXT_MARK: 6,
+    ContainerType.CONT_SER: 4,
+    ContainerType.CONT_VAL: 6,
+    ContainerType.VALOFCON: 4,
+    ContainerType.REC_SPT: 13,
+    ContainerType.SESSIONCLS: 2,
+    ContainerType.RECSERVSERIALNO: 3,
+    ContainerType.REC_FINPT: 23,
+    ContainerType.REC_CONT: 9,
+    ContainerType.REC_DIST: 3,
+    ContainerType.RECDATA1: 28,
+    ContainerType.RECDATA2: 28,
+    ContainerType.VEHCLASS: 1,
+    ContainerType.VEHDIMS: 3,
+    ContainerType.VEHAXLES: 2,
+    ContainerType.VEHWTLIMS: 6,
+    ContainerType.VEHWTLADEN: 2,
+    ContainerType.VEHSPCHARS: 4,
+    ContainerType.AWL: 10,
+    ContainerType.PACA: 2,
+    ContainerType.ENG: 4,
+    ContainerType.SL: 2,
+    ContainerType.EEV: 8,
+    ContainerType.DEV: 4,
+    ContainerType.CO2EV: 2,
+    ContainerType.VTD: 4,
+    ContainerType.EQU_STAT: 2,
+    ContainerType.DVRCHARS: 2,
+    ContainerType.ANP: 1,
+    ContainerType.PAYMEANS: 14,
+    ContainerType.PAYMBAL: 3,
+    ContainerType.PAYMUNIT: 2,
+}
+
 decoder_logger = logging.getLogger(__name__)
 
 def encode_date_compact(datetime_timestamp):
@@ -25,6 +149,59 @@ def decode_date_and_time(date_and_time):
 
     return dt.datetime(1990 + years, months, days, hours, mins, 2*double_secs)
 
+class DSRC_Data_Container:
+    def __init__(self, content: bytes):
+        self.content = content
+        self.content_type = content[0]
+
+    def represent_lpn(self):
+        vehicle_licence_plate_number = self.content
+        country_code = bytes(vehicle_licence_plate_number[0 : 2]) >> 6
+        lpn_length = vehicle_licence_plate_number[3]
+        lpn_value = vehicle_licence_plate_number[4 : 4 + lpn_length].decode('utf-8')
+        return {
+            "country_code" : country_code,
+            "lpn_length" : lpn_length,
+            "lpn_value" : lpn_value,
+        }
+    def __repr__(self):
+        if self.content_type == ContainerType.VEHLPN:
+            return self.represent_lpn()
+        else:
+            return self.content.hex().upper()
+
+def decode_attributes_list(datagram, attribute_list_start_index):
+    datagram_index = attribute_list_start_index
+
+    number_of_attributes_in_list = datagram[datagram_index]
+    datagram_index += 1
+
+    decoded_attribute_list = []
+    while len(decoded_attribute_list) < number_of_attributes_in_list:
+        attribute_id = datagram[datagram_index]
+
+        # Container Choice or ContainerType
+        container_type = datagram[datagram_index + 1]
+        decoder_logger.debug(f"Decoding attribute with Container Type {container_type} = 0x{container_type:01X}")
+        if container_type in FIXED_SIZE_CONTAINER_TYPE_SIZES:
+            length = FIXED_SIZE_CONTAINER_TYPE_SIZES[container_type]
+        else:
+            length = datagram[datagram_index + 2]
+
+        # Attribute value including its Container Type and optional Length, but without the AttributeId
+        attribute_value = datagram[datagram_index + 1 : datagram_index + length + 3]
+        datagram_index += length + 3
+
+        attribute_value_bytes = bytes(attribute_value)
+        decoder_logger.debug(f"Attribute value in hex: {attribute_value_bytes.hex().upper()}")
+        attribute = {
+            "attribute_id": attribute_id,
+            "value": attribute_value_bytes.hex().upper(),
+            "representation": DSRC_Data_Container(attribute_value_bytes).__repr__()
+            }
+
+        decoded_attribute_list.append(attribute)
+    return decoded_attribute_list
 
 def decode_vst(vst_bytes, logger=decoder_logger):
     vst_data = {}

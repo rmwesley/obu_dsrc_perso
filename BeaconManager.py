@@ -364,7 +364,10 @@ class BeaconManager:
         
         get_request_data = [self.frag_header, eid, ac_cr] + [len(attribute_id_list)] + attribute_id_list
         bcm_logger.debug(f"Get Request datalist: {get_request_data}")
-        return self.send_command(bytes(get_request_data))
+
+        # Converting last command request to bytes structure
+        response_as_list = self.send_command(bytes(get_request_data))
+        return bytes(response_as_list)
         
     def get_stamped_request(self, eid, ac_cr, operator_auk_ref=111, attribute_id_list=[0x20], response_expected=True, close = False):
         return self.presentation_request(eid, ac_cr, operator_auk_ref, attribute_id_list, response_expected, close)
@@ -398,6 +401,7 @@ class BeaconManager:
         response_as_list = self.send_command(bytes(presentation_request))
         # Converting last command request to bytes structure
         self.last_cmd_req = bytes(response_as_list)
+        return self.last_cmd_req
 
     def set_mmi(self, close = False):
         # SetMMI ActionType is 0xA, or 10 in decimal

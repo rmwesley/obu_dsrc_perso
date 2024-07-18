@@ -121,6 +121,10 @@ def main():
 
         # Operator auth key is optional, it is set to 111 by default
         response = beacon_manager.presentation_request(eid, access_credentials)
+        
+        attribute_list_start_index = 4
+        attribute_list = custom_der_decoders.decode_attributes_list(response, attribute_list_start_index)
+        root_logger.debug(f"AttributeList in hex: {attribute_list}")
 
     root_logger.debug("We should send a SetMMI command on the main Thread to close the transaction")
     root_logger.debug("Otherwise, the transaction will remain unclosed and cause an error on the next execution")
