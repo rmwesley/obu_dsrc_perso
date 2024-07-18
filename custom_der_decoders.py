@@ -127,13 +127,18 @@ def decode_vst(vst_bytes, logger=decoder_logger):
             decoder_logger.error(f"Access Credentials container is {container_type:02X}{container_length:02X} instead of 0202")
         vst_byte_idx += 2
 
-        decoder_logger.debug("Obtaining Access Credentials details...")
-        ac_cr_mack_ref = vst_bytes[vst_byte_idx]
-        ac_cr_diversifier = vst_bytes[vst_byte_idx+1]
-        #vst_data["AC_CR-Ref"] = vst_bytes[vst_byte_idx : vst_byte_idx+2].hex()
-        vst_data["AC_CR-Ref"] = {}
-        vst_data["AC_CR-Ref"]["AC_CR-MasterKeyRef"] = ac_cr_mack_ref
-        vst_data["AC_CR-Ref"]["AC_CR-Diversifier"] = ac_cr_diversifier
+        decoder_logger.debug("Obtaining Access Credentials details and keeping it as an int...")
+        # Storing AC_CR-KeyRef as an int
+        vst_data["AC_CR-KeyRef"] = int.from_bytes(vst_bytes[vst_byte_idx : vst_byte_idx+2], byteorder='big')
+
+        #vst_data["AC_CR-Ref"] = vst_bytes[vst_byte_idx : vst_byte_idx+2]
+
+        #ac_cr_mack_ref = vst_bytes[vst_byte_idx]
+        #ac_cr_diversifier = vst_bytes[vst_byte_idx+1]
+        #vst_data["AC_CR-Ref"] = {}
+        #vst_data["AC_CR-Ref"]["AC_CR-MasterKeyRef"] = ac_cr_mack_ref
+        #vst_data["AC_CR-Ref"]["AC_CR-Diversifier"] = ac_cr_diversifier
+
         vst_byte_idx += 2
 
         container_type = vst_bytes[vst_byte_idx]
@@ -143,7 +148,7 @@ def decode_vst(vst_bytes, logger=decoder_logger):
         vst_byte_idx += 2
 
     rnd_obe = bytes(vst_bytes[vst_byte_idx : vst_byte_idx+4])
-    vst_data["RndOBE"] = rnd_obe.hex().upper()
+    vst_data["RndOBE"] = rnd_obe
 
     decoder_logger.debug(f"\tRndOBE: {rnd_obe.hex().upper()}")
     vst_byte_idx += 4
