@@ -96,25 +96,31 @@ def main():
     root_logger.debug(f"BCM last command response in hex format: {beacon_manager.last_cmd_response.hex().upper()}")
 
     eid = 7
+    vst_application_index = -1
     for index, application in enumerate(vst_data['applications']):
         if application["EID"] == eid:
             vst_application_index = index
-    root_logger.debug(f"Operator application index: {vst_application_index}")
-    operator_application = vst_data['applications'][vst_application_index]
-            
-    # IssuerId = ContractProvider = EFC-CM
-    issuer_id = operator_application['EFC-CM']
+    
+    if vst_application_index == -1:
+        root_logger.info(f"EID 7 is not present!")
 
-    root_logger.debug(f"AC_CR-KeyRef in hex: {operator_application["AC_CR-KeyRef"]:04X}")
-    ac_cr_key_ref = operator_application["AC_CR-KeyRef"]
+    # EID 7 is present! The beacon operator can do a transaction
+    elif vst_application_index > 0:
+        root_logger.debug(f"Operator application index: {vst_application_index}")
+        operator_application = vst_data['applications'][vst_application_index]
+                
+        # IssuerId = ContractProvider = EFC-CM
+        issuer_id = operator_application['EFC-CM']
 
-    rnd_obe = operator_application["RndOBE"]
-    access_credentials = key_derivation.compute_access_credentials(issuer_id, rnd_obe, ac_cr_key_ref)
-    root_logger.debug(f"Generated Access Credentials in hex format: {access_credentials:08X}")
+        root_logger.debug(f"AC_CR-KeyRef in hex: {operator_application["AC_CR-KeyRef"]:04X}")
+        ac_cr_key_ref = operator_application["AC_CR-KeyRef"]
 
-    # Operator auth key is optional, it is set to 111 by default
-    beacon_manager.presentation_request(eid, access_credentials)
+        rnd_obe = operator_application["RndOBE"]
+        access_credentials = key_derivation.compute_access_credentials(issuer_id, rnd_obe, ac_cr_key_ref)
+        root_logger.debug(f"Generated Access Credentials in hex format: {access_credentials:08X}")
 
+        # Operator auth key is optional, it is set to 111 by default
+        response = beacon_manager.presentation_request(eid, access_credentials)
 
     root_logger.debug("We should send a SetMMI command on the main Thread to close the transaction")
     root_logger.debug("Otherwise, the transaction will remain unclosed and cause an error on the next execution")
