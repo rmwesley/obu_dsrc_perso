@@ -69,7 +69,11 @@ def main():
     root_logger.debug(bcm_state)
 
     root_logger.debug("Starting BST...")
-    beacon_manager.start_bst(0x00D0, 0xBA00, [0x01])
+    manufacturer_id = 0x00D0
+    individual_id = 0xBA00
+    #requested_aids = [1, 20, 29]
+    #beacon_manager.start_bst(manufacturer_id, individual_id, requested_aids)
+    beacon_manager.start_bst(manufacturer_id, individual_id)
     
     root_logger.debug("No errors occurred: BST started!")
     root_logger.debug("We now create a task that logs some text to the console upon receiving a callback...")
@@ -92,23 +96,23 @@ def main():
     root_logger.debug(f"BCM last command response in hex format: {beacon_manager.last_cmd_response.hex().upper()}")
 
     eid = 7
+    for index, application in enumerate(vst_data['applications']):
+        if application["EID"] == eid:
+            vst_application_index = index
+    root_logger.debug(f"Operator application index: {vst_application_index}")
+    operator_application = vst_data['applications'][vst_application_index]
+            
     # IssuerId = ContractProvider = EFC-CM
-    issuer_id = vst_data['applications'][1]['EFC-CM']
+    issuer_id = operator_application['EFC-CM']
 
-    root_logger.debug(f"AC_CR-KeyRef in hex: {vst_data["AC_CR-KeyRef"]:04X}")
-    #ac_cr_mk_ref = vst_data["AC_CR-Ref"]["AC_CR-MasterKeyRef"]
-    #ac_cr_diversifier = vst_data["AC_CR-Ref"]["AC_CR-Diversifier"]
-    #root_logger.debug(f"AC_CR-MasterKeyReference in hex: {ac_cr_mack_ref:02X}")
-    #root_logger.debug(f"AC_CR-Diversifier in hex: {ac_cr_diversifier:02X}")
-    ac_cr_key_ref = vst_data["AC_CR-KeyRef"]
+    root_logger.debug(f"AC_CR-KeyRef in hex: {operator_application["AC_CR-KeyRef"]:04X}")
+    ac_cr_key_ref = operator_application["AC_CR-KeyRef"]
 
-    rnd_obe = vst_data["RndOBE"]
+    rnd_obe = operator_application["RndOBE"]
     access_credentials = key_derivation.compute_access_credentials(issuer_id, rnd_obe, ac_cr_key_ref)
     root_logger.debug(f"Generated Access Credentials in hex format: {access_credentials:08X}")
 
-    # Operator auth key is optional, we set it to 111 by default
-    #chosen_auth_key = 111
-    #beacon_manager.presentation_request(eid, access_credentials, chosen_auth_key)
+    # Operator auth key is optional, it is set to 111 by default
     beacon_manager.presentation_request(eid, access_credentials)
 
 

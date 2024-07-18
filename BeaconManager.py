@@ -214,7 +214,8 @@ class BeaconManager:
         bcm_error_handler(result)
 
     # Start sending a BST
-    def start_bst(self, manufacturer_id, individual_id, mandapplications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
+    # mandapplications contains AIDs 1, 20 and 29, for EFC, CCC and UNI/IT, respectively
+    def start_bst(self, manufacturer_id=0x31, individual_id=0x111, mandapplications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
         # INITIALIZATION.request is 0b1000, shifted 4 bits
         init_request = 0x80
         
