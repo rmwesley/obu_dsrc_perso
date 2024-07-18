@@ -11,6 +11,7 @@ mk_path = os.environ['MK_PATH']
 with open(mk_path) as json_file:
     master_keys = json.load(json_file)
 
+# CODE FOR DERIVED ACCESS KEY (Uses MasterKey with ref 120)
 def compute_access_key(issuer_id, ac_cr_key_ref):
     # issuer_id = EFC-CM or ContractProvider
     # Get the Master Access Key (MAcK)t
@@ -49,3 +50,75 @@ def compute_access_credentials_with_access_key(issuer_id, rnd_obe, access_key):
     ac_cr = int.from_bytes(output[:4])
     key_derivation_logger.info(f"Access Credentials in hex: {ac_cr:08X}")
     return ac_cr
+
+
+# CODE FOR DERIVED AUTHENTICATION KEYS (Uses MasterKeys with ref 111 through 118)
+def compact_pan_type1(pan_str: str):
+    PAN_8 = pan_str[:16]
+
+    most_sbytes = int(PAN_8[:8], 16)
+    least_sbytes = int(PAN_8[8:], 16)
+    int_compact_pan = most_sbytes ^ least_sbytes
+
+    # Length is 4 bytes, byte ordering is 'big'
+    bytes_compact_pan = int_compact_pan.to_bytes(length=4, byteorder="big")
+    return bytes_compact_pan
+
+
+def compute_ciphertext(pan_id, issuer_id):
+    # Prepare the compact PAN
+    bytes_compact_pan = compact_pan_type1(pan_id)
+    # print(bytes_compact_pan.hex())
+
+    # Concatenating a "00" tail and assembling the full ciphertext
+    ciphertext_extension = issuer_id + "00"
+
+    bytes_ciphertext_extension = bytes.fromhex(ciphertext_extension)
+    ciphertext = bytes_compact_pan + bytes_ciphertext_extension
+    # logger.debug(ciphertext.hex())
+    # print(ciphertext.hex())
+    return ciphertext
+
+
+def compute_auth_key_with_mauk_value(pan_id: str, issuer_id: str, master_key: bytes):
+    # Prepare/configure the cipher with the master key
+    cipher = DES3.new(master_key, DES3.MODE_ECB)
+
+    # Prepare the compact PAN
+    bytes_compact_pan = compact_pan_type1(pan_id)
+    # print(bytes_compact_pan.hex())
+
+    # Concatenating a "00" tail and assembling the full ciphertext
+    ciphertext_extension = issuer_id + "00"
+
+    bytes_ciphertext_extension = bytes.fromhex(ciphertext_extension)
+    ciphertext = bytes_compact_pan + bytes_ciphertext_extension
+    # logger.debug(ciphertext.hex())
+    # print(ciphertext.hex())
+
+    auth_key = cipher.encrypt(ciphertext)
+
+    return auth_key.hex().upper()
+
+def compute_auth_key_with_mauk_ref(pan_id: str, issuer_id: str, key_ref: int):
+    if key_ref not in range(111, 119):
+        raise ValueError("Invalid master authentication key (MAuK) reference!")
+    mauk_hex = master_keys[issuer_id][key_ref - 111]
+    mauk = bytes.fromhex(mauk_hex)
+    return compute_auth_key_with_mauk_value(pan_id, issuer_id, mauk)
+
+
+def decipher_auth_key_with_mauk_value(auth_key: str, mauk: str):
+    bytes_master_key = bytes.fromhex(mauk)
+    # Prepare/configure the cipher with the master key
+    cipher = DES3.new(bytes_master_key, DES3.MODE_ECB)
+
+    # Decipher
+    deciphered_ciphertext = cipher.decrypt(bytes.fromhex(auth_key))
+
+    return deciphered_ciphertext.hex().upper()
+
+
+def decipher_auth_key_with_mauk_ref(auth_key: str, issuer_id: str, key_number: int):
+    mauk = master_keys[issuer_id][key_number - 1]
+    return decipher_auth_key_with_mauk_value(auth_key, mauk)
