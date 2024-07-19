@@ -345,41 +345,61 @@ class BeaconManager:
         bcm_logger.debug(f"Command response in hex format: {self.last_cmd_response.hex().upper()}")
         return response_as_list
     
-    def get_request(self, eid, ac_cr=None, attribute_id_list=[0x20], close = False):
-        get_req_header = 0b01100000
-        if ac_cr:
+    def get_request_datagram_prepartion(self, eid, access_credentials=None, attribute_ids=None, close = False):
+        bcm_logger.debug(f"Preparing a GET.request to get attributes with ids {attribute_ids}")
+        # 0b0110 0000 = 0x60
+        get_req_header = 0x60
+        if access_credentials:
+            # Access Credentials are present!
             get_req_header = get_req_header | 0b1000
-        
-        if attribute_id_list is None:
-            # AttributeIdList not present
-            get_request_data = [self.frag_header, eid, ac_cr]
-            return self.send_command(bytes(get_request_data))
+            # Length + Value
+            ac_cr_list = [4] + list(access_credentials.to_bytes(4, 'big'))
         else:
+            ac_cr_list = []
+        
+        if attribute_ids:
             # AttributeIdList is present!
             get_req_header = get_req_header | 0b10
-
-        if ac_cr is None:
-            get_request_data = [self.frag_header, get_req_header, eid] + [len(attribute_id_list)] + attribute_id_list
-            return self.send_command(bytes(get_request_data))
+            # Length + Value
+            attribute_id_list = [len(attribute_ids)] + attribute_ids
+        else:
+            attribute_id_list = []
         
-        get_request_data = [self.frag_header, eid, ac_cr] + [len(attribute_id_list)] + attribute_id_list
+        get_request_data = [self.frag_header, get_req_header, eid] + ac_cr_list + attribute_id_list
         bcm_logger.debug(f"Get Request datalist: {get_request_data}")
 
         # Converting last command request to bytes structure
         response_as_list = self.send_command(bytes(get_request_data))
         return bytes(response_as_list)
-        
-    def get_stamped_request(self, eid, ac_cr, operator_auk_ref=111, attribute_id_list=[0x20], response_expected=True, close = False):
-        return self.presentation_request(eid, ac_cr, operator_auk_ref, attribute_id_list, response_expected, close)
-    
-    def presentation_request(self, eid:int, ac_cr:int, operator_auk_ref=111, attribute_id_list=[0x20], response_expected=True, close = False):
+    def send_get_request(self, eid, access_credentials=None, attribute_ids=None, close = False):
+        datagram = self.get_request_datagram_prepartion(eid, access_credentials, attribute_ids, close)
+        return self.send_command(datagram)
+
+    def get_stamped_request_datagram_preparation(self, eid:int, access_credentials:int, operator_auk_ref=111, attribute_ids=[], response_expected=True, close = False):
+        bcm_logger.debug(f"Preparing a GET_STAMPED.request to get attributes with ids {attribute_ids}")
         action_req_header = 0
-        if ac_cr:
+        # The ActionParameter is always present in a GET_STAMPED request
+        action_req_header = action_req_header | 0b100
+
+        if access_credentials:
+            # Access Credentials are present!
             action_req_header = action_req_header | 0b1000
+            # Length + Value
+            ac_cr_list = [4] + list(access_credentials.to_bytes(4, 'big'))
+        else:
+            ac_cr_list = []
+
+        if attribute_ids:
+            # AttributeIdList is present!
+            # Length + Value
+            attribute_id_list = [len(attribute_ids)] + attribute_ids
+        else:
+            # AttributeIdList is present, even if empty (length = 0)
+            attribute_id_list = [00]
 
         # ActionParameter is present for a GET_STAMPED.request
         # Its container type/choice is set to 17=GetStampedRq
-        GetStampedRq = 17
+        GetStampedRq_container_type = 17
         action_req_header = action_req_header | 0b0100
 
         if response_expected:
@@ -391,10 +411,8 @@ class BeaconManager:
         # So the AttributeIdList is set by default to [0x20]
 
         rnd_rse = custom_der_decoders.encode_date_and_time()
-
-        ac_cr_list = list(ac_cr.to_bytes(4, 'big'))
-        rnd_rse_list = list(rnd_rse.to_bytes(4, 'big'))
-        presentation_request = [self.frag_header, action_req_header, eid, action_type] + [len(ac_cr_list)] + ac_cr_list + [GetStampedRq] + [len(attribute_id_list)] + attribute_id_list +  [len(rnd_rse_list)] + rnd_rse_list + [operator_auk_ref]
+        rnd_rse_list = [4] + list(rnd_rse.to_bytes(4, 'big'))
+        presentation_request = [self.frag_header, action_req_header, eid, action_type] + ac_cr_list + [GetStampedRq_container_type] + attribute_id_list + rnd_rse_list + [operator_auk_ref]
         
         bcm_logger.debug(f"Presentation request: {presentation_request}")
         
@@ -402,6 +420,12 @@ class BeaconManager:
         # Converting last command request to bytes structure
         self.last_cmd_req = bytes(response_as_list)
         return self.last_cmd_req
+    def send_get_stamped_request(self, eid, access_credentials=None, attribute_ids=None, close = False):
+        datagram = self.get_request_datagram_prepartion(eid, access_credentials, attribute_ids, close)
+        return self.send_command(datagram)
+
+    def presentation_request(self, eid, access_credentials, operator_auk_ref=111, attribute_ids=None, response_expected=True, close = False):
+        return self.send_get_stamped_request(eid, access_credentials, operator_auk_ref, attribute_ids, response_expected, close)
 
     def set_mmi(self, close = False):
         # SetMMI ActionType is 0xA, or 10 in decimal
