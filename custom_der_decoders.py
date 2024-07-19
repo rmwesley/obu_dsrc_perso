@@ -62,11 +62,11 @@ class ContainerType:
     EQU_ICC_ID = 57
     EQU_STAT = 58
     DVRCHARS = 59
-    PAYMEANS_ENV = 60
+    PAYMENT_MEANS_ENV = 60
     PAYMBAL = 61
     PAYMUNIT = 62
     PAYSECDATA = 63
-    PAYMEANS = 64
+    PAYMENT_MEANS = 64
     RECDATA1 = 65
     RECDATA2 = 66
     VALOFCON = 67
@@ -121,15 +121,21 @@ FIXED_SIZE_CONTAINER_TYPE_SIZES = {
     ContainerType.EQU_STAT: 2,
     ContainerType.DVRCHARS: 2,
     ContainerType.ANP: 1,
-    ContainerType.PAYMEANS: 14,
+    ContainerType.PAYMENT_MEANS: 14,
     ContainerType.PAYMBAL: 3,
     ContainerType.PAYMUNIT: 2,
 }
 
 decoder_logger = logging.getLogger(__name__)
 
-def encode_date_compact(datetime_timestamp):
+def encode_date_compact(datetime_timestamp: dt.datetime):
     return (datetime_timestamp.year - 1990 << 9) | (datetime_timestamp.month << 5) | (datetime_timestamp.day)
+def decode_date_compact(date_compact : int):
+    day = date_compact & 0b11111
+    month = (date_compact >> 5) & 0b1111
+    year = (date_compact >> 9) + 1990
+    return f"{year:04d}-{month:02d}-{day:02d}"
+
 def encode_time_compact(datetime_timestamp):
     return (datetime_timestamp.hour << 11) | (datetime_timestamp.minute << 5) | (datetime_timestamp.second // 2)
 def encode_date_and_time(utc_timestamp=None) -> int:
@@ -154,19 +160,51 @@ class DSRC_Data_Container:
         self.content = content
         self.content_type = content[0]
 
-    def represent_lpn(self):
-        vehicle_licence_plate_number = self.content
-        country_code = bytes(vehicle_licence_plate_number[0 : 2]) >> 6
-        lpn_length = vehicle_licence_plate_number[3]
-        lpn_value = vehicle_licence_plate_number[4 : 4 + lpn_length].decode('utf-8')
+    def represent_payment_means(self):
+        pan_bytes = bytes(self.content[1 : 10])
+        pm_expiry_date_bytes = int.from_bytes(bytes(self.content[11 : 13]))
+        pm_usage_control = bytes(self.content[14 : 16])
         return {
+            "type": "PaymentMeans",
+            "PAN": pan_bytes.hex().upper(),
+            "pm_expiry_date": decode_date_compact(pm_expiry_date_bytes),
+            "pm_usage_contol": pm_usage_control.hex().upper()
+        }
+    def represent_lpn(self):
+        country_code = int.from_bytes(bytes(self.content[1 : 3])) >> 6
+        lpn_length = self.content[3]
+        lpn_value = self.content[4 : 4 + lpn_length].decode('utf-8')
+        return {
+            "type": "LPN",
             "country_code" : country_code,
             "lpn_length" : lpn_length,
             "lpn_value" : lpn_value,
         }
+    def represent_efc_cm(self):
+        efc_cm = self.content
+        country_code = int.from_bytes(bytes(efc_cm[1 : 3])) >> 6
+        issuer_id = int.from_bytes(bytes(efc_cm[2 : 4])) & 0x3FFF
+        type_of_contract = bytes(efc_cm[4 : 6])
+        context_version = efc_cm[6]
+
+        return  {
+            "type": "EFC-Context-Mark",
+            "contract_provider" : {
+                "type" : 'Provider',
+                "country_code": country_code,
+                "issuer_id": issuer_id
+            },
+            "type_of_contract": type_of_contract.hex().upper(),
+            "context_version": context_version
+        }
     def __repr__(self):
+        decoder_logger.debug(f"Representing {self.content.hex().upper()}")
         if self.content_type == ContainerType.VEHLPN:
             return self.represent_lpn()
+        if self.content_type == ContainerType.PAYMENT_MEANS:
+            return self.represent_payment_means()
+        if self.content_type == ContainerType.EFC_CONTEXT_MARK:
+            return self.represent_efc_cm()
         else:
             return self.content.hex().upper()
 
