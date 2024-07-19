@@ -337,6 +337,7 @@ class BeaconManager:
             dword_cmd_resonse_max_size,
             close
             )
+        self.last_cmd_req = bytes(datagram)
         bcm_error_handler(result)
 
         # Iterating cmd response pointer to get its value/contents
@@ -365,12 +366,11 @@ class BeaconManager:
         else:
             attribute_id_list = []
         
-        get_request_data = [self.frag_header, get_req_header, eid] + ac_cr_list + attribute_id_list
-        bcm_logger.debug(f"Get Request datalist: {get_request_data}")
+        get_request_datagram = [self.frag_header, get_req_header, eid] + ac_cr_list + attribute_id_list
+        bcm_logger.debug(f"Get Request datalist: {get_request_datagram}")
 
-        # Converting last command request to bytes structure
-        response_as_list = self.send_command(bytes(get_request_data))
-        return bytes(response_as_list)
+        # Converting command request to bytes structure and returning it
+        return bytes(get_request_datagram)
     def send_get_request(self, eid, access_credentials=None, attribute_ids=None, close = False):
         datagram = self.get_request_datagram_prepartion(eid, access_credentials, attribute_ids, close)
         return self.send_command(datagram)
@@ -378,8 +378,14 @@ class BeaconManager:
     def get_stamped_request_datagram_preparation(self, eid:int, access_credentials:int, operator_auk_ref=111, attribute_ids=[], response_expected=True, close = False):
         bcm_logger.debug(f"Preparing a GET_STAMPED.request to get attributes with ids {attribute_ids}")
         action_req_header = 0
+
         # The ActionParameter is always present in a GET_STAMPED request
-        action_req_header = action_req_header | 0b100
+        # Also, its container type/choice is set to 17 = 0x11 for a GetStampedRq
+        action_req_header = action_req_header | 0b0100
+        GetStampedRq_action_type = 0x11
+
+        if response_expected:
+            action_req_header = action_req_header | 1
 
         if access_credentials:
             # Access Credentials are present!
@@ -387,23 +393,16 @@ class BeaconManager:
             # Length + Value
             ac_cr_list = [4] + list(access_credentials.to_bytes(4, 'big'))
         else:
-            ac_cr_list = []
+            # ActionParamater is always present, so AC_CR must be present even if empty, but with length = 0
+            ac_cr_list = [00]
 
         if attribute_ids:
             # AttributeIdList is present!
             # Length + Value
             attribute_id_list = [len(attribute_ids)] + attribute_ids
         else:
-            # AttributeIdList is present, even if empty (length = 0)
+            # ActionParamater is always present, so AttributeIdList must be present even if empty, but with length = 0
             attribute_id_list = [00]
-
-        # ActionParameter is present for a GET_STAMPED.request
-        # Its container type/choice is set to 17=GetStampedRq
-        GetStampedRq_container_type = 17
-        action_req_header = action_req_header | 0b0100
-
-        if response_expected:
-            action_req_header = action_req_header | 1
         
         # ActionType is a GET_STAMPED
         action_type = 0
@@ -412,42 +411,37 @@ class BeaconManager:
 
         rnd_rse = custom_der_decoders.encode_date_and_time()
         rnd_rse_list = [4] + list(rnd_rse.to_bytes(4, 'big'))
-        presentation_request = [self.frag_header, action_req_header, eid, action_type] + ac_cr_list + [GetStampedRq_container_type] + attribute_id_list + rnd_rse_list + [operator_auk_ref]
+        presentation_request = [self.frag_header, action_req_header, eid, action_type] + [GetStampedRq_action_type] + ac_cr_list  + attribute_id_list + rnd_rse_list + [operator_auk_ref]
         
         bcm_logger.debug(f"Presentation request: {presentation_request}")
         
-        response_as_list = self.send_command(bytes(presentation_request))
-        # Converting last command request to bytes structure
-        self.last_cmd_req = bytes(response_as_list)
-        return self.last_cmd_req
-    def send_get_stamped_request(self, eid, access_credentials=None, attribute_ids=None, close = False):
-        datagram = self.get_request_datagram_prepartion(eid, access_credentials, attribute_ids, close)
+        # Converting command request to bytes structure and returning it
+        return bytes(presentation_request)
+    def send_get_stamped_request(self, eid:int, access_credentials:int, operator_auk_ref=111, attribute_ids=None, response_expected=True, close = False):
+        datagram = self.get_stamped_request_datagram_preparation(eid, access_credentials, attribute_ids, response_expected, close)
         return self.send_command(datagram)
-
-    def presentation_request(self, eid, access_credentials, operator_auk_ref=111, attribute_ids=None, response_expected=True, close = False):
-        return self.send_get_stamped_request(eid, access_credentials, operator_auk_ref, attribute_ids, response_expected, close)
+    def presentation_request(self, eid:int, access_credentials:int, operator_auk_ref=111, attribute_ids=None, response_expected=True, close = False):
+        return self.send_get_stamped_request(eid, access_credentials, attribute_ids, response_expected, close)
 
     def set_mmi(self, close = False):
+        bcm_logger.debug(f"Preparing a SET_MMI.request")
         # SetMMI ActionType is 0xA, or 10 in decimal
-        set_mmi_datagram = [self.frag_header, 0x05, 0x00, 0x0A, 0x00, 0x00]
-        set_mmi_datagram_buffer = ctypes.create_string_buffer(bytes(set_mmi_datagram), size=len(set_mmi_datagram))
-        lp_cmd_datagram = ctypes.cast(set_mmi_datagram_buffer, POINTER(BYTE))
+        set_mmi_request = [self.frag_header, 0x05, 0x00, 0x0A, 0x00, 0x00]
+        set_mmi_datagram = bytes(set_mmi_request)
+        self.send_command(set_mmi_datagram)
+    def decode_last_get_response(self):
+        decoded_response = custom_der_decoders.decode_response(self.last_cmd_response)
+        if decoded_response is None:
+            return
+        try:
+            return_status = decoded_response["ReturnStatus"]
+            raise(return_status)
+        except custom_der_decoders.ReturnStatus:
+            bcm_logger.error(return_status.message)
+        decoded_response
         
-        # Buffers and pointers for command datagrams
-        cmd_buffer_array = ctypes.create_string_buffer(BCM_SIZEMAX_Enum.BCM_SIZEMAX_CMD)
-        dword_cmd_max_size = DWORD(BCM_SIZEMAX_Enum.BCM_SIZEMAX_CMD)
-        lp_cmd_response_datagram = ctypes.cast(cmd_buffer_array, POINTER(BYTE))
-        cmd_buffer_size = DWORD()
 
-        bcm_send_cmd(
-            self.reg_ptr,
-            lp_cmd_datagram,
-            DWORD(len(set_mmi_datagram)),
-            lp_cmd_response_datagram,
-            ctypes.byref(cmd_buffer_size),
-            dword_cmd_max_size,
-            close
-            )
+
 
     def close_transaction(self, close_transaction = False):
         self.set_mmi(True)

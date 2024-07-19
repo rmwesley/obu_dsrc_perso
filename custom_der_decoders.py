@@ -2,7 +2,7 @@ import logging
 import time
 import datetime as dt
 
-class ReturnStatus:
+class ReturnStatus(Exception):
     noError = 0,
     accessDenied = 1,
     argumentError = 2,
@@ -12,19 +12,21 @@ class ReturnStatus:
 
     def __init__(self, value) -> None:
         self.value = value
+        self.message = f"Error response received from OBE! Erro code is {self.value} and error description is {self.get_description()}"
     def get_description(self):
-        if(self.value == ReturnStatus.noError):
+        if self.value == ReturnStatus.noError:
             return "Success!"
-        if(self.value == ReturnStatus.accessDenied):
+        if self.value == ReturnStatus.accessDenied:
             return "Access Denied!"
-        if(self.value == ReturnStatus.argumentError):
+        if self.value == ReturnStatus.argumentError:
             return "Bad Request: Argument Error"
-        if(self.value == ReturnStatus.complexityLimitation):
+        if self.value == ReturnStatus.complexityLimitation:
             return "Complexity Limitation"
-        if(self.value == ReturnStatus.processingFailure):
+        if self.value == ReturnStatus.processingFailure:
             return "Processign Failure!"
-        if(self.value == ReturnStatus.processing):
+        if self.value == ReturnStatus.processing:
             return "Processing..."
+        return "Unknown error code!"
 
 
 class ContainerType:
@@ -74,9 +76,9 @@ class ContainerType:
     REC_TEXT = 44
     REC_AUTH = 45
     REC_DIST = 46
-    VEHLPN = 47
+    VEHICLE_LPN = 47
     VEHID = 48
-    VEHCLASS = 49
+    VEHICLE_CLASS = 49
     VEHDIMS = 50
     VEHAXLES = 51
     VEHWTLIMS = 52
@@ -129,7 +131,7 @@ FIXED_SIZE_CONTAINER_TYPE_SIZES = {
     ContainerType.REC_DIST: 3,
     ContainerType.RECDATA1: 28,
     ContainerType.RECDATA2: 28,
-    ContainerType.VEHCLASS: 1,
+    ContainerType.VEHICLE_CLASS: 1,
     ContainerType.VEHDIMS: 3,
     ContainerType.VEHAXLES: 2,
     ContainerType.VEHWTLIMS: 6,
@@ -224,7 +226,7 @@ class DSRC_Data_Container:
         }
     def __repr__(self):
         decoder_logger.debug(f"Representing {self.content.hex().upper()}")
-        if self.content_type == ContainerType.VEHLPN:
+        if self.content_type == ContainerType.VEHICLE_LPN:
             return self.represent_lpn()
         if self.content_type == ContainerType.PAYMENT_MEANS:
             return self.represent_payment_means()
@@ -249,37 +251,69 @@ def decode_response(datagram):
         return decode_get_response(datagram)
     if response_header == 0b0001:
         decoder_logger.debug("Decoding an ACTION.response...")
-        return None
+        return decode_action_request(datagram)
     decoder_logger.error("Not a response datagram!!")
 
 def decode_action_request(datagram):
     action_type = datagram[3] >> 4
     if action_type == 0:
         decoder_logger("Decoding a GET_STAMPED.request...")
+        return None
     if action_type == 10:
         decoder_logger("Decoding a SET_MMI.request...")
-    decode_attributes_list(datagram)
 
 def decode_get_response(datagram):
-    action_response_return_status_present = (datagram[1] >> 1) & 1
+    get_return_status_present = (datagram[1] >> 1) & 1
     eid = datagram[2]
-    if action_response_return_status_present is not 0:
+
+    return_status = None
+    # Return Status is present
+    if get_return_status_present is not 0:
         return_status = ReturnStatus(datagram[3])
-        decoder_logger.error(return_status.get_description())
-        decoder_logger.error(f"GET.response for the request sent to EID {eid} contains an error status!")
-        decoder_logger.debug(f"The error code is {return_status.value}")
-        return
-    decode_attributes_list(datagram)
+
+        # Return Status is present and it is an error code
+        if return_status.value != ReturnStatus.noError:
+            decoder_logger.error(return_status.get_description())
+            decoder_logger.error(f"GET.response for the request sent to EID {eid} contains an error status!")
+            return {
+                "type": "GET.response",
+                "EID": eid,
+                "ReturnStatus": return_status
+            }
+    
+    response_parameter_present = (datagram[1] >> 3) & 1
+    if response_parameter_present is 0 and get_return_status_present is not 0:
+        decoder_logger.error(f"Response Parameter is always to be present when Return Code is present and its value is 0!")
+        #decoder_logger.error(f"Response Parameter should always be present if Return Code is present and not 0 (Success code)!")
+    
+    attribute_list = decode_attributes_list(datagram)
+
+    authenticator_index = 4 + len(attribute_list)
+    authenticator_length = datagram[authenticator_index]
+    authenticator_value = datagram[authenticator_index + 1 : authenticator_index + authenticator_length + 1]
+    if response_parameter_present:
+        return {
+            "type": "GET.response",
+            "EID": eid,
+            "AttributeList": attribute_list,
+            "Authenticator": authenticator_value,
+            "ReturnStatus": return_status
+        }
 
 def decode_set_response(datagram):
     action_response_return_status_present = (datagram[1] >> 2) & 1
     eid = datagram[2]
     if action_response_return_status_present is not 0:
         return_status = ReturnStatus(datagram[3])
+
         decoder_logger.error(return_status.get_description())
         decoder_logger.error(f"SET.response for the request sent to EID {eid} contains an error status!")
-        decoder_logger.debug(f"The error code is {return_status.value}")
-        return
+        #decoder_logger.debug(f"The error code is {return_status.value}")
+        return {
+            "type": "SET.response",
+            "EID": eid,
+            "ReturnStatus": return_status
+        }
     decode_attributes_list(datagram)
 def decode_action_response(datagram):
     action_response_type = datagram[1] >> 4
@@ -295,7 +329,7 @@ def decode_action_response(datagram):
         decoder_logger("Decoding a GET_STAMPED.response...")
     if action_response_type == 9:
         decoder_logger("Decoding a SET_MMI.response...")
-    decode_attributes_list(datagram, 3)
+    decode_attributes_list(datagram)
 
 def decode_attributes_list(datagram, attribute_list_start_index=3):
     datagram_index = attribute_list_start_index
@@ -307,18 +341,25 @@ def decode_attributes_list(datagram, attribute_list_start_index=3):
     decoded_attribute_list = []
     while len(decoded_attribute_list) < number_of_attributes_in_list:
         attribute_id = datagram[datagram_index]
+        decoder_logger.debug(f"Attribute id is {attribute_id} = 0x{attribute_id:02X}")
 
         # Container Choice or ContainerType
         container_type = datagram[datagram_index + 1]
-        decoder_logger.debug(f"Decoding attribute with Container Type {container_type} = 0x{container_type:01X}")
+        decoder_logger.debug(f"Decoding attribute with Container Type {container_type} = 0x{container_type:02X}")
         if container_type in FIXED_SIZE_CONTAINER_TYPE_SIZES:
-            length = FIXED_SIZE_CONTAINER_TYPE_SIZES[container_type]
+            length = FIXED_SIZE_CONTAINER_TYPE_SIZES[container_type] + 1
+            decoder_logger.debug(f"Attribute has fixed size!")
+        elif container_type == ContainerType.VEHICLE_LPN:
+            length = datagram[datagram_index + 4] + 4
+            decoder_logger.debug(f"Attribute is LPN!")
         else:
             length = datagram[datagram_index + 2]
+            decoder_logger.debug(f"Attribute has variable size!")
+        decoder_logger.debug(f"Length of attribute including container type is {length} = 0x{length:02X}")
 
         # Attribute value including its Container Type and optional Length, but without the AttributeId
-        attribute_value = datagram[datagram_index + 1 : datagram_index + length + 3]
-        datagram_index += length + 3
+        attribute_value = datagram[datagram_index + 1 : datagram_index + length + 1]
+        datagram_index += length + 1
 
         attribute_value_bytes = bytes(attribute_value)
         decoder_logger.debug(f"Attribute value in hex: {attribute_value_bytes.hex().upper()}")
@@ -327,9 +368,8 @@ def decode_attributes_list(datagram, attribute_list_start_index=3):
             "value": attribute_value_bytes.hex().upper(),
             "representation": DSRC_Data_Container(attribute_value_bytes).__repr__()
             }
-
         decoded_attribute_list.append(attribute)
-        decoder_logger.debug(f"Appended attribute to list!")
+        decoder_logger.debug(f"Appended attribute to list! Current number of decoded attrs: {len(decoded_attribute_list)}")
     return decoded_attribute_list
 
 def decode_vst(vst_bytes, logger=decoder_logger):

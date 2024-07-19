@@ -92,7 +92,7 @@ def main():
 
     eid = 4
     root_logger.debug(f"Getting the attribute 32=0x20, PaymentMeans, for the instance with EID {eid}...")
-    response = beacon_manager.get_request(eid, attribute_id_list=[0x20])
+    response = beacon_manager.send_get_request(eid, attribute_ids=[0x20])
     root_logger.debug(f"BCM last command response in hex format: {beacon_manager.last_cmd_response.hex().upper()}")
 
     eid = 7
@@ -108,23 +108,37 @@ def main():
     elif vst_application_index > 0:
         root_logger.debug(f"Operator application index: {vst_application_index}")
         operator_application = vst_data['applications'][vst_application_index]
-                
-        # IssuerId = ContractProvider = EFC-CM
-        issuer_id = operator_application['EFC-CM']
+
+        efc_cm = operator_application['EFC-CM']
+        root_logger.debug(f"EFC-CM decoding: {custom_der_decoders.DSRC_Data_Container(bytes.fromhex("20" + efc_cm)).__repr__()}")
 
         root_logger.debug(f"AC_CR-KeyRef in hex: {operator_application["AC_CR-KeyRef"]:04X}")
         ac_cr_key_ref = operator_application["AC_CR-KeyRef"]
 
         rnd_obe = operator_application["RndOBE"]
-        access_credentials = key_derivation.compute_access_credentials(issuer_id, rnd_obe, ac_cr_key_ref)
+        contract_provider = efc_cm[0:6]
+        access_credentials = key_derivation.compute_access_credentials(contract_provider, rnd_obe, ac_cr_key_ref)
         root_logger.debug(f"Generated Access Credentials in hex format: {access_credentials:08X}")
 
         # Operator auth key is optional, it is set to 111 by default
-        response = beacon_manager.presentation_request(eid, access_credentials)
+        #response = beacon_manager.presentation_request(eid, access_credentials, 111, [0])
         
-        attribute_list_start_index = 4
-        attribute_list = custom_der_decoders.decode_attributes_list(response, attribute_list_start_index)
-        root_logger.debug(f"AttributeList in hex: {attribute_list}")
+        attribute_list_start_index = 10
+        #attribute_list = custom_der_decoders.decode_attributes_list(response, attribute_list_start_index)
+        #root_logger.debug(f"AttributeList in hex: {attribute_list}")
+
+
+        root_logger.debug(f"Sending a GET request on EID {eid} for attribute 16")
+        response = beacon_manager.send_get_request(eid, access_credentials, [16])
+        root_logger.debug(f"GET.response decoded AttributesList: {custom_der_decoders.decode_response(response)}")
+        #root_logger.debug(f"Latest sent command decoded AttributesList: {beacon_manager.decode_last_get_response()}")
+
+        root_logger.debug(f"LPN decoding: {custom_der_decoders.DSRC_Data_Container(bytes.fromhex("20" + efc_cm)).__repr__()}")
+        root_logger.debug(f"Sending a GET request on EID {eid} for multiple attributes at once")
+        
+        response = beacon_manager.send_get_request(eid, access_credentials, [0, 16, 17, 20, 26, 33, 34])
+        root_logger.debug(f"GET.response decoded AttributesList: {custom_der_decoders.decode_response(response)}")
+        
 
     root_logger.debug("We should send a SetMMI command on the main Thread to close the transaction")
     root_logger.debug("Otherwise, the transaction will remain unclosed and cause an error on the next execution")
