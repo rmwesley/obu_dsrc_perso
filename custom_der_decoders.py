@@ -2,6 +2,31 @@ import logging
 import time
 import datetime as dt
 
+class ReturnStatus:
+    noError = 0,
+    accessDenied = 1,
+    argumentError = 2,
+    complexityLimitation = 3,
+    processingFailure = 4,
+    processing = 5
+
+    def __init__(self, value) -> None:
+        self.value = value
+    def get_description(self):
+        if(self.value == ReturnStatus.noError):
+            return "Success!"
+        if(self.value == ReturnStatus.accessDenied):
+            return "Access Denied!"
+        if(self.value == ReturnStatus.argumentError):
+            return "Bad Request: Argument Error"
+        if(self.value == ReturnStatus.complexityLimitation):
+            return "Complexity Limitation"
+        if(self.value == ReturnStatus.processingFailure):
+            return "Processign Failure!"
+        if(self.value == ReturnStatus.processing):
+            return "Processing..."
+
+
 class ContainerType:
     INTEGER = 0
     OCTET_STRING = 2
@@ -208,10 +233,75 @@ class DSRC_Data_Container:
         else:
             return self.content.hex().upper()
 
-def decode_attributes_list(datagram, attribute_list_start_index):
+def decode_request(datagram):
+    request_header = datagram[1] >> 4
+    if request_header == 0b0111:
+        decoder_logger.debug("Decoding a GET.response...")
+        return decode_attributes_list(datagram)
+    if request_header == 0b0000:
+        decoder_logger.debug("Decoding an ACTION.request...")
+    decoder_logger.error("Not a request datagram!!")
+
+def decode_response(datagram):
+    response_header = datagram[1] >> 4
+    if response_header == 0b0111:
+        decoder_logger.debug("Decoding a GET.response...")
+        return decode_get_response(datagram)
+    if response_header == 0b0001:
+        decoder_logger.debug("Decoding an ACTION.response...")
+        return None
+    decoder_logger.error("Not a response datagram!!")
+
+def decode_action_request(datagram):
+    action_type = datagram[3] >> 4
+    if action_type == 0:
+        decoder_logger("Decoding a GET_STAMPED.request...")
+    if action_type == 10:
+        decoder_logger("Decoding a SET_MMI.request...")
+    decode_attributes_list(datagram)
+
+def decode_get_response(datagram):
+    action_response_return_status_present = (datagram[1] >> 1) & 1
+    eid = datagram[2]
+    if action_response_return_status_present is not 0:
+        return_status = ReturnStatus(datagram[3])
+        decoder_logger.error(return_status.get_description())
+        decoder_logger.error(f"GET.response for the request sent to EID {eid} contains an error status!")
+        decoder_logger.debug(f"The error code is {return_status.value}")
+        return
+    decode_attributes_list(datagram)
+
+def decode_set_response(datagram):
+    action_response_return_status_present = (datagram[1] >> 2) & 1
+    eid = datagram[2]
+    if action_response_return_status_present is not 0:
+        return_status = ReturnStatus(datagram[3])
+        decoder_logger.error(return_status.get_description())
+        decoder_logger.error(f"SET.response for the request sent to EID {eid} contains an error status!")
+        decoder_logger.debug(f"The error code is {return_status.value}")
+        return
+    decode_attributes_list(datagram)
+def decode_action_response(datagram):
+    action_response_type = datagram[1] >> 4
+    action_response_return_status_present = (datagram[1] >> 1) & 1
+    eid = datagram[2]
+    if action_response_return_status_present is not 0:
+        return_status = ReturnStatus(datagram[3])
+        decoder_logger.error(return_status.get_description())
+        decoder_logger.error(f"Action.response for the request sent to EID {eid} contains an error status!")
+        decoder_logger.debug(f"The error code (return status) is {return_status.value}")
+        return
+    if action_response_type == 1:
+        decoder_logger("Decoding a GET_STAMPED.response...")
+    if action_response_type == 9:
+        decoder_logger("Decoding a SET_MMI.response...")
+    decode_attributes_list(datagram, 3)
+
+def decode_attributes_list(datagram, attribute_list_start_index=3):
     datagram_index = attribute_list_start_index
 
     number_of_attributes_in_list = datagram[datagram_index]
+    decoder_logger.debug(f"Number of attributes do decode in the datagram: {number_of_attributes_in_list}")
     datagram_index += 1
 
     decoded_attribute_list = []
@@ -239,6 +329,7 @@ def decode_attributes_list(datagram, attribute_list_start_index):
             }
 
         decoded_attribute_list.append(attribute)
+        decoder_logger.debug(f"Appended attribute to list!")
     return decoded_attribute_list
 
 def decode_vst(vst_bytes, logger=decoder_logger):
@@ -307,24 +398,10 @@ def decode_vst(vst_bytes, logger=decoder_logger):
             vst_byte_idx += 2
 
             # And then we get the actual EFC-CM:
-            efc_cm_hex_str = bytes(vst_bytes[vst_byte_idx : vst_byte_idx + 3]).hex().upper()
+            efc_cm_hex_str = bytes(vst_bytes[vst_byte_idx : vst_byte_idx + 6]).hex().upper()
             decoder_logger.debug(f"\tEFC-CM: {efc_cm_hex_str}")
             current_application_details["EFC-CM"] = efc_cm_hex_str
-
-            # Country code is encoded in 10 bits
-            country_code = (vst_bytes[vst_byte_idx] << 2) + (vst_bytes[vst_byte_idx] >> 6)
-            # Issuer identifier is encoded in 14 bits
-            issuer_id = ((vst_bytes[vst_byte_idx] & 0x3F) << 8) + vst_bytes[vst_byte_idx+1]
-
-            vst_byte_idx += 3
-
-            # We now get the TOC and CV
-            toc = (vst_bytes[vst_byte_idx] << 8) + vst_bytes[vst_byte_idx+1]
-            cv = vst_bytes[vst_byte_idx+2]
-
-            decoder_logger.debug(f"\tTOC: {toc:04X}")
-            decoder_logger.debug(f"\tCV: {cv}")
-            vst_byte_idx += 3
+            vst_byte_idx += 6
         else:
             decoder_logger.debug(f"\tEFC-CM not present")
         
