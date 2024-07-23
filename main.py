@@ -45,7 +45,7 @@ class ColoredFormatterWrapper(logging.Formatter):
         colored_formatting = color + self.formatter.format(record) + ColoredFormatterWrapper.RESET_COLOR
         return colored_formatting
         
-console_formatter = ColoredFormatterWrapper(logging.Formatter(f"%(levelname)-8s %(filename)22s:%(lineno)s - %(funcName)s() - %(threadName)s %(message)s"))
+console_formatter = ColoredFormatterWrapper(logging.Formatter(f"%(levelname)-8s %(filename)22s:%(lineno)4s - %(threadName)s: %(message)s"))
 console_handler.setFormatter(console_formatter)
 
 file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
@@ -69,7 +69,8 @@ def main():
     root_logger.debug("Initialized BCM!!")
 
     root_logger.debug("Getting beacon configuration...")
-    root_logger.debug("Displaying config data...:\n" + repr(beacon_manager.get_config()))
+    bcm_config = beacon_manager.get_config()
+    root_logger.debug(f"Displaying config data...: {bcm_config}")
     
     beacon_manager.change_mode(BCM_MODE_Enum.BCM_MOD_Transparent)
     root_logger.debug("Changed mode to transparent!")
@@ -77,27 +78,8 @@ def main():
     bcm_state = beacon_manager.check_state()
     root_logger.debug(bcm_state)
 
-    root_logger.debug("Starting BST...")
-    manufacturer_id = 0x00D0
-    individual_id = 0xBA00
-    #requested_aids = [1, 20, 29]
-    #beacon_manager.start_bst(manufacturer_id, individual_id, requested_aids)
-    beacon_manager.start_bst()
-    
-    root_logger.debug("No errors occurred: BST started!")
-    root_logger.debug("We now create a task that logs some text to the console upon receiving a callback...")
-    event_thread = threading.Thread(target = beacon_manager.display_cb_event_trigger)
-    event_thread.start()
-    root_logger.debug("Number of threads: " + str(threading.active_count()))
-
-    root_logger.info("We now wait on the main thread until we receive a VST...")
-    beacon_manager.wait_and_get_vst()
-
-    root_logger.debug("Last VST details in raw bytes format:")
-    root_logger.debug(beacon_manager.last_vst)
-    root_logger.debug("We now decode the VST")
-    vst_obj = custom_der_decoders.VST(beacon_manager.last_vst)
-    root_logger.debug(vst_obj)
+    root_logger.debug("Initialization: Starting BST and getting VST...")
+    vst_obj = beacon_manager.initialization()
 
     eid = 4
     root_logger.debug(f"Getting the attribute 32=0x20, PaymentMeans, for the instance with EID {eid}...")

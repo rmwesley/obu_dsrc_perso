@@ -202,6 +202,21 @@ class BeaconManager:
         result = bcm_reset(self.reg_ptr)
         bcm_error_handler(result)
     
+    def initialization(self, manufacturer_id=0x31, individual_id=0x111, mandapplications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
+        self.start_bst(manufacturer_id, individual_id, mandapplications, profile, profile_list, non_mand_applications, bst_type)
+    
+        bcm_logger.debug("No errors occurred: BST started!")
+        bcm_logger.info("We now wait on the main thread until we receive a VST...")
+        self.wait_for_vst_notification()
+
+        bcm_logger.debug("The lock was notified! We now get the VST")
+        vst_datagram = self.get_vst()
+        bcm_logger.debug("We now instantiate a VST object from the response")
+        vst_obj = custom_der_decoders.VST(vst_datagram)
+
+        bcm_logger.debug('Decoded VST: {vst_obj}')
+        return vst_obj
+
     # Start sending a BST
     def start_bst(self, manufacturer_id=0x31, individual_id=0x111, mandapplications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
         bst_datagram = custom_der_decoders.encode_bst_datagram(self.frag_header, manufacturer_id, individual_id, mandapplications, profile, profile_list, non_mand_applications)
