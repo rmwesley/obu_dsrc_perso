@@ -212,55 +212,20 @@ class BeaconManager:
     def reset_manager(self):
         result = bcm_reset(self.reg_ptr)
         bcm_error_handler(result)
-
+    
     # Start sending a BST
-    # mandapplications contains AIDs 1, 20 and 29, for EFC, CCC and UNI/IT, respectively
-    def start_bst(self, manufacturer_id=0x31, individual_id=0x111, mandapplications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
-        # INITIALIZATION.request is 0b1000, shifted 4 bits
-        init_request = 0x80
-        
-        # 1 bit boolean
-        non_mand_applications_present = len(non_mand_applications) != 0
-        # Shift it 3 bits to the left to fit the datagram
-        non_mand_applications_present = non_mand_applications_present << 3
-        
-        beacon_id_int = (init_request | non_mand_applications_present) << 40
-        
-        # manufacturerId has a size of 16 bits
-        beacon_id_int |= manufacturer_id << 27
-        # individualId has a size of 27 bits
-        beacon_id_int |= individual_id
-        
-        beacon_id = list(beacon_id_int.to_bytes(6))
-        
-        utc_timestamp = list(int(time.time()).to_bytes(4))
-        if non_mand_applications_present :
-            bst_datagram = [self.frag_header] + beacon_id + utc_timestamp + [profile] + [len(mandapplications)] + mandapplications + [len(non_mand_applications)] + non_mand_applications + profile_list
-        else:
-            bst_datagram = [self.frag_header] + beacon_id + utc_timestamp + [profile] + [len(mandapplications)] + mandapplications + profile_list
-        
-        bst_datagram_buffer = ctypes.create_string_buffer(bytes(bst_datagram), size=len(bst_datagram))
-        # Pointer to the buffered BST datagram
-        lp_bst_datagram = ctypes.cast(bst_datagram_buffer, POINTER(BYTE))
-        
-        bcm_logger.debug("BST to be sent in hex:")
-        bcm_logger.debug(bytes(bst_datagram).hex())
-        
-        bst_repr = f'''
-        Init request + Non_mand_present_bool + Beacon ID: { hex(beacon_id_int)[2:].upper() }
-        Profile: {profile_list}
-        Requested AIDs: {mandapplications}
-        Requested optional AIDs: {non_mand_applications}
-        Profile List: {profile_list}'''
-
-        bcm_logger.debug("Detailed BST string representation:")
-        bcm_logger.debug(bst_repr)
-
+    def start_bst(self, manufacturer_id=0x31, individual_id=0x111, mandapplications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
+        bst_datagram = custom_der_decoders.encode_bst_datagram(self.frag_header, manufacturer_id, individual_id, mandapplications, profile, profile_list, non_mand_applications)
         if len(bst_datagram) > BCM_SIZEMAX_Enum.BCM_SIZEMAX_BST:
             bcm_logger.error(f"Datagram is too big! Will probably cause a BST error")
-
-        byte_bst_type = BYTE(bst_type)
+        self.start_bst_wrapper(bytes(bst_datagram), bst_type)
         
+    def start_bst_wrapper(self, bst_datagram:bytes, bst_type:int):
+        bst_datagram_buffer = ctypes.create_string_buffer(bst_datagram, size=len(bst_datagram))
+        # Pointer to the buffered BST datagram
+        lp_bst_datagram = ctypes.cast(bst_datagram_buffer, POINTER(BYTE))
+        byte_bst_type = BYTE(bst_type)
+
         result = bcm_start_bst(self.reg_ptr,
                                lp_bst_datagram,
                                DWORD(len(bst_datagram)),

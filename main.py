@@ -74,7 +74,7 @@ def main():
     individual_id = 0xBA00
     #requested_aids = [1, 20, 29]
     #beacon_manager.start_bst(manufacturer_id, individual_id, requested_aids)
-    beacon_manager.start_bst(manufacturer_id, individual_id)
+    beacon_manager.start_bst()
     
     root_logger.debug("No errors occurred: BST started!")
     root_logger.debug("We now create a task that logs some text to the console upon receiving a callback...")

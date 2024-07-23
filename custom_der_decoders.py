@@ -406,6 +406,48 @@ def decode_attributes_list(datagram, attribute_list_start_index=3):
         attribute_list_size_in_bytes = datagram_index - attribute_list_start_index
     return (decoded_attribute_list, attribute_list_size_in_bytes)
 
+# mandapplications contains AIDs 1, 20 and 29, for EFC, CCC and UNI/IT, respectively
+def encode_bst_datagram(frag_header:int, manufacturer_id=0x31, individual_id=0x111, mandapplications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = []):
+    """This function encodes/prepares a BST datagram from the provided input parameters"""
+    # INITIALIZATION.request is 0b1000, shifted 4 bits
+    init_request = 0x80
+    
+    # 1 bit boolean
+    non_mand_applications_present = len(non_mand_applications) != 0
+    # Shift it 3 bits to the left to fit the datagram
+    non_mand_applications_present = non_mand_applications_present << 3
+    
+    beacon_id_int = (init_request | non_mand_applications_present) << 40
+    
+    # manufacturerId has a size of 16 bits
+    beacon_id_int |= manufacturer_id << 27
+    # individualId has a size of 27 bits
+    beacon_id_int |= individual_id
+    
+    beacon_id = list(beacon_id_int.to_bytes(6))
+    
+    utc_timestamp = list(int(time.time()).to_bytes(4))
+    if non_mand_applications_present :
+        bst_datagram = [frag_header] + beacon_id + utc_timestamp + [profile] + [len(mandapplications)] + mandapplications + [len(non_mand_applications)] + non_mand_applications + profile_list
+    else:
+        bst_datagram = [frag_header] + beacon_id + utc_timestamp + [profile] + [len(mandapplications)] + mandapplications + profile_list
+    
+    
+    decoder_logger.debug("BST to be sent in hex:")
+    decoder_logger.debug(bytes(bst_datagram).hex())
+    
+    bst_repr = f'''
+    Init request + Non_mand_present_bool + Beacon ID: { hex(beacon_id_int)[2:].upper() }
+    Profile: {profile_list}
+    Requested AIDs: {mandapplications}
+    Requested optional AIDs: {non_mand_applications}
+    Profile List: {profile_list}'''
+
+    decoder_logger.debug("Detailed BST string representation:")
+    decoder_logger.debug(bst_repr)
+
+    return bst_datagram
+
 def decode_vst(vst_bytes, logger=decoder_logger):
     vst_data = {}
     decoder_logger.debug("Decoding VST...")
