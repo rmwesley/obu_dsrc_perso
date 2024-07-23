@@ -20,7 +20,7 @@ def compute_access_key(contract_provider, ac_cr_key_ref):
         key_derivation_logger.error(e)
         key_derivation_logger.error(f"We do not possess the masterkeys for Contract Provider {contract_provider}")
         key_derivation_logger.info(f"Please note: TIS instances have security level 0. They are thus not really protected and can be read freely.")
-    key_derivation_logger.debug(f"Master Access Key in hex: {master_access_key.hex().upper()}")
+    # key_derivation_logger.debug(f"Master Access Key in hex: {master_access_key.hex().upper()}")
     # Prepare the 3DES cipher with the MAcK
     cipher = DES3.new(master_access_key, DES3.MODE_ECB)
     
@@ -39,7 +39,7 @@ def compute_access_credentials(contract_provider, rnd_obe, ac_cr_key_ref):
     return compute_access_credentials_with_access_key(contract_provider, rnd_obe, access_key)
 
 def compute_access_credentials_with_access_key(contract_provider, rnd_obe, access_key):
-    # Prepare the 3DES cipher with the MAcK
+    # Prepare the DES cipher with the MAcK
     cipher = DES.new(access_key, DES.MODE_ECB)
     # The padding is automatically added to the right of RndOBE for 3DES
     # We add 4 bytes of padding to the right of RndOBE
@@ -49,6 +49,32 @@ def compute_access_credentials_with_access_key(contract_provider, rnd_obe, acces
     ac_cr = int.from_bytes(output[:4])
     key_derivation_logger.info(f"Access Credentials in hex: {ac_cr:08X}")
     return ac_cr
+
+
+
+
+
+def compute_authenticator_with_auk_ref(pan_id, contract_provider, attribute_list_bytes, rnd_rse, auk_ref=115):
+    authenticator_key = bytes.fromhex(compute_auth_key_with_mauk_ref(pan_id, contract_provider, auk_ref))
+
+    # Prepare the DES cipher with the MAuK
+    cipher = DES.new(authenticator_key, DES.MODE_ECB)
+    des_output = b''
+    right_padding_size = (8 - (len(attribute_list_bytes) + 5)%8)%8
+    des_input_bytes = attribute_list_bytes + b'\x04' + rnd_rse.to_bytes(4) + bytearray(right_padding_size)
+    
+    print(f"{des_input_bytes.hex().upper()}")
+    for index in range(0, len(des_input_bytes)//8):
+        # XOR the 8 output bytes of the last iteration with the next 8 input bytes
+        block_of_8_bytes = int.from_bytes(des_input_bytes[index*8 : index*8 + 8])
+
+        print(f"{index}, {block_of_8_bytes:16X}")
+        des_input = int.from_bytes(des_output, 'big') ^ block_of_8_bytes
+        des_output = cipher.encrypt(des_input.to_bytes(8))
+
+    authenticator = int.from_bytes(des_output[0:4])
+    return authenticator
+    
 
 
 # CODE FOR DERIVED AUTHENTICATION KEYS (Uses MasterKeys with ref 111 through 118)
@@ -96,7 +122,7 @@ def compute_auth_key_with_mauk_value(pan_id: str, contract_provider: str, master
     # print(ciphertext.hex())
 
     auth_key = cipher.encrypt(ciphertext)
-
+    key_derivation_logger.debug(f'Auth key: {auth_key.hex().upper()}')
     return auth_key.hex().upper()
 
 def compute_auth_key_with_mauk_ref(pan_id: str, contract_provider: str, key_ref: int):

@@ -375,7 +375,12 @@ class BeaconManager:
         datagram = self.get_request_datagram_prepartion(eid, access_credentials, attribute_ids, close)
         return self.send_command(datagram)
 
-    def get_stamped_request_datagram_preparation(self, eid:int, access_credentials:int, operator_auk_ref=111, attribute_ids=[], response_expected=True, close = False):
+    def presentation_request(self, eid:int, access_credentials:int, attribute_ids=[], operator_auk_ref=111, response_expected=True, close=False):
+        return self.send_get_stamped_request(eid, access_credentials, attribute_ids, operator_auk_ref, response_expected, close)
+    def send_get_stamped_request(self, eid:int, access_credentials:int, attribute_ids=[], operator_auk_ref=111, response_expected=True, close=False):
+        datagram = self.get_stamped_request_datagram_preparation(eid, access_credentials, attribute_ids, operator_auk_ref, response_expected, close)
+        return self.send_command(datagram)
+    def get_stamped_request_datagram_preparation(self, eid:int, access_credentials:int, attribute_ids=[], operator_auk_ref=111, response_expected=True, close = False):
         bcm_logger.debug(f"Preparing a GET_STAMPED.request to get attributes with ids {attribute_ids}")
         action_req_header = 0
 
@@ -387,41 +392,37 @@ class BeaconManager:
         if response_expected:
             action_req_header = action_req_header | 1
 
-        if access_credentials:
-            # Access Credentials are present!
+        if access_credentials is not None:
+            # Access Credentials is present!
             action_req_header = action_req_header | 0b1000
             # Length + Value
             ac_cr_list = [4] + list(access_credentials.to_bytes(4, 'big'))
         else:
-            # ActionParamater is always present, so AC_CR must be present even if empty, but with length = 0
-            ac_cr_list = [00]
+            ac_cr_list = []
 
+        # ActionParamater is always present, so AttributeIdList must be present even if just an empty list (thus with length = 0)
+        if attribute_ids is None:
+            attribute_ids = []
         if attribute_ids:
             # AttributeIdList is present!
             # Length + Value
             attribute_id_list = [len(attribute_ids)] + attribute_ids
-        else:
-            # ActionParamater is always present, so AttributeIdList must be present even if empty, but with length = 0
-            attribute_id_list = [00]
+        #else:
+        #    attribute_id_list = [00]
         
         # ActionType is a GET_STAMPED
         action_type = 0
         # Attribute 0x20 = 32 is the PAN, or PaymentMeans
         # So the AttributeIdList is set by default to [0x20]
 
-        rnd_rse = custom_der_decoders.encode_date_and_time()
-        rnd_rse_list = [4] + list(rnd_rse.to_bytes(4, 'big'))
-        presentation_request = [self.frag_header, action_req_header, eid, action_type] + [GetStampedRq_action_type] + ac_cr_list  + attribute_id_list + rnd_rse_list + [operator_auk_ref]
+        self.rnd_rse = custom_der_decoders.encode_date_and_time()
+        rnd_rse_list = [4] + list(self.rnd_rse.to_bytes(4, 'big'))
+        presentation_request = [self.frag_header, action_req_header, eid, action_type] + ac_cr_list  + [GetStampedRq_action_type] + attribute_id_list + rnd_rse_list + [operator_auk_ref]
         
         bcm_logger.debug(f"Presentation request: {presentation_request}")
         
         # Converting command request to bytes structure and returning it
         return bytes(presentation_request)
-    def send_get_stamped_request(self, eid:int, access_credentials:int, operator_auk_ref=111, attribute_ids=None, response_expected=True, close = False):
-        datagram = self.get_stamped_request_datagram_preparation(eid, access_credentials, attribute_ids, response_expected, close)
-        return self.send_command(datagram)
-    def presentation_request(self, eid:int, access_credentials:int, operator_auk_ref=111, attribute_ids=None, response_expected=True, close = False):
-        return self.send_get_stamped_request(eid, access_credentials, attribute_ids, response_expected, close)
 
     def set_mmi(self, close = False):
         bcm_logger.debug(f"Preparing a SET_MMI.request")

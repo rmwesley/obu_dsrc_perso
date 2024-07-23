@@ -2,6 +2,10 @@ import logging
 import time
 import datetime as dt
 
+# CountryCode is encoded with ITA2 (or Baudot) encoding
+import baudot
+from io import BytesIO
+
 class ReturnStatus(Exception):
     noError = 0,
     accessDenied = 1,
@@ -182,6 +186,28 @@ def decode_date_and_time(date_and_time):
 
     return dt.datetime(1990 + years, months, days, hours, mins, 2*double_secs)
 
+def encode_country_code(country_code_bytes):
+    country_code_int = int.from_bytes(country_code_bytes)
+
+    # Each baudot (ITA2) character is encoded with 5 bits
+    # As such, the country code is encoded in only 10 bits, so we remove 6 of its 16 bits
+    first_5bits = (country_code_int >> 11) & 0b11111
+    second_5bits = (country_code_int >> 6) & 0b11111
+    
+    # Now, we invert the bits
+    first_letter_encoding = int('{:05b}'.format(first_5bits).zfill(5)[::-1], 2)
+    second_letter_encoding = int('{:05b}'.format(second_5bits).zfill(5)[::-1], 2)
+    # 0x1F is the header needed in the baudot decoder for some reason...
+    country_code_5bits_pair = bytes([0x1F, first_letter_encoding, second_letter_encoding]).hex().encode('utf-8')
+
+    # Reverse bit order (LSB should be on the right)
+    with BytesIO(country_code_5bits_pair) as country_code_bitstream:
+        reader = baudot.handlers.HexBytesReader(country_code_bitstream)
+        country_code_str = baudot.decode_to_str(reader, baudot.codecs.ITA2_STANDARD)
+    decoder_logger.debug(f"Country code to be decoded in decimal: {country_code_int}")
+
+    return country_code_str
+
 class DSRC_Data_Container:
     def __init__(self, content: bytes):
         self.content = content
@@ -197,13 +223,17 @@ class DSRC_Data_Container:
             "pm_expiry_date": decode_date_compact(pm_expiry_date_bytes),
             "pm_usage_contol": pm_usage_control.hex().upper()
         }
+
     def represent_lpn(self):
-        country_code = int.from_bytes(bytes(self.content[1 : 3])) >> 6
+        # Country code is encoded in 10 bits only
+        country_code_bytes = bytes(self.content[1 : 3])
+        countr_code_str = encode_country_code(country_code_bytes)
+
         lpn_length = self.content[3]
         lpn_value = self.content[4 : 4 + lpn_length].decode('utf-8')
         return {
             "type": "LPN",
-            "country_code" : country_code,
+            "country_code" : countr_code_str,
             "lpn_length" : lpn_length,
             "lpn_value" : lpn_value,
         }
@@ -239,10 +269,11 @@ def decode_request(datagram):
     request_header = datagram[1] >> 4
     if request_header == 0b0111:
         decoder_logger.debug("Decoding a GET.response...")
-        return decode_attributes_list(datagram)
+        return None
     if request_header == 0b0000:
         decoder_logger.debug("Decoding an ACTION.request...")
-    decoder_logger.error("Not a request datagram!!")
+        return None
+    raise("Not a request datagram!!")
 
 def decode_response(datagram):
     response_header = datagram[1] >> 4
@@ -251,7 +282,7 @@ def decode_response(datagram):
         return decode_get_response(datagram)
     if response_header == 0b0001:
         decoder_logger.debug("Decoding an ACTION.response...")
-        return decode_action_request(datagram)
+        return decode_action_response(datagram)
     decoder_logger.error("Not a response datagram!!")
 
 def decode_action_request(datagram):
@@ -265,40 +296,25 @@ def decode_action_request(datagram):
 def decode_get_response(datagram):
     get_return_status_present = (datagram[1] >> 1) & 1
     eid = datagram[2]
+    get_response = {"type": "GET.response"}
 
     return_status = None
     # Return Status is present
     if get_return_status_present is not 0:
         return_status = ReturnStatus(datagram[3])
+        get_response["ReturnStatus"] = return_status
 
         # Return Status is present and it is an error code
         if return_status.value != ReturnStatus.noError:
             decoder_logger.error(return_status.get_description())
             decoder_logger.error(f"GET.response for the request sent to EID {eid} contains an error status!")
-            return {
-                "type": "GET.response",
-                "EID": eid,
-                "ReturnStatus": return_status
-            }
+            return get_response
     
-    response_parameter_present = (datagram[1] >> 3) & 1
-    if response_parameter_present is 0 and get_return_status_present is not 0:
-        decoder_logger.error(f"Response Parameter is always to be present when Return Code is present and its value is 0!")
-        #decoder_logger.error(f"Response Parameter should always be present if Return Code is present and not 0 (Success code)!")
-    
-    attribute_list = decode_attributes_list(datagram)
+    attribute_list, size_in_bytes = decode_attributes_list(datagram, 3)
+    get_response["AttributeList"] = attribute_list
+    get_response['AttributeList_size'] = size_in_bytes
 
-    authenticator_index = 4 + len(attribute_list)
-    authenticator_length = datagram[authenticator_index]
-    authenticator_value = datagram[authenticator_index + 1 : authenticator_index + authenticator_length + 1]
-    if response_parameter_present:
-        return {
-            "type": "GET.response",
-            "EID": eid,
-            "AttributeList": attribute_list,
-            "Authenticator": authenticator_value,
-            "ReturnStatus": return_status
-        }
+    return get_response
 
 def decode_set_response(datagram):
     action_response_return_status_present = (datagram[1] >> 2) & 1
@@ -314,11 +330,15 @@ def decode_set_response(datagram):
             "EID": eid,
             "ReturnStatus": return_status
         }
-    decode_attributes_list(datagram)
+    return None
+
 def decode_action_response(datagram):
     action_response_type = datagram[1] >> 4
+    # Second bit from the right in second byte from the left informs whether a ReturnStatus is present
     action_response_return_status_present = (datagram[1] >> 1) & 1
     eid = datagram[2]
+
+
     if action_response_return_status_present is not 0:
         return_status = ReturnStatus(datagram[3])
         decoder_logger.error(return_status.get_description())
@@ -326,10 +346,23 @@ def decode_action_response(datagram):
         decoder_logger.debug(f"The error code (return status) is {return_status.value}")
         return
     if action_response_type == 1:
-        decoder_logger("Decoding a GET_STAMPED.response...")
+        decoder_logger.debug("Decoding a GET_STAMPED.response...")
+        action_response = {"type": "GET_STAMPED.response"}
+        action_response["ResponseParameter"] = {"type": "GetStampedRs"}
+
+        attribute_list, size_in_bytes = decode_attributes_list(datagram, attribute_list_start_index=4)
+        action_response["ResponseParameter"]["AttributeList"] = attribute_list
+        action_response["ResponseParameter"]['AttributeList_size'] = size_in_bytes
+
+        authenticator_index = 4 + size_in_bytes
+        authenticator_length = datagram[authenticator_index]
+        action_response["ResponseParameter"]["Authenticator"] = int.from_bytes(datagram[authenticator_index + 1 : authenticator_index + authenticator_length + 1])
+        return action_response
     if action_response_type == 9:
-        decoder_logger("Decoding a SET_MMI.response...")
-    decode_attributes_list(datagram)
+        decoder_logger.debug("Decoding a SET_MMI.response...")
+        return None
+
+    raise Exception("Datagram does not represent an ACTION.response!")
 
 def decode_attributes_list(datagram, attribute_list_start_index=3):
     datagram_index = attribute_list_start_index
@@ -370,7 +403,8 @@ def decode_attributes_list(datagram, attribute_list_start_index=3):
             }
         decoded_attribute_list.append(attribute)
         decoder_logger.debug(f"Appended attribute to list! Current number of decoded attrs: {len(decoded_attribute_list)}")
-    return decoded_attribute_list
+        attribute_list_size_in_bytes = datagram_index - attribute_list_start_index
+    return (decoded_attribute_list, attribute_list_size_in_bytes)
 
 def decode_vst(vst_bytes, logger=decoder_logger):
     vst_data = {}

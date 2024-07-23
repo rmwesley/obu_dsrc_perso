@@ -20,17 +20,18 @@ console_handler = logging.StreamHandler()
 file_handler = logging.FileHandler('gea_bcm_dll_python_loader.log')
 
 class ColoredFormatterWrapper(logging.Formatter):
-    GRAY = "\033[38;20m"
-    YELLOW = "\033[33;20m"
+    GRAY = "\033[38m"
+    YELLOW = "\033[33m"
     RED = "\033[31;20m"
-    BOLD_RED = "\033[31;1m"
+    BOLD_RED = "\033[31m"
+    BLUE = "\33[34m"
     RESET_COLOR = "\033[0m"
     default_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)")
     formatter = None
 
     LEVEL_COLORS = {
         logging.DEBUG: GRAY,
-        logging.INFO: GRAY,
+        logging.INFO: BLUE,
         logging.WARNING: YELLOW,
         logging.ERROR: RED,
         logging.CRITICAL: BOLD_RED,
@@ -128,17 +129,41 @@ def main():
         #root_logger.debug(f"AttributeList in hex: {attribute_list}")
 
 
-        root_logger.debug(f"Sending a GET request on EID {eid} for attribute 16")
+        root_logger.debug(f"Sending a GET request on EID {eid} for attribute 16, the LPN")
         response = beacon_manager.send_get_request(eid, access_credentials, [16])
-        root_logger.debug(f"GET.response decoded AttributesList: {custom_der_decoders.decode_response(response)}")
+        root_logger.info(f"GET.response decoded: {custom_der_decoders.decode_response(response)}")
         #root_logger.debug(f"Latest sent command decoded AttributesList: {beacon_manager.decode_last_get_response()}")
 
         root_logger.debug(f"LPN decoding: {custom_der_decoders.DSRC_Data_Container(bytes.fromhex("20" + efc_cm)).__repr__()}")
         root_logger.debug(f"Sending a GET request on EID {eid} for multiple attributes at once")
         
         response = beacon_manager.send_get_request(eid, access_credentials, [0, 16, 17, 20, 26, 33, 34])
-        root_logger.debug(f"GET.response decoded AttributesList: {custom_der_decoders.decode_response(response)}")
+        root_logger.info(f"GET.response decoded: {custom_der_decoders.decode_response(response)}")
         
+        root_logger.debug(f"Sending a GET_STAMPED request on EID {eid} for attribute 32, the PaymenMeans")
+        response = beacon_manager.presentation_request(eid, access_credentials, [32])
+        decoded_get_stamped_response = custom_der_decoders.decode_response(response)
+        root_logger.info(f"GET_STAMPED.response decoded: {decoded_get_stamped_response}")
+
+        size = decoded_get_stamped_response['ResponseParameter']['AttributeList_size']
+        provided_authenticator = decoded_get_stamped_response['ResponseParameter']['Authenticator']
+        attribute_list_bytes = bytes(response[4 : 4 + size])
+        root_logger.debug(f"AttibuteList in hex: {attribute_list_bytes.hex().upper()}")
+        rnd_rse = beacon_manager.rnd_rse
+        root_logger.debug(f"RndRSE value: {rnd_rse:04X}")
+
+        pan_id = decoded_get_stamped_response['ResponseParameter']['AttributeList'][0]['representation']['PAN']
+        print("PAN ID:", pan_id)
+
+        authenticator = key_derivation.compute_authenticator_with_auk_ref(pan_id, contract_provider, attribute_list_bytes, rnd_rse, 115)
+        root_logger.debug(f"Authenticator provided by OBE: {provided_authenticator:08X}")
+        root_logger.debug(f"Authenticator computed by RSE: {authenticator:08X}")
+
+        if provided_authenticator != authenticator:
+            root_logger.error(f"The OBE is fraudulent!!")
+        else:
+            root_logger.info(f"OBE is authentic!!!")
+
 
     root_logger.debug("We should send a SetMMI command on the main Thread to close the transaction")
     root_logger.debug("Otherwise, the transaction will remain unclosed and cause an error on the next execution")
