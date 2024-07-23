@@ -12,7 +12,7 @@ import key_derivation
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
 from python_dll_loader import *
-from BeaconManager import BeaconManager
+from beacon_manager import BeaconManager
 
 root_logger = logging.getLogger()
 
@@ -45,7 +45,6 @@ class ColoredFormatterWrapper(logging.Formatter):
         colored_formatting = color + self.formatter.format(record) + ColoredFormatterWrapper.RESET_COLOR
         return colored_formatting
         
-#console_formatter = ColoredFormatterWrapper(logging.Formatter(f"%(levelname)-8s %(filename)22s:%(lineno)s - %(funcName)28s() - %(threadName)s %(message)s"))
 console_formatter = ColoredFormatterWrapper(logging.Formatter(f"%(levelname)-8s %(filename)22s:%(lineno)s - %(funcName)s() - %(threadName)s %(message)s"))
 console_handler.setFormatter(console_formatter)
 
