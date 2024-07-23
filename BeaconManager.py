@@ -24,7 +24,7 @@ def cb_error_handler(callback_code, error_code):
     if callback_code == BCM_CALLBACK_Enum.BCM_CB_ERR:
         # No Exception/Error is raised on callbacks.
         # We only log them
-        bcm_logger.error(f"Callback Error ({cb_code}) occurred, with error code {error_code}")
+        bcm_logger.error(f"Callback Error ({callback_code}) occurred, with error code {error_code}")
         raise Exception(f"Callback Error ({callback_code}) occurred! Error code: {error_code}")
 
 # Defining the BeaconManager class
@@ -34,7 +34,7 @@ class BeaconManager:
         self.callback_received_notifier = threading.Condition()
 
         self.external_callback = external_callback
-        self.external_callback = external_alarm
+        self.external_alarm = external_alarm
 
         # This is the BCM structure pointer. It is managed by the DLL
         self.reg_ptr = ST_BCM_REG_PTR()

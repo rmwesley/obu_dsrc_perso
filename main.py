@@ -26,7 +26,7 @@ class ColoredFormatterWrapper(logging.Formatter):
     BOLD_RED = "\033[31m"
     BLUE = "\33[34m"
     RESET_COLOR = "\033[0m"
-    default_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)")
+    default_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)")
     formatter = None
 
     LEVEL_COLORS = {
@@ -45,7 +45,8 @@ class ColoredFormatterWrapper(logging.Formatter):
         colored_formatting = color + self.formatter.format(record) + ColoredFormatterWrapper.RESET_COLOR
         return colored_formatting
         
-console_formatter = ColoredFormatterWrapper(logging.Formatter("%(levelname)-8s - %(threadName)s - %(message)s"))
+#console_formatter = ColoredFormatterWrapper(logging.Formatter(f"%(levelname)-8s %(filename)22s:%(lineno)s - %(funcName)28s() - %(threadName)s %(message)s"))
+console_formatter = ColoredFormatterWrapper(logging.Formatter(f"%(levelname)-8s %(filename)22s:%(lineno)s - %(funcName)s() - %(threadName)s %(message)s"))
 console_handler.setFormatter(console_formatter)
 
 file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
