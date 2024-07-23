@@ -369,7 +369,7 @@ class BeaconManager:
         # SetMMI ActionType is 0xA, or 10 in decimal
         set_mmi_request = [self.frag_header, 0x05, 0x00, 0x0A, 0x00, 0x00]
         set_mmi_datagram = bytes(set_mmi_request)
-        self.send_command(set_mmi_datagram)
+        self.send_command(set_mmi_datagram, close)
     def decode_last_get_response(self):
         decoded_response = custom_der_decoders.decode_response(self.last_cmd_response)
         if decoded_response is None:
