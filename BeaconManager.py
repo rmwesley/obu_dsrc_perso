@@ -311,33 +311,8 @@ class BeaconManager:
         bcm_logger.debug(f"Command response in hex format: {self.last_cmd_response.hex().upper()}")
         return response_as_list
     
-    def get_request_datagram_prepartion(self, eid, access_credentials=None, attribute_ids=None, close = False):
-        bcm_logger.debug(f"Preparing a GET.request to get attributes with ids {attribute_ids}")
-        # 0b0110 0000 = 0x60
-        get_req_header = 0x60
-        if access_credentials:
-            # Access Credentials are present!
-            get_req_header = get_req_header | 0b1000
-            # Length + Value
-            ac_cr_list = [4] + list(access_credentials.to_bytes(4, 'big'))
-        else:
-            ac_cr_list = []
-        
-        if attribute_ids:
-            # AttributeIdList is present!
-            get_req_header = get_req_header | 0b10
-            # Length + Value
-            attribute_id_list = [len(attribute_ids)] + attribute_ids
-        else:
-            attribute_id_list = []
-        
-        get_request_datagram = [self.frag_header, get_req_header, eid] + ac_cr_list + attribute_id_list
-        bcm_logger.debug(f"Get Request datalist: {get_request_datagram}")
-
-        # Converting command request to bytes structure and returning it
-        return bytes(get_request_datagram)
     def send_get_request(self, eid, access_credentials=None, attribute_ids=None, close = False):
-        datagram = self.get_request_datagram_prepartion(eid, access_credentials, attribute_ids, close)
+        datagram = custom_der_decoders.encode_get_request_datagram(self.frag_header, eid, access_credentials, attribute_ids, close)
         return self.send_command(datagram)
 
     def presentation_request(self, eid:int, access_credentials:int, attribute_ids=[], operator_auk_ref=111, response_expected=True, close=False):

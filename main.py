@@ -88,8 +88,8 @@ def main():
     root_logger.debug("Last VST details in raw bytes format:")
     root_logger.debug(beacon_manager.last_vst)
     root_logger.debug("We now decode the VST")
-    vst_data = custom_der_decoders.decode_vst(beacon_manager.last_vst)
-    root_logger.debug(vst_data)
+    vst_obj = custom_der_decoders.VST(beacon_manager.last_vst)
+    root_logger.debug(vst_obj)
 
     eid = 4
     root_logger.debug(f"Getting the attribute 32=0x20, PaymentMeans, for the instance with EID {eid}...")
@@ -97,18 +97,12 @@ def main():
     root_logger.debug(f"BCM last command response in hex format: {beacon_manager.last_cmd_response.hex().upper()}")
 
     eid = 7
-    vst_application_index = -1
-    for index, application in enumerate(vst_data['applications']):
-        if application["EID"] == eid:
-            vst_application_index = index
-    
-    if vst_application_index == -1:
-        root_logger.info(f"EID 7 is not present!")
+    vst_application_index = vst_obj.get_eid_info(eid)
 
     # EID 7 is present! The beacon operator can do a transaction
-    elif vst_application_index > 0:
+    if vst_application_index > 0:
         root_logger.debug(f"Operator application index: {vst_application_index}")
-        operator_application = vst_data['applications'][vst_application_index]
+        operator_application = vst_obj['Applications'][vst_application_index]
 
         efc_cm = operator_application['EFC-CM']
         root_logger.debug(f"EFC-CM decoding: {custom_der_decoders.DSRC_Data_Container(bytes.fromhex("20" + efc_cm)).__repr__()}")
@@ -168,7 +162,6 @@ def main():
     root_logger.debug("We should send a SetMMI command on the main Thread to close the transaction")
     root_logger.debug("Otherwise, the transaction will remain unclosed and cause an error on the next execution")
     beacon_manager.set_mmi(True)
-
 
 # Main execution
 if __name__ == "__main__":
