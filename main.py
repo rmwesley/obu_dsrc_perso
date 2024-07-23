@@ -55,6 +55,14 @@ root_logger.addHandler(console_handler)
 root_logger.addHandler(file_handler)
 root_logger.setLevel(logging.DEBUG)
 
+
+def callback_logger(cb_code, error_code):
+    if cb_code == BCM_CALLBACK_Enum.BCM_CB_ERR:
+        root_logger.error(f"Callback Error ({cb_code}) occurred, with error code {error_code}")
+        return
+    root_logger.debug(f"Callback IN ({cb_code})")
+    root_logger.debug(BCM_Callback.get_description(cb_code))
+
 def main():
     root_logger.debug("Instantiating BeaconManager class...")
     beacon_manager = BeaconManager()
@@ -96,7 +104,7 @@ def main():
     response = beacon_manager.send_get_request(eid, attribute_ids=[0x20])
     root_logger.debug(f"BCM last command response in hex format: {beacon_manager.last_cmd_response.hex().upper()}")
 
-    eid = 7
+    eid = 3
     vst_application_index = vst_obj.get_eid_info(eid)
 
     # EID 7 is present! The beacon operator can do a transaction
