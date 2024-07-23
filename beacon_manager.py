@@ -29,9 +29,10 @@ def cb_error_handler(callback_code, error_code):
 
 # Defining the BeaconManager class
 class BeaconManager:
-    def __init__(self, external_callback:callable = None, external_alarm:callable = None):
+    def __init__(self, beacon_alarm_state_polling_ms=1000, external_callback:callable = None, external_alarm:callable = None):
         self.beacon_state_ok_trigger = threading.Event()
         self.callback_received_notifier = threading.Condition()
+        self.initialization_lock = threading.Lock()
 
         self.external_callback = external_callback
         self.external_alarm = external_alarm
@@ -53,8 +54,9 @@ class BeaconManager:
         
         bcm_logger.debug("Initializing GEA BCM...")
         
-        beacon_state_polling_ms = 100
-        send_event_polling_OK = True
+        send_event_polling_OK = False
+        if beacon_alarm_state_polling_ms > 0:
+            send_event_polling_OK = True
         # The user registration number is not used internally by the BCM DLL
         # It is thus free for use in our application
         user_registration = 7
@@ -69,7 +71,7 @@ class BeaconManager:
                 serial_port,
                 serial_port_speed,
                 BCM_STATION_Enum.BCM_Secondary,
-                beacon_state_polling_ms,
+                beacon_alarm_state_polling_ms,
                 send_event_polling_OK,
                 self.c_callback,
                 self.c_alarm
@@ -85,7 +87,7 @@ class BeaconManager:
                 beacon_ip_address,
                 beacon_tcp_port,
                 BCM_STATION_Enum.BCM_Secondary,
-                beacon_state_polling_ms,
+                beacon_alarm_state_polling_ms,
                 send_event_polling_OK,
                 self.c_callback,
                 self.c_alarm
@@ -203,11 +205,13 @@ class BeaconManager:
         bcm_error_handler(result)
     
     def initialization(self, manufacturer_id=0x31, individual_id=0x111, mandapplications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
+        self.initialization_lock.acquire()
         self.start_bst(manufacturer_id, individual_id, mandapplications, profile, profile_list, non_mand_applications, bst_type)
     
         bcm_logger.debug("No errors occurred: BST started!")
         bcm_logger.info("We now wait on the main thread until we receive a VST...")
         self.wait_for_vst_notification()
+        self.initialization_lock.release()
 
         bcm_logger.debug("The lock was notified! We now get the VST")
         vst_datagram = self.get_vst()
