@@ -459,21 +459,27 @@ def encode_bst_datagram(frag_header:int, manufacturer_id=0x31, individual_id=0x1
         bst_datagram = [frag_header] + beacon_id + utc_timestamp + [profile] + [len(mandapplications)] + mandapplications + profile_list
     
     
-    decoder_logger.debug("BST to be sent in hex:")
-    decoder_logger.debug(bytes(bst_datagram).hex())
-    
-    bst_repr = f'''
-    Init request + Non_mand_present_bool + Beacon ID: { hex(beacon_id_int)[2:].upper() }
-    Profile: {profile_list}
-    Requested AIDs: {mandapplications}
-    Requested optional AIDs: {non_mand_applications}
-    Profile List: {profile_list}'''
-
-    decoder_logger.debug("Detailed BST string representation:")
-    decoder_logger.debug(bst_repr)
+    decoder_logger.debug(f"BST to be sent in hex: {bytes(bst_datagram).hex()}")
 
     return bst_datagram
+class BST(dict):
+    def __init__(self, beacon_id_int, profile, mandapplications, non_mand_applications, profile_list):
+        self.beacon_id_int = beacon_id_int
+        self.profile = profile
+        self.mandapplications = mandapplications
+        self.non_mand_applications = non_mand_applications
+        self.profile_list = profile_list
+    
+    def __repr__(self):
+        bst_repr = f'''
+        Init request + Non_mand_present_bool + Beacon ID: { hex(self.beacon_id_int)[2:].upper() }
+        Profile: {self.profile_list}
+        Requested AIDs: {self.mandapplications}
+        Requested optional AIDs: {self.non_mand_applications}
+        Profile List: {self.profile_list}'''
+        return bst_repr
 
+    decoder_logger.debug("Detailed BST string representation: {bst_repr}")
 class VST(dict):
     def __init__(self, vst_bytes):
         decoder_logger.debug("Decoding VST...")
