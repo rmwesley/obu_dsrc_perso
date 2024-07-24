@@ -258,6 +258,35 @@ class ST_BCM_STATE(ctypes.Structure):
     _fields_ = [("state", BYTE),
                 ("mode", BYTE),
                 ("trxInProgress", BYTE)]
+    def __repr__(self):
+        str_state = f"<ST_BCM_STATE:\n"
+            
+        for field_name, field_type in self._fields_:
+            str_state += f"  {field_name}: {getattr(self, field_name)}\n"
+        str_state += f">"
+        
+        return str_state
+    def get_description(self):
+        str_state = f"BCM_STATE:\n"
+        if self.state == BCM_ERR_Enum.BCM_NoError:
+            str_state += f"  State: OK\n"
+        if self.state == BCM_ERR_Enum.BCM_PbBeacon:
+            str_state += f"  State: The beacon is out of order\n"
+        if self.state == BCM_ERR_Enum.BCM_ResetBeacon:
+            str_state += f"  State: The beacon has been reset\n"
+            
+        if self.mode == BCM_MODE_Enum.BCM_MOD_Stopped:
+            str_state += f"  Mode: Stopped. To switch off the HF, and to read or change the parameters of the beacon.\n"
+        if self.mode == BCM_MODE_Enum.BCM_MOD_Transparent:
+            str_state += f"  State: Transaction. To allow a transation\n"
+        if self.mode == BCM_MODE_Enum.BCM_MOD_Transparent:
+            str_state += f"  State: Maintenant. The beacon should not be used!\n"
+            
+        if self.trxInProgress == True:
+            str_state += f"  Transaction: True. There is a transaction in progress.\n"
+        else:
+            str_state += f"  Transaction: False.\n"
+        return str_state
 ST_BCM_STATE_PTR = POINTER(ST_BCM_STATE)
 
 class ST_BCM_CONFIG(ctypes.Structure):
