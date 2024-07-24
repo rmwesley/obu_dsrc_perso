@@ -1,5 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
+
+from fastapi.staticfiles import StaticFiles
 
 from contextlib import asynccontextmanager
 from beacon_manager import BeaconManager
@@ -60,17 +62,65 @@ app = FastAPI(lifespan=lifespan)
 class GET_rq(BaseModel):
     attribute_id_list: list = Field(default=0x20, description='List of attribute ids to get')
 
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
-
-@app.get("/transparent")
-async def set_transparent():
-    router_logger.debug("Changed mode to transparent!")
-    app.state.beacon_manager.change_mode(1)
-@app.get("/initialization")
+@app.post("/initialization")
 async def get_rq():
-
     router_logger.debug("Initializing!")
     vst_obj = app.state.beacon_manager.initialization()
     return {"VST" : vst_obj}
+
+# Endpoint to get the current beacon state
+@app.get("/beacon-state")
+async def get_beacon_state():
+    app.state.beacon_manager.update_state()
+    return {"state": app.state.beacon_manager.bcm_state}
+
+class ChangeModeRequest(BaseModel):
+    mode: int
+# Endpoint to change the beacon mode
+@app.post("/change-mode")
+async def change_mode(request: ChangeModeRequest):
+    mode = request.mode
+    app.state.beacon_manager.change_mode(mode)
+    return {"message": f"Changed mode to {mode}"}
+
+# Endpoint to initialize the beacon and close transaction
+@app.post("/initialize-close")
+async def initialize_close():
+    vst_obj = app.state.beacon_manager.initialization()
+    app.state.beacon_manager.set_mmi(True)
+    return {"VST": vst_obj}
+
+# Endpoint to initialize the beacon to access EFC functions
+@app.post("/initialize")
+async def initialize():
+    vst_obj = app.state.beacon_manager.initialization()
+    app.state.beacon_manager.close()
+    return {"VST": vst_obj}
+
+class EFCFunctionRequest(BaseModel):
+    function_type: str
+    eid: int
+    attribute_id_list: list = Field(default_factory=list)
+    action_type: str = None
+
+# Endpoint to handle EFC functions
+@app.post("/efc-function")
+async def efc_function(request: EFCFunctionRequest):
+    function_type = request.function_type
+    eid = request.eid
+    attribute_id_list = request.attribute_id_list
+
+    if function_type == "GET":
+        response = app.state.beacon_manager.send_get_request(eid, attribute_id_list)
+    elif function_type == "SET":
+        response = app.state.beacon_manager.send_set_request(eid, attribute_id_list)
+    elif function_type == "ACTION":
+        action_type = request.action_type
+        response = app.state.beacon_manager.send_action_request(eid, action_type, attribute_id_list)
+    else:
+        raise HTTPException(status_code=400, detail="Invalid function type")
+    
+    return {"response": response}
+
+# Serve the index.html at the root
+app.mount("/", StaticFiles(directory="static", html=True), name="static")

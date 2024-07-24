@@ -141,8 +141,9 @@ class BeaconManager:
             Beacon not in stopped mode
             etc."""
 
-        bcm_logger.debug("Getting beacon state...")
-        result = self.check_state()
+        bcm_logger.debug("Updating beacon state...")
+        result = self.update_state()
+
         bcm_logger.debug(self.bcm_state)
 
         if result == BCM_ERR_Enum.BCM_NoError:
@@ -162,7 +163,7 @@ class BeaconManager:
             
             self.wait_until_ok()
 
-        if self.bcm_state.mode != 0:
+        if self.bcm_state.mode != BCM_MODE_Enum.BCM_MOD_Stopped:
             self.change_mode(BCM_MODE_Enum.BCM_MOD_Stopped)
             bcm_logger.debug("Changed mode to stopped!")
             #self.close()
@@ -178,11 +179,14 @@ class BeaconManager:
             self.callback_received_notifier.wait()
         bcm_logger.debug("\tCB notification received!!! You can receive a VST now.")
         
-    def check_state(self):
+    def update_state(self):
+        bcm_logger.debug(f"Getting beacon state...")
         self.bcm_state = ST_BCM_STATE()
         
         result = bcm_check_state(self.reg_ptr, ctypes.byref(self.bcm_state))
+        bcm_error_handler(result)
         
+        bcm_logger.debug(f"Beacon state: {self.bcm_state}")
         return result
     
     def get_config(self):
@@ -388,9 +392,18 @@ class BeaconManager:
         except custom_der_decoders.ReturnStatus:
             bcm_logger.error(return_status.message)
         decoded_response
-        
 
-
-
-    def close_transaction(self, close_transaction = False):
+    def close_transaction(self):
         self.set_mmi(True)
+    def close(self):
+        self.update_state()
+
+        if self.bcm_state.mode != BCM_MODE_Enum.BCM_MOD_Stopped:
+            self.change_mode(BCM_MODE_Enum.BCM_MOD_Stopped)
+            bcm_logger.debug("Changed mode to stopped!")
+            #self.close()
+        bcm_logger.info(f"Closing Beacon Manager!")
+        bcm_logger.info(f"Closing Transaction if it is in progress...")
+        self.close_transaction()
+        self.change_mode(BCM_MODE_Enum.BCM_MOD_Stopped)
+        bcm_logger.debug("Changed mode to stopped!")
