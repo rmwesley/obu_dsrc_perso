@@ -45,7 +45,7 @@ class ColoredFormatterWrapper(logging.Formatter):
         colored_formatting = color + self.formatter.format(record) + ColoredFormatterWrapper.RESET_COLOR
         return colored_formatting
         
-console_formatter = ColoredFormatterWrapper(logging.Formatter(f"%(levelname)-8s %(filename)22s:%(lineno)4s - %(threadName)s: %(message)s"))
+console_formatter = ColoredFormatterWrapper(logging.Formatter(f"%(levelname)-8s %(filename)22s:%(lineno)-4s - %(threadName)s: %(message)s"))
 console_handler.setFormatter(console_formatter)
 
 file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")

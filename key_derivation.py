@@ -20,6 +20,7 @@ def compute_access_key(contract_provider, ac_cr_key_ref):
         key_derivation_logger.error(e)
         key_derivation_logger.error(f"We do not possess the masterkeys for Contract Provider {contract_provider}")
         key_derivation_logger.info(f"Please note: TIS instances have security level 0. They are thus not really protected and can be read freely.")
+        raise(e)
     # key_derivation_logger.debug(f"Master Access Key in hex: {master_access_key.hex().upper()}")
     # Prepare the 3DES cipher with the MAcK
     cipher = DES3.new(master_access_key, DES3.MODE_ECB)

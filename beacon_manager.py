@@ -117,8 +117,7 @@ class BeaconManager:
             with self.callback_received_notifier:
                 self.callback_received_notifier.notify_all()
         except:
-            bcm_logger.debug(f"CB: Error, with code {error_code}")
-            bcm_logger.error(error_code)
+            bcm_logger.error(f"CB: Error, with BCM error code {error_code}")
             return
     def bcm_alarm(self, reg_ptr, alarm_type, alarm_state):
         bcm_logger.debug(f"AL: Alarm notification ({alarm_type}) received!")
