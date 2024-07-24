@@ -5,45 +5,9 @@ from fastapi.staticfiles import StaticFiles
 
 from contextlib import asynccontextmanager
 from beacon_manager import BeaconManager
-import logging
 
-router_logger = logging.getLogger()
-
-console_handler = logging.StreamHandler()
-
-class ColoredFormatterWrapper(logging.Formatter):
-    GRAY = "\033[38m"
-    YELLOW = "\033[33m"
-    RED = "\033[31;20m"
-    BOLD_RED = "\033[31m"
-    BLUE = "\33[34m"
-    RESET_COLOR = "\033[0m"
-    default_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)")
-    formatter = None
-
-    LEVEL_COLORS = {
-        logging.DEBUG: GRAY,
-        logging.INFO: BLUE,
-        logging.WARNING: YELLOW,
-        logging.ERROR: RED,
-        logging.CRITICAL: BOLD_RED,
-    }
-
-    def __init__(self, formatter=default_formatter):
-        self.formatter = formatter
-
-    def format(self, record):
-        color = ColoredFormatterWrapper.LEVEL_COLORS.get(record.levelno)
-        colored_formatting = color + self.formatter.format(record) + ColoredFormatterWrapper.RESET_COLOR
-        return colored_formatting
-        
-console_formatter = ColoredFormatterWrapper(logging.Formatter(f"%(levelname)-8s %(filename)22s:%(lineno)s - %(funcName)s() - %(threadName)s %(message)s"))
-console_handler.setFormatter(console_formatter)
-
-router_logger.addHandler(console_handler)
-router_logger.setLevel(logging.DEBUG)
-
-
+# Instantiating BeaconManager as a global attribute
+# of the FastAPI application
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     ''' Run at startup
