@@ -75,8 +75,8 @@ def main():
     beacon_manager.change_mode(BCM_MODE_Enum.BCM_MOD_Transparent)
     root_logger.debug("Changed mode to transparent!")
     root_logger.debug("Getting beacon state...")
-    bcm_state = beacon_manager.check_state()
-    root_logger.debug(bcm_state)
+    result = beacon_manager.update_state()
+    root_logger.debug(beacon_manager.bcm_state)
 
     root_logger.debug("Initialization: Starting BST and getting VST...")
     vst_obj = beacon_manager.initialization()
