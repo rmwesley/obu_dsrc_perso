@@ -22,10 +22,11 @@ def bcm_error_handler(bcm_error):
         raise Exception(f"Beacon Manager Error {bcm_error}: {BCMError.get_error_description(bcm_error)}")
 def cb_error_handler(callback_code, error_code):
     if callback_code == BCM_CALLBACK_Enum.BCM_CB_ERR:
+        bcm_logger.error(BCM_Callback.get_description(callback_code))
         # No Exception/Error is raised on callbacks.
         # We only log them
-        bcm_logger.error(f"Callback Error ({callback_code}) occurred, with error code {error_code}")
-        raise Exception(f"Callback Error ({callback_code}) occurred! Error code: {error_code}")
+        bcm_logger.error(f"Callback Error ({callback_code}), with BCM error code {error_code}")
+        raise Exception(f"Callback Error ({callback_code}) with BCM Error {error_code}: {BCMError.get_error_description(error_code)}")
 
 # Defining the BeaconManager class
 class BeaconManager:
@@ -120,17 +121,15 @@ class BeaconManager:
             bcm_logger.error(error_code)
             return
     def bcm_alarm(self, reg_ptr, alarm_type, alarm_state):
-        bcm_logger.debug("AL: Alarm notification received!")
+        bcm_logger.debug(f"AL: Alarm notification ({alarm_type}) received!")
         if callable(self.external_alarm):
             bcm_logger.debug("AL: External alarm function present! (from the frontend, for exemple)")
             bcm_logger.debug("AL: We now call/notify it!")
             self.external_alarm(alarm_type, alarm_state)
 
         if alarm_type == BCM_ALARMS_Enum.BCM_AlarmPeriph or alarm_type == BCM_ALARMS_Enum.BCM_AlarmBeacon:
-            bcm_logger.error(f"Alarm error! ({alarm_type})!")
-            bcm_logger.debug(f"Alarm description: {BCM_Alarm.get_description(alarm_type)}")
+            bcm_logger.error(f"Error in Alarm! Description: {BCM_Alarm.get_description(alarm_type)}")
             return
-        bcm_logger.debug(f"Alarm received ({alarm_type})!")
         bcm_logger.debug(f"Alarm description: {BCM_Alarm.get_description(alarm_type)}")
         if alarm_type == BCM_ALARMS_Enum.BCM_EventPollingOK:
             self.beacon_state_ok_trigger.set()
@@ -211,9 +210,9 @@ class BeaconManager:
     def initialization(self, manufacturer_id=0x31, individual_id=0x111, mandapplications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
         self.initialization_lock.acquire()
         self.start_bst(manufacturer_id, individual_id, mandapplications, profile, profile_list, non_mand_applications, bst_type)
-    
-        bcm_logger.debug("No errors occurred: BST started!")
-        bcm_logger.info("We now wait on the main thread until we receive a VST...")
+        bcm_logger.debug("No errors occurred when starting BST!")
+        
+        bcm_logger.info("We now wait on the main thread until we a VST notification is received...")
         self.wait_for_vst_notification()
         self.initialization_lock.release()
 
@@ -242,12 +241,11 @@ class BeaconManager:
                                lp_bst_datagram,
                                DWORD(len(bst_datagram)),
                                byte_bst_type)
-
-        bcm_logger.debug("ST_BCM_REG (dereferenced value):")
-        bcm_logger.debug(ctypes.cast(self.reg_ptr, ctypes.c_void_p).value)
-        bcm_logger.debug(self.reg_ptr.contents)
-        
         bcm_error_handler(result)
+        bcm_logger.debug("No errors occurred: BST started!")
+        st_bcm_reg_ptr_value = ctypes.cast(self.reg_ptr, ctypes.c_void_p).value
+        bcm_logger.debug(f"ST_BCM_REG (dereferenced value): {st_bcm_reg_ptr_value}")
+        
     
     # Wait for the application to be notified through a callback
     def wait_for_vst_notification(self):
@@ -403,7 +401,10 @@ class BeaconManager:
             bcm_logger.debug("Changed mode to stopped!")
             #self.close()
         bcm_logger.info(f"Closing Beacon Manager!")
-        bcm_logger.info(f"Closing Transaction if it is in progress...")
-        self.close_transaction()
+        
+        # If a transaction is still open, we close it
+        if self.bcm_state.trxInProgress:
+            bcm_logger.info(f"A transaction was in progress! Closing it...")
+            self.close_transaction()
         self.change_mode(BCM_MODE_Enum.BCM_MOD_Stopped)
         bcm_logger.debug("Changed mode to stopped!")

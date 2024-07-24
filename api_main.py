@@ -83,18 +83,24 @@ async def change_mode(request: ChangeModeRequest):
     app.state.beacon_manager.change_mode(mode)
     return {"message": f"Changed mode to {mode}"}
 
-# Endpoint to initialize the beacon and close transaction
-@app.post("/initialize-close")
-async def initialize_close():
-    vst_obj = app.state.beacon_manager.initialization()
-    app.state.beacon_manager.set_mmi(True)
-    return {"VST": vst_obj}
-
 # Endpoint to initialize the beacon to access EFC functions
-@app.post("/initialize")
+@app.post("/initialize-transaction")
 async def initialize():
     vst_obj = app.state.beacon_manager.initialization()
     app.state.beacon_manager.close()
+    return {"VST": vst_obj}
+
+# Endpoint to close transaction
+@app.post("/close-transaction")
+async def close_transaction():
+    app.state.beacon_manager.set_mmi(True)
+    return {"message": "Transaction closed"}
+
+# Endpoint to initialize the beacon and close transaction
+@app.post("/initialize-close-transaction")
+async def initialize_close():
+    vst_obj = app.state.beacon_manager.initialization()
+    app.state.beacon_manager.set_mmi(True)
     return {"VST": vst_obj}
 
 class EFCFunctionRequest(BaseModel):
@@ -102,6 +108,11 @@ class EFCFunctionRequest(BaseModel):
     eid: int
     attribute_id_list: list = Field(default_factory=list)
     action_type: str = None
+
+@app.get("/last-vst")
+async def get_last_vst():
+    last_vst = app.state.beacon_manager.last_vst
+    return {"last_vst": last_vst}
 
 # Endpoint to handle EFC functions
 @app.post("/efc-function")
