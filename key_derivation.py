@@ -39,12 +39,12 @@ def compute_access_credentials(contract_provider, rnd_obe, ac_cr_key_ref):
     access_key = compute_access_key(contract_provider, ac_cr_key_ref)
     return compute_access_credentials_with_access_key(contract_provider, rnd_obe, access_key)
 
-def compute_access_credentials_with_access_key(contract_provider, rnd_obe, access_key):
+def compute_access_credentials_with_access_key(contract_provider, rnd_obe:int, access_key):
     # Prepare the DES cipher with the MAcK
     cipher = DES.new(access_key, DES.MODE_ECB)
     # The padding is automatically added to the right of RndOBE for 3DES
     # We add 4 bytes of padding to the right of RndOBE
-    output = cipher.encrypt(rnd_obe + bytearray(4))
+    output = cipher.encrypt(rnd_obe.to_bytes(4) + bytearray(4))
 
     # We now truncate this output to the 4 left-most bytes
     ac_cr = int.from_bytes(output[:4])

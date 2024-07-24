@@ -459,7 +459,7 @@ def encode_bst_datagram(frag_header:int, manufacturer_id=0x31, individual_id=0x1
         bst_datagram = [frag_header] + beacon_id + utc_timestamp + [profile] + [len(mandapplications)] + mandapplications + profile_list
     
     
-    decoder_logger.debug(f"BST to be sent in hex: {bytes(bst_datagram).hex()}")
+    decoder_logger.debug(f"Encoded BST in hex format: {bytes(bst_datagram).hex()}")
 
     return bst_datagram
 class BST(dict):
@@ -482,10 +482,8 @@ class BST(dict):
     decoder_logger.debug("Detailed BST string representation: {bst_repr}")
 class VST(dict):
     def __init__(self, vst_bytes):
-        decoder_logger.debug("Decoding VST...")
+        decoder_logger.debug(f"Decoding VST: {vst_bytes.hex().upper()}")
         self["type"] = "VST"
-
-        decoder_logger.debug(vst_bytes.hex().upper())
 
         profile = vst_bytes[2]
         number_of_applications = vst_bytes[3]
@@ -580,10 +578,10 @@ class VST(dict):
                     decoder_logger.error(f"\tRndOBE container is {container_type:02X}{container_length:02X} instead of 0204")
                 vst_byte_idx += 2
 
-                rnd_obe = bytes(vst_bytes[vst_byte_idx : vst_byte_idx+4])
+                rnd_obe = int.from_bytes(vst_bytes[vst_byte_idx : vst_byte_idx+4])
                 current_application_details["RndOBE"] = rnd_obe
 
-                decoder_logger.debug(f"\tRndOBE: {rnd_obe.hex().upper()}")
+                decoder_logger.debug(f"\tRndOBE: {rnd_obe:X}")
                 vst_byte_idx += 4
 
             applications.append(current_application_details)
@@ -591,11 +589,11 @@ class VST(dict):
 
         obe_status_present = vst_bytes[vst_byte_idx] & 0x80
         equipment_class = vst_bytes[vst_byte_idx] & 0x7F
-        obe_manufacturer_id = vst_bytes[vst_byte_idx+1:vst_byte_idx+3]
+        obe_manufacturer_id = int.from_bytes(vst_bytes[vst_byte_idx+1:vst_byte_idx+3])
 
         decoder_logger.debug(f"\tEquipment class: {equipment_class}")
         self['EquipmentClass'] = equipment_class
-        decoder_logger.debug(f"\tOBE manufacturerId: {int.from_bytes(obe_manufacturer_id)}")
+        decoder_logger.debug(f"\tOBE manufacturerId: {obe_manufacturer_id}")
         self['ManufacturerId'] = obe_manufacturer_id
         vst_byte_idx += 1
 
