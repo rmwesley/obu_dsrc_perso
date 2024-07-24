@@ -87,20 +87,19 @@ async def change_mode(request: ChangeModeRequest):
 @app.post("/initialize-transaction")
 async def initialize():
     vst_obj = app.state.beacon_manager.initialization()
-    app.state.beacon_manager.close()
     return {"VST": vst_obj}
 
 # Endpoint to close transaction
 @app.post("/close-transaction")
 async def close_transaction():
-    app.state.beacon_manager.set_mmi(True)
+    app.state.beacon_manager.close_transaction()
     return {"message": "Transaction closed"}
 
 # Endpoint to initialize the beacon and close transaction
 @app.post("/initialize-close-transaction")
 async def initialize_close():
     vst_obj = app.state.beacon_manager.initialization()
-    app.state.beacon_manager.set_mmi(True)
+    app.state.beacon_manager.close_transaction()
     return {"VST": vst_obj}
 
 class EFCFunctionRequest(BaseModel):
@@ -111,8 +110,8 @@ class EFCFunctionRequest(BaseModel):
 
 @app.get("/last-vst")
 async def get_last_vst():
-    last_vst = app.state.beacon_manager.last_vst
-    return {"last_vst": last_vst}
+    last_decoded_vst = app.state.beacon_manager.last_vst_obj
+    return {"last_decoded_vst": last_decoded_vst}
 
 # Endpoint to handle EFC functions
 @app.post("/efc-function")
