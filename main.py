@@ -76,7 +76,7 @@ def main():
     root_logger.debug("Changed mode to transparent!")
     root_logger.debug("Getting beacon state...")
     result = beacon_manager.update_state()
-    root_logger.debug(beacon_manager.bcm_state)
+    root_logger.debug(beacon_manager.beacon_state)
 
     root_logger.debug("Initialization: Starting BST and getting VST...")
     vst_obj = beacon_manager.initialization()
