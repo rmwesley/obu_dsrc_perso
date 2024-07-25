@@ -12,7 +12,7 @@
   <div id="app">
     <div>
       <p>Beacon is stopped!</p>
-      <button @click="changeToTransparent">Change mode to Transaparent</button>
+      <button @click="changeToTransparent">Change mode to Transparent</button>
       <button @click="stopBeacon">Change mode to Stopped</button>
     </div>
     <div>
@@ -68,7 +68,7 @@
       async getBeaconState() {
         const response = await fetch('/beacon-state')
         const data = await response.json()
-        this.beacon_state = data.state === 0 ? 'transparent' : 'transparent_but_not_initialized'
+        this.beacon_state = data.beacon_state
       },
       async getLastVST() {
         const response = await fetch('/last-vst')
@@ -79,8 +79,9 @@
         await fetch('/change-mode', { method: 'POST', body: JSON.stringify({ mode: 1 }), headers: { 'Content-Type': 'application/json' } })
       },
       async stopBeacon(){
-        await fetch('/change-mode', { method: 'POST', body: JSON.stringify({ mode: 0 }), headers: { 'Content-Type': 'application/json' } })
-        this.getBeaconState()
+        const response = await fetch('/change-mode', { method: 'POST', body: JSON.stringify({ mode: 0 }), headers: { 'Content-Type': 'application/json' } })
+        const data = await response.json()
+        this.beacon_state = data.beacon_state
       },
       async initialize() {
         await fetch('/initialize-transaction', { method: 'POST' })
@@ -93,7 +94,7 @@
         this.getLastVST()
       },
       async closeTransaction(){
-        await fetch('/close-transaction', { method: 'POST' })
+        await fetch('/send-close-transaction-to-obu', { method: 'POST' })
         this.getBeaconState()
       },
       async efcGet() {

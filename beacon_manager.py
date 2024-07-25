@@ -15,18 +15,15 @@ import custom_der_decoders
 bcm_logger = logging.getLogger(__name__)
 SERIAL_MODE = True
 
-class TransactionInProgressException(Exception):
-    pass
-
 def bcm_error_handler(bcm_error):
     if bcm_error != BCM_ERR_Enum.BCM_NoError:
         bcm_logger.error(f"Beacon Manager Error {bcm_error}: {BCMError.get_error_description(bcm_error)}")
 
         # Handle error case if needed
         if bcm_error == BCM_ERR_Enum.BCM_TrxInProgress:
-            raise TransactionInProgressException(f"Cannot execute function because a transaction is in progress!")
+            bcm_logger.error(f"Cannot execute function because a transaction is in progress!")
 
-        raise Exception(f"Beacon Manager Error {bcm_error}: {BCMError.get_error_description(bcm_error)}")
+        bcm_logger.error(f"Beacon Manager Error {bcm_error}: {BCMError.get_error_description(bcm_error)}")
 
 def cb_error_handler(callback_code, error_code):
     if callback_code == BCM_CALLBACK_Enum.BCM_CB_ERR:
@@ -41,8 +38,10 @@ def cb_error_handler(callback_code, error_code):
 class BeaconManager:
     def __init__(self, beacon_alarm_state_polling_ms=1000, external_callback:callable = None, external_alarm:callable = None):
         self.beacon_state_ok_trigger = threading.Event()
+        self.no_transaction_in_progress = threading.Event()
         self.callback_received_notifier = threading.Condition()
         self.transaction_lock = threading.Lock()
+        self.transaction_in_progress = False
 
         self.external_callback = external_callback
         self.external_alarm = external_alarm
@@ -50,7 +49,7 @@ class BeaconManager:
         # This is the BCM structure pointer. It is managed by the DLL
         self.reg_ptr = ST_BCM_REG_PTR()
         # This is the BCM state pointer. It is managed by the DLL
-        self.bcm_state = ST_BCM_STATE()
+        self.beacon_state = ST_BCM_STATE()
         # Last received VST
         self.last_vst = bytes()
         self.last_vst_obj = {}
@@ -154,30 +153,32 @@ class BeaconManager:
         bcm_logger.debug("Updating beacon state...")
         result = self.update_state()
 
-        bcm_logger.debug(self.bcm_state)
+        bcm_logger.debug(self.beacon_state)
 
         if result == BCM_ERR_Enum.BCM_NoError:
             pass
         elif result == BCM_ERR_Enum.BCM_SocketNotConnected:
             bcm_logger.error("Wait for socket to connect before sending commands!")
-            self.wait_until_ok()
         else:
             bcm_logger.error("We could not handle the error, so it will be raised")
             bcm_error_handler(result)
+        
+        self.wait_until_ok()
 
         # If a previous transaction was not closed, we forcefully reset the beacon
-        if self.bcm_state.trxInProgress:
+        if self.beacon_state.trxInProgress:
             bcm_logger.error("Previously unclosed transaction in progress!")
             bcm_logger.info("We will forcefully reset the beacon...")
             self.reset_manager()
             
             self.wait_until_ok()
 
-        if self.bcm_state.mode != BCM_MODE_Enum.BCM_MOD_Stopped:
+        if self.beacon_state.mode != BCM_MODE_Enum.BCM_MOD_Stopped:
             self.change_mode(BCM_MODE_Enum.BCM_MOD_Stopped)
             bcm_logger.debug("Changed mode to stopped!")
             #self.close()
         self.update_state()
+        return self.beacon_state
 
     def wait_until_ok(self):
         bcm_logger.debug("Polling the beacon state until it is in an OK state...")
@@ -191,15 +192,15 @@ class BeaconManager:
         bcm_logger.debug("\tCB notification received!!! You can receive a VST now.")
         
     def update_state(self):
-        if self.bcm_state.trxInProgress:
+        if self.beacon_state.trxInProgress:
             bcm_logger.debug(f"Do not try to update the state: A transaction is in progress! Otherwise, an Exception will be raised.")
             return
         
         bcm_logger.debug(f"Getting beacon state...")
         
-        result = bcm_check_state(self.reg_ptr, ctypes.byref(self.bcm_state))
+        result = bcm_check_state(self.reg_ptr, ctypes.byref(self.beacon_state))
         
-        bcm_logger.debug(f"Beacon state: {self.bcm_state}")
+        bcm_logger.debug(f"Beacon state: {self.beacon_state}")
         return result
     
     def get_config(self):
@@ -222,18 +223,21 @@ class BeaconManager:
         bcm_error_handler(result)
     
     def initialization(self, manufacturer_id=0x31, individual_id=0x111, mandapplications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
-        if self.bcm_state.trxInProgress:
-            bcm_logger.error("A transaction is already in progress!")
+        if self.beacon_state.trxInProgress:
+            bcm_logger.error("Do not try to initilize a transaction! One is already in progress!")
             return
         bcm_logger.debug("We lock the thread until the opened transaction is closed!")
-        self.transaction_lock.acquire()
+        #self.no_transaction_in_progress.wait()
+        #self.no_transaction_in_progress.clear()
+
         self.start_bst(manufacturer_id, individual_id, mandapplications, profile, profile_list, non_mand_applications, bst_type)
         bcm_logger.debug("No errors occurred when starting BST!")
         
         bcm_logger.info("We now wait on the main thread until we a VST notification is received...")
         self.wait_for_vst_notification()
+        #self.no_transaction_in_progress.set()
 
-        bcm_logger.debug("The lock was notified! We now get the VST")
+        bcm_logger.debug("A VST notification was received! We now get the VST")
         vst_datagram = self.get_vst()
         bcm_logger.debug("We now instantiate a VST object from the response")
         # Decoding VST
@@ -409,19 +413,19 @@ class BeaconManager:
             bcm_logger.error(return_status.message)
         decoded_response
 
-    def close_transaction(self):
-        self.transaction_lock.release()
+    def send_close_transaction_to_obu(self):
         self.set_mmi(True)
+        self.no_transaction_in_progress.clear()
     def stopping(self):
         bcm_logger.info(f"Stopping Beacon Manager!")
         # If a transaction is still open, we close it
-        if self.bcm_state.trxInProgress:
-            bcm_logger.info(f"A transaction was in progress! Closing it...")
-            self.close_transaction()
+        if self.beacon_state.trxInProgress:
+            bcm_logger.info(f"A transaction was in progress according to the DLL! Closing it...")
+            self.send_close_transaction_to_obu()
         
         self.update_state()
 
-        if self.bcm_state.mode != BCM_MODE_Enum.BCM_MOD_Stopped:
+        if self.beacon_state.mode != BCM_MODE_Enum.BCM_MOD_Stopped:
             self.change_mode(BCM_MODE_Enum.BCM_MOD_Stopped)
             bcm_logger.debug("Changed mode to stopped!")
             #self.close()

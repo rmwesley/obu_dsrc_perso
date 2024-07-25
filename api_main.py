@@ -6,6 +6,12 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from beacon_manager import BeaconManager
 
+import logging
+logging.basicConfig(
+    format=f"%(levelname)-8s %(filename)22s:%(lineno)s - %(funcName)s() - %(threadName)s %(message)s",
+    level=logging.DEBUG
+    )
+
 # Instantiating BeaconManager as a global attribute
 # of the FastAPI application
 @asynccontextmanager
@@ -35,8 +41,12 @@ async def get_rq():
 # Endpoint to get the current beacon state
 @app.get("/beacon-state")
 async def get_beacon_state():
+    return {"beacon_state": app.state.beacon_manager.beacon_state}
+# Endpoint to update the current beacon state
+@app.post("/update-beacon-state")
+async def update_beacon_state():
     app.state.beacon_manager.update_state()
-    return {"state": app.state.beacon_manager.bcm_state}
+    return {"beacon_state": app.state.beacon_manager.beacon_state}
 
 class ChangeModeRequest(BaseModel):
     mode: int
@@ -54,16 +64,16 @@ async def initialize():
     return {"VST": vst_obj}
 
 # Endpoint to close transaction
-@app.post("/close-transaction")
-async def close_transaction():
-    app.state.beacon_manager.close_transaction()
+@app.post("/send-close-transaction-to-obu")
+async def send_close_transaction_to_obu():
+    app.state.beacon_manager.send_close_transaction_to_obu()
     return {"message": "Transaction closed"}
 
 # Endpoint to initialize the beacon and close transaction
 @app.post("/initialize-close-transaction")
 async def initialize_close():
     vst_obj = app.state.beacon_manager.initialization()
-    app.state.beacon_manager.close_transaction()
+    app.state.beacon_manager.send_close_transaction_to_obu()
     return {"VST": vst_obj}
 
 class EFCFunctionRequest(BaseModel):
