@@ -606,7 +606,7 @@ class VST(dict):
             if application["EID"] == eid:
                 vst_application_index = index
         if vst_application_index == -1:
-            decoder_logger.info(f"EID 7 is not present!")
+            decoder_logger.info(f"EID {eid} is not present!")
         return vst_application_index
 
 def decode_vst(vst_bytes):
