@@ -150,7 +150,7 @@ class BeaconManager:
             Beacon not in stopped mode
             etc."""
 
-        bcm_logger.debug("Updating beacon state...")
+        bcm_logger.debug("Trying to update beacon state...")
         result = self.update_state()
 
         bcm_logger.debug(self.beacon_state)
@@ -164,6 +164,9 @@ class BeaconManager:
             bcm_error_handler(result)
         
         self.wait_until_ok()
+
+        bcm_logger.debug("Updating beacon state (It should now be OK)...")
+        result = self.update_state()
 
         # If a previous transaction was not closed, we forcefully reset the beacon
         if self.beacon_state.trxInProgress:
@@ -202,6 +205,8 @@ class BeaconManager:
         
         bcm_logger.debug(f"Beacon state: {self.beacon_state}")
         return result
+    def get_last_beacon_state(self):
+        return vars(self.beacon_state)
     
     def get_config(self):
         bcm_config = ST_BCM_CONFIG()
@@ -341,7 +346,7 @@ class BeaconManager:
         response_as_list = lp_cmd_response_datagram[:cmd_response_size.value]
         self.last_cmd_response = bytes(response_as_list)
         bcm_logger.debug(f"Command response in hex format: {self.last_cmd_response.hex().upper()}")
-        return response_as_list
+        return self.last_cmd_response
     
     def send_get_request(self, eid, access_credentials=None, attribute_ids=None, close = False):
         datagram = custom_der_decoders.encode_get_request_datagram(self.frag_header, eid, access_credentials, attribute_ids, close)
@@ -414,8 +419,9 @@ class BeaconManager:
         decoded_response
 
     def send_close_transaction_to_obu(self):
-        self.set_mmi(True)
+        command_response = self.set_mmi(True)
         self.no_transaction_in_progress.clear()
+        return command_response
     def stopping(self):
         bcm_logger.info(f"Stopping Beacon Manager!")
         # If a transaction is still open, we close it

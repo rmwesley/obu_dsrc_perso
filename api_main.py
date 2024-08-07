@@ -29,24 +29,15 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-class GET_rq(BaseModel):
-    attribute_id_list: list = Field(default=0x20, description='List of attribute ids to get')
-
-@app.post("/initialization")
-async def get_rq():
-    router_logger.debug("Initializing!")
-    vst_obj = app.state.beacon_manager.initialization()
-    return {"VST" : vst_obj}
-
 # Endpoint to get the current beacon state
 @app.get("/beacon-state")
 async def get_beacon_state():
-    return {"beacon_state": app.state.beacon_manager.beacon_state}
+    return {"beacon_state": app.state.beacon_manager.get_last_beacon_state()}
 # Endpoint to update the current beacon state
 @app.post("/update-beacon-state")
 async def update_beacon_state():
     app.state.beacon_manager.update_state()
-    return {"beacon_state": app.state.beacon_manager.beacon_state}
+    return {"beacon_state": app.state.beacon_manager.get_last_beacon_state()}
 
 class ChangeModeRequest(BaseModel):
     mode: int
@@ -60,32 +51,44 @@ async def change_mode(request: ChangeModeRequest):
 # Endpoint to initialize the beacon to access EFC functions
 @app.post("/initialize-transaction")
 async def initialize():
-    vst_obj = app.state.beacon_manager.initialization()
-    return {"VST": vst_obj}
+    last_decoded_vst_obj = app.state.beacon_manager.initialization()
+    return {"last_vst": last_decoded_vst_obj}
 
 # Endpoint to close transaction
 @app.post("/send-close-transaction-to-obu")
 async def send_close_transaction_to_obu():
-    app.state.beacon_manager.send_close_transaction_to_obu()
-    return {"message": "Transaction closed"}
+    command_response = app.state.beacon_manager.send_close_transaction_to_obu()
+    return {
+        "message": "Transaction closed",
+        "command_response": command_response
+        }
 
 # Endpoint to initialize the beacon and close transaction
 @app.post("/initialize-close-transaction")
 async def initialize_close():
-    vst_obj = app.state.beacon_manager.initialization()
+    last_decoded_vst_obj = app.state.beacon_manager.initialization()
     app.state.beacon_manager.send_close_transaction_to_obu()
-    return {"VST": vst_obj}
+    return {"VST": last_decoded_vst_obj}
+
+@app.get("/last-vst")
+async def get_last_vst():
+    last_decoded_vst = app.state.beacon_manager.last_vst_obj
+    return {"last_vst": last_decoded_vst}
+
+
+class GET_rq(BaseModel):
+    attribute_id_list: list = Field(default=0x20, description='List of attribute ids to get')
+
+@app.post("/get-stamped")
+async def get_rq():
+    command_respose = app.state.beacon_manager.send_get_stamped_request()
+    return {"command_respose" : command_respose}
 
 class EFCFunctionRequest(BaseModel):
     function_type: str
     eid: int
     attribute_id_list: list = Field(default_factory=list)
     action_type: str = None
-
-@app.get("/last-vst")
-async def get_last_vst():
-    last_decoded_vst = app.state.beacon_manager.last_vst_obj
-    return {"last_decoded_vst": last_decoded_vst}
 
 # Endpoint to handle EFC functions
 @app.post("/efc-function")

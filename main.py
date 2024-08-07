@@ -86,7 +86,7 @@ def main():
     response = beacon_manager.send_get_request(eid, attribute_ids=[0x20])
     root_logger.debug(f"BCM last command response in hex format: {beacon_manager.last_cmd_response.hex().upper()}")
 
-    eid = 3
+    eid = 7
     vst_application_index = vst_obj.get_eid_info(eid)
 
     # EID 7 is present! The beacon operator can do a transaction
