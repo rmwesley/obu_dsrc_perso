@@ -2,7 +2,7 @@ import os
 try:
     os.environ['MK_PATH']
 except:
-    os.environ['MK_PATH'] = r"C:\Users\wesley.rodrigues\AXXES\OBU Proxy - Documents\16 - Automatisation des Tests\master_keys_test.json"
+    os.environ['MK_PATH'] = r"..\..\master_keys_test.json"
 
 import threading
 import logging
@@ -89,7 +89,7 @@ def main():
     eid = 7
     vst_application_index = vst_obj.get_eid_info(eid)
 
-    # EID 7 is present! The beacon operator can do a transaction
+    # The EID is present in the VST! The beacon operator can do a transaction
     if vst_application_index > 0:
         root_logger.debug(f"Operator application index: {vst_application_index}")
         operator_application = vst_obj['Applications'][vst_application_index]

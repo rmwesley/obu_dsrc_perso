@@ -1,0 +1,1 @@
+$Env:MK_PATH = "..\..\master_keys_test.json"
