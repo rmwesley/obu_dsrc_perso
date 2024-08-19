@@ -90,7 +90,7 @@ def main():
     vst_application_index = vst_obj.get_eid_info(eid)
 
     # The EID is present in the VST! The beacon operator can do a transaction
-    if vst_application_index > 0:
+    if vst_application_index >= 0:
         root_logger.debug(f"Operator application index: {vst_application_index}")
         operator_application = vst_obj['Applications'][vst_application_index]
 
