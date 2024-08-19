@@ -602,11 +602,14 @@ class VST(dict):
     
     def get_eid_info(self, eid:int) -> int:
         vst_application_index = -1
+        decoder_logger.debug(f"Getting application with EID {eid}")
         for index, application in enumerate(self['Applications']):
+            decoder_logger.debug(f"Application details: {application}")
             if application["EID"] == eid:
                 vst_application_index = index
         if vst_application_index == -1:
             decoder_logger.info(f"EID {eid} is not present!")
+        decoder_logger.debug(f"Index of EID {eid} on VST is {vst_application_index}")
         return vst_application_index
 
 def decode_vst(vst_bytes):
