@@ -16,13 +16,13 @@ with open(mk_path) as json_file:
 
 
 # CODE FOR DERIVED ACCESS KEY (Uses MasterKey with ref 120)
-def compute_access_key(contract_provider, ac_cr_key_ref):
+def compute_access_key(efc_cm, ac_cr_key_ref):
     # Get the Master Access Key (MAcK)
     try :
-        master_access_key = bytes.fromhex(master_keys[contract_provider][8])
+        master_access_key = bytes.fromhex(master_keys[efc_cm]["120"])
     except KeyError as e:
         key_derivation_logger.error(e)
-        key_derivation_logger.error(f"We do not possess the masterkeys for Contract Provider {contract_provider}")
+        key_derivation_logger.error(f"We do not possess the masterkeys for EFC-CM {efc_cm}")
         key_derivation_logger.info(f"Please note: TIS instances have security level 0. They are thus not really protected and can be read freely.")
         raise(e)
     # key_derivation_logger.debug(f"Master Access Key in hex: {master_access_key.hex().upper()}")
@@ -41,6 +41,7 @@ def compute_access_key(contract_provider, ac_cr_key_ref):
 def compute_access_credentials(contract_provider, rnd_obe, ac_cr_key_ref):
     # Compute the Access Key
     access_key = compute_access_key(contract_provider, ac_cr_key_ref)
+    # Compute the Access Credentials and return it
     return compute_access_credentials_with_access_key(contract_provider, rnd_obe, access_key)
 
 def compute_access_credentials_with_access_key(contract_provider, rnd_obe:int, access_key):
@@ -59,8 +60,8 @@ def compute_access_credentials_with_access_key(contract_provider, rnd_obe:int, a
 
 
 
-def compute_authenticator_with_auk_ref(pan_id, contract_provider, attribute_list_bytes, rnd_rse, auk_ref=115):
-    authenticator_key = bytes.fromhex(compute_auth_key_with_mauk_ref(pan_id, contract_provider, auk_ref))
+def compute_authenticator_with_auk_ref(pan_id, efc_cm, attribute_list_bytes, rnd_rse, auk_ref=115):
+    authenticator_key = compute_auth_key_with_mauk_ref(pan_id, efc_cm, auk_ref)
 
     # Prepare the DES cipher with the MAuK
     cipher = DES.new(authenticator_key, DES.MODE_ECB)
@@ -98,44 +99,57 @@ def compact_pan_type1(pan_str: str):
 def compute_ciphertext(pan_id, contract_provider):
     # Prepare the compact PAN
     bytes_compact_pan = compact_pan_type1(pan_id)
-    # print(bytes_compact_pan.hex())
+    key_derivation_logger.debug(f'Compact PAN in hex: {bytes_compact_pan.hex().upper()}')
+    if len(bytes_compact_pan) != 4:
+        key_derivation_logger.error("Compact PAN should be encoded in 4 bytes!")
 
     # Concatenating a "00" tail and assembling the full ciphertext
     ciphertext_extension = contract_provider + "00"
+    contract_provider_size = len(contract_provider)
+    if contract_provider_size != 6:
+        key_derivation_logger.error(f"Contract Provider should contain 6 hex characters (3 bytes), not {contract_provider_size} chars!")
 
     bytes_ciphertext_extension = bytes.fromhex(ciphertext_extension)
     ciphertext = bytes_compact_pan + bytes_ciphertext_extension
-    # logger.debug(ciphertext.hex())
-    # print(ciphertext.hex())
+    if len(ciphertext) != 8:
+        key_derivation_logger.error("Ciphertext should be 8 bytes!!")
+        key_derivation_logger.error("Please ensure that the Compact PAN is encoded in 4 bytes and that the Contract Provider is 3 bytes!")
+    
+    key_derivation_logger.debug(f'Ciphertext in hex: {ciphertext.hex().upper()}')
     return ciphertext
 
-
-def compute_auth_key_with_mauk_value(pan_id: str, contract_provider: str, master_key: bytes):
+def compute_auth_key_with_mauk_value_and_ciphertext(ciphertext, master_key: bytes):
     # Prepare/configure the cipher with the master key
     cipher = DES3.new(master_key, DES3.MODE_ECB)
-
-    # Prepare the compact PAN
-    bytes_compact_pan = compact_pan_type1(pan_id)
-    # print(bytes_compact_pan.hex())
-
-    # Concatenating a "00" tail and assembling the full ciphertext
-    ciphertext_extension = contract_provider + "00"
-
-    bytes_ciphertext_extension = bytes.fromhex(ciphertext_extension)
-    ciphertext = bytes_compact_pan + bytes_ciphertext_extension
-    # logger.debug(ciphertext.hex())
-    # print(ciphertext.hex())
-
     auth_key = cipher.encrypt(ciphertext)
-    key_derivation_logger.debug(f'Auth key: {auth_key.hex().upper()}')
-    return auth_key.hex().upper()
 
-def compute_auth_key_with_mauk_ref(pan_id: str, contract_provider: str, key_ref: int):
+    key_derivation_logger.debug(f'Computed Auth key: {auth_key.hex().upper()}')
+    return auth_key
+
+def compute_auth_key_with_mauk_ref(pan_id: str, efc_cm: str, key_ref: int):
+    key_derivation_logger.debug(f'Computing Authentication Key with KeyRef {key_ref} for PAN {pan_id}...')
+    key_derivation_logger.debug(f'Getting the Contract Provider. It is encodeed in the first 3 bytes of the EFC-CM...')
+    contract_provider = efc_cm[0:6]
+    ciphertext = compute_ciphertext(pan_id, contract_provider)
+    
     if key_ref not in range(111, 119):
         raise ValueError("Invalid master authentication key (MAuK) reference!")
-    mauk_hex = master_keys[contract_provider][key_ref - 111]
+    mauk_hex = master_keys[efc_cm][str(key_ref)]
     mauk = bytes.fromhex(mauk_hex)
-    return compute_auth_key_with_mauk_value(pan_id, contract_provider, mauk)
+    return compute_auth_key_with_mauk_value_and_ciphertext(ciphertext, mauk)
+
+def compute_all_auth_keys(pan_id: str, efc_cm: str):
+    key_derivation_logger.info(f'Computing all 8 Authentication Keys for PAN {pan_id}')
+    key_derivation_logger.debug(f'Getting the Contract Provider. It is encodeed in the first 3 bytes of the EFC-CM...')
+    contract_provider = efc_cm[0:6]
+    ciphertext = compute_ciphertext(pan_id, contract_provider)
+    
+    auth_keys = {}
+    for key_ref in range(111, 119):
+        mauk_hex = master_keys[efc_cm][str(key_ref)]
+        mauk = bytes.fromhex(mauk_hex)
+        auth_keys[key_ref] = compute_auth_key_with_mauk_value_and_ciphertext(ciphertext, mauk)
+    return auth_keys
 
 
 def decipher_auth_key_with_mauk_value(auth_key: str, mauk: str):
@@ -149,6 +163,6 @@ def decipher_auth_key_with_mauk_value(auth_key: str, mauk: str):
     return deciphered_ciphertext.hex().upper()
 
 
-def decipher_auth_key_with_mauk_ref(auth_key: str, contract_provider: str, key_number: int):
-    mauk = master_keys[contract_provider][key_number - 1]
+def decipher_auth_key_with_mauk_ref(auth_key: str, efc_cm: str, key_number: int):
+    mauk = master_keys[efc_cm][key_number - 1]
     return decipher_auth_key_with_mauk_value(auth_key, mauk)
