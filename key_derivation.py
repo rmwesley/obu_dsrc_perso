@@ -8,8 +8,12 @@ import logging
 key_derivation_logger = logging.getLogger(__name__)
 
 mk_path = os.environ['MK_PATH']
+master_keys = {}
 with open(mk_path) as json_file:
-    master_keys = json.load(json_file)
+    master_keys_config = json.load(json_file)
+    for efc_cm, keyset_name in master_keys_config['efc_cm_to_keysets'].items():
+        master_keys[efc_cm] = master_keys_config['keysets'][keyset_name]
+
 
 # CODE FOR DERIVED ACCESS KEY (Uses MasterKey with ref 120)
 def compute_access_key(contract_provider, ac_cr_key_ref):
