@@ -15,10 +15,10 @@ from python_dll_loader import *
 from beacon_manager import BeaconManager
 
 root_logger = logging.getLogger()
+root_logger.setLevel(logging.DEBUG)
 
+# SETTING UP COLORED CONSOLE LOGGING
 console_handler = logging.StreamHandler()
-file_handler = logging.FileHandler('gea_bcm_dll_python_loader.log')
-
 class ColoredFormatterWrapper(logging.Formatter):
     GRAY = "\033[38m"
     YELLOW = "\033[33m"
@@ -44,17 +44,15 @@ class ColoredFormatterWrapper(logging.Formatter):
         color = ColoredFormatterWrapper.LEVEL_COLORS.get(record.levelno)
         colored_formatting = color + self.formatter.format(record) + ColoredFormatterWrapper.RESET_COLOR
         return colored_formatting
-        
 console_formatter = ColoredFormatterWrapper(logging.Formatter(f"%(levelname)-8s %(filename)22s:%(lineno)-4s - %(threadName)s: %(message)s"))
 console_handler.setFormatter(console_formatter)
+root_logger.addHandler(console_handler)
 
+# SETTING UP LOGGER FILE HANDLER
+file_handler = logging.FileHandler('gea_bcm_dll_python_loader.log')
 file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
 file_handler.setFormatter(file_formatter)
-
-root_logger.addHandler(console_handler)
 root_logger.addHandler(file_handler)
-root_logger.setLevel(logging.DEBUG)
-
 
 def callback_logger(cb_code, error_code):
     if cb_code == BCM_CALLBACK_Enum.BCM_CB_ERR:
