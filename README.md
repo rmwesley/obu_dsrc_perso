@@ -3,7 +3,13 @@ Required PIP libraries:
 - pycryptodome
 - logging
 - threading
+- requests_pkcs12
 
+# Installing dependencies
+For the time being we cannot run scripts.
+So manually install dependencies with `pip`, which can be run via `python`.
+Exemple:
+`.venv\Scripts\python.exe -m pip install requests_pkcs12`
 
 # Deploying the FastAPI in development mode
 To deploy the FastAPI, just run:
