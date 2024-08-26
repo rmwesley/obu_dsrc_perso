@@ -9,7 +9,7 @@ import logging
 
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
-from python_dll_loader import *
+from gea_bcm_dll_loader import *
 import custom_der_decoders
 
 bcm_logger = logging.getLogger(__name__)

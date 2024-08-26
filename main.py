@@ -11,7 +11,7 @@ import key_derivation
 
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
-from python_dll_loader import *
+from gea_bcm_dll_loader import *
 from beacon_manager import BeaconManager
 
 root_logger = logging.getLogger()
