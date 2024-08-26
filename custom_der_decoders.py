@@ -6,33 +6,6 @@ import datetime as dt
 import baudot
 from io import BytesIO
 
-class ReturnStatus(Exception):
-    noError = 0,
-    accessDenied = 1,
-    argumentError = 2,
-    complexityLimitation = 3,
-    processingFailure = 4,
-    processing = 5
-
-    def __init__(self, value) -> None:
-        self.value = value
-        self.message = f"Error response received from OBE! Erro code is {self.value} and error description is {self.get_description()}"
-    def get_description(self):
-        if self.value == ReturnStatus.noError:
-            return "Success!"
-        if self.value == ReturnStatus.accessDenied:
-            return "Access Denied!"
-        if self.value == ReturnStatus.argumentError:
-            return "Bad Request: Argument Error"
-        if self.value == ReturnStatus.complexityLimitation:
-            return "Complexity Limitation"
-        if self.value == ReturnStatus.processingFailure:
-            return "Processign Failure!"
-        if self.value == ReturnStatus.processing:
-            return "Processing..."
-        return "Unknown error code!"
-
-
 class ContainerType:
     INTEGER = 0
     OCTET_STRING = 2
@@ -156,6 +129,37 @@ FIXED_SIZE_CONTAINER_TYPE_SIZES = {
     ContainerType.PAYMBAL: 3,
     ContainerType.PAYMUNIT: 2,
 }
+
+
+class ReturnStatus(Exception):
+    noError = 0
+    accessDenied = 1
+    argumentError = 2
+    complexityLimitation = 3
+    processingFailure = 4
+    processing = 5
+
+    def __init__(self, value) -> None:
+        self.value = value
+        if value != ReturnStatus.noError:
+            #decoder_logger.error(f"Error response received from OBE! Error code is {value} and error description is {self.get_description()}")
+            decoder_logger.error(self.get_description())
+    def get_description(self):
+        #decoder_logger.debug(f"Getting description for ReturnStatus={self.value}")
+        if self.value == ReturnStatus.noError:
+            return "No Error!"
+        if self.value == ReturnStatus.accessDenied:
+            return "Access Denied!"
+        if self.value == ReturnStatus.argumentError:
+            return "Bad Request: Argument Error"
+        if self.value == ReturnStatus.complexityLimitation:
+            return "Complexity Limitation"
+        if self.value == ReturnStatus.processingFailure:
+            return "Processign Failure!"
+        if self.value == ReturnStatus.processing:
+            return "Processing..."
+        return f"Unknown ReturnStatus value ({self.value})!"
+
 
 decoder_logger = logging.getLogger(__name__)
 
@@ -326,14 +330,13 @@ def decode_get_response(datagram):
 
     return_status = None
     # Return Status is present
-    if get_return_status_present is not 0:
+    if get_return_status_present != 0:
         return_status = ReturnStatus(datagram[3])
-        get_response["ReturnStatus"] = return_status
+        get_response["ReturnStatus"] = return_status.value
 
         # Return Status is present and it is an error code
         if return_status.value != ReturnStatus.noError:
-            decoder_logger.error(return_status.get_description())
-            decoder_logger.error(f"GET.response for the request sent to EID {eid} contains an error status!")
+            decoder_logger.debug(f"GET.response for the request sent to EID {eid} contains an error status!")
             return get_response
     
     attribute_list, size_in_bytes = decode_attributes_list(datagram, 3)
@@ -348,7 +351,7 @@ def decode_set_response(datagram):
     if action_response_return_status_present is not 0:
         return_status = ReturnStatus(datagram[3])
 
-        decoder_logger.error(return_status.get_description())
+        #decoder_logger.error(return_status.get_description())
         decoder_logger.error(f"SET.response for the request sent to EID {eid} contains an error status!")
         #decoder_logger.debug(f"The error code is {return_status.value}")
         return {
@@ -367,7 +370,7 @@ def decode_action_response(datagram):
 
     if action_response_return_status_present is not 0:
         return_status = ReturnStatus(datagram[3])
-        decoder_logger.error(return_status.get_description())
+        #decoder_logger.error(return_status.get_description())
         decoder_logger.error(f"Action.response for the request sent to EID {eid} contains an error status!")
         decoder_logger.debug(f"The error code (return status) is {return_status.value}")
         return
@@ -609,7 +612,8 @@ class VST(dict):
                 vst_application_index = index
         if vst_application_index == -1:
             decoder_logger.info(f"EID {eid} is not present!")
-        decoder_logger.debug(f"Index of EID {eid} on VST is {vst_application_index}")
+        else:
+            decoder_logger.debug(f"Index of EID {eid} on VST is {vst_application_index}")
         return vst_application_index
 
 def decode_vst(vst_bytes):
