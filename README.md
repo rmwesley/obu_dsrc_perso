@@ -5,6 +5,16 @@ Required PIP libraries:
 - threading
 - requests_pkcs12
 
+# Rememeber to set the MK_PATH environment variable!
+This is the variable containing the path to the masterkey sets used for DSRC key derivation.
+To do so, either run the main class or run the following command on PowerShell:
+`$env:MK_PATH = Resolve-Path '..\..\master_keys_test.json' | select -ExpandProperty Path`
+
+You can also directly set this environment variable in Python code like so:
+`os.environ['MK_PATH'] = r"..\..\master_keys_test.json"`
+
+This is exactly the code that is executed in the `main.py` module to set the `MK_PATH` environment variable
+
 # Installing dependencies
 For the time being we cannot run scripts.
 So manually install dependencies with `pip`, which can be run via `python`.
