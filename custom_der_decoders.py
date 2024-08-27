@@ -166,6 +166,7 @@ decoder_logger = logging.getLogger(__name__)
 def encode_date_compact(datetime_timestamp: dt.datetime):
     return (datetime_timestamp.year - 1990 << 9) | (datetime_timestamp.month << 5) | (datetime_timestamp.day)
 def decode_date_compact(date_compact : int):
+    decoder_logger.debug(f"Decoding date from hex {date_compact:X}")
     day = date_compact & 0b11111
     month = (date_compact >> 5) & 0b1111
     year = (date_compact >> 9) + 1990
@@ -331,13 +332,15 @@ def decode_get_response(datagram):
     return_status = None
     # Return Status is present
     if get_return_status_present != 0:
+        # Return Status is present
+        decoder_logger.debug(f"GET.response for the request sent to EID {eid} contains a ReturnStatus code!")
+
         return_status = ReturnStatus(datagram[3])
         get_response["ReturnStatus"] = return_status.value
 
-        # Return Status is present and it is an error code
-        if return_status.value != ReturnStatus.noError:
-            decoder_logger.debug(f"GET.response for the request sent to EID {eid} contains an error status!")
-            return get_response
+        if return_status.value != 0:
+            decoder_logger.error(f"ReturnStatus contains an error code ({return_status.value})!")
+        return get_response
     
     attribute_list, size_in_bytes = decode_attributes_list(datagram, 3)
     get_response["AttributeList"] = attribute_list
@@ -456,13 +459,14 @@ def encode_bst_datagram(frag_header:int, manufacturer_id=0x31, individual_id=0x1
     beacon_id = list(beacon_id_int.to_bytes(6))
     
     utc_timestamp = list(int(time.time()).to_bytes(4))
+    decoder_logger.debug(f"UTC timestamp in hex format: {bytes(utc_timestamp).hex().upper()}")
     if non_mand_applications_present :
         bst_datagram = [frag_header] + beacon_id + utc_timestamp + [profile] + [len(mandapplications)] + mandapplications + [len(non_mand_applications)] + non_mand_applications + profile_list
     else:
         bst_datagram = [frag_header] + beacon_id + utc_timestamp + [profile] + [len(mandapplications)] + mandapplications + profile_list
     
     
-    decoder_logger.debug(f"Encoded BST in hex format: {bytes(bst_datagram).hex()}")
+    decoder_logger.debug(f"Encoded BST in hex format: {bytes(bst_datagram).hex().upper()}")
 
     return bst_datagram
 class BST(dict):
