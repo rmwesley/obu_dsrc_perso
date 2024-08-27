@@ -15,6 +15,20 @@ You can also directly set this environment variable in Python code like so:
 
 This is exactly the code that is executed in the `main.py` module to set the `MK_PATH` environment variable
 
+# Usage exemples
+## Recalculating the derived keys for an instance in a personalization's request body (JSON)
+Inside the `devices/` subfolder, you will find some python modules to update personalization requests!
+
+You need to put the original personalization inside the `perso_db.json` file.
+Then, also update the `pan_ids_to_update` variable (hardcoded for now).
+The, also update the masterkeys to be used in the `master_keys_test.json`.
+
+After doing these 3 things, you can finally run the script :
+`.venv\Scripts\python.exe -m devices.update_derived_keys_in_perso`
+
+Then just take the contents of `proxy_format.json` and send it to the Proxy.
+
+
 # Installing dependencies
 For the time being we cannot run scripts.
 So manually install dependencies with `pip`, which can be run via `python`.
