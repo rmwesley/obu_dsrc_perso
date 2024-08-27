@@ -178,7 +178,7 @@ class BeaconManager:
 
         if self.beacon_state.mode != BCM_MODE_Enum.BCM_MOD_Stopped:
             self.change_mode(BCM_MODE_Enum.BCM_MOD_Stopped)
-            bcm_logger.debug("Changed mode to stopped!")
+            bcm_logger.debug("Changed operating mode to stopped!")
             #self.close()
         self.update_state()
         return self.beacon_state
@@ -196,7 +196,7 @@ class BeaconManager:
         
     def update_state(self):
         if self.beacon_state.trxInProgress:
-            bcm_logger.debug(f"Do not try to update the state: A transaction is in progress! Otherwise, an Exception will be raised.")
+            bcm_logger.error(f"Do not try to update the state: A transaction is in progress! Otherwise, an Exception will be raised.")
             return
         
         bcm_logger.debug(f"Getting beacon state...")
@@ -216,8 +216,8 @@ class BeaconManager:
 
         return bcm_config
     
-    def change_mode(self, mode_code):
-        result = bcm_change_mode(self.reg_ptr, mode_code)
+    def change_mode(self, operating_mode_code):
+        result = bcm_change_mode(self.reg_ptr, operating_mode_code)
         bcm_error_handler(result)
     def close(self):
         result = bcm_close_manager(ctypes.byref(self.reg_ptr))
