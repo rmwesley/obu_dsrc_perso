@@ -218,7 +218,7 @@ class DSRC_Data_Container:
         self.content_type = content[0]
 
     def represent_payment_means(self):
-        pan_bytes = bytes(self.content[1 : 10])
+        pan_bytes = bytes(self.content[1 : 11])
         pm_expiry_date_bytes = int.from_bytes(bytes(self.content[11 : 13]))
         pm_usage_control = bytes(self.content[14 : 16])
         return {
