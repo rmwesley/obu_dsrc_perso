@@ -259,7 +259,7 @@ class DSRC_Data_Container:
             "type_of_contract": type_of_contract.hex().upper(),
             "context_version": context_version
         }
-    def __repr__(self):
+    def represent_as_dict(self):
         decoder_logger.debug(f"Representing {self.content.hex().upper()}")
         if self.content_type == ContainerType.VEHICLE_LPN:
             return self.represent_lpn()
@@ -269,6 +269,8 @@ class DSRC_Data_Container:
             return self.represent_efc_cm()
         else:
             return self.content.hex().upper()
+    def __repr__(self) -> str:
+        return repr(self.represent_as_dict())
 
 def decode_request(datagram):
     request_header = datagram[1] >> 4
@@ -431,7 +433,7 @@ def decode_attributes_list(datagram, attribute_list_start_index=3):
         attribute = {
             "attribute_id": attribute_id,
             "value": attribute_value_bytes.hex().upper(),
-            "representation": DSRC_Data_Container(attribute_value_bytes).__repr__()
+            "representation": DSRC_Data_Container(attribute_value_bytes).represent_as_dict()
             }
         decoded_attribute_list.append(attribute)
         decoder_logger.debug(f"Appended attribute to list! Current number of decoded attrs: {len(decoded_attribute_list)}")
