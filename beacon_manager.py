@@ -106,8 +106,22 @@ class BeaconManager:
             )
 
         bcm_error_handler(result)
+        self.update_beacon_id()
         self.handle_init_errors()
+    def update_beacon_id(self):
+        bcm_logger.debug("Getting Beacon ID...")
+        
+        beacon_id_buffer_array = ctypes.create_string_buffer(BCM_FIXED_SIZES_Enum.BCM_SIZE_BEACONID)
 
+        # Pointer where the BeaconID will be stored by BCM
+        lp_beacon_id = ctypes.cast(beacon_id_buffer_array, POINTER(BYTE))
+
+        bcm_get_beacon_id(self.reg_ptr, lp_beacon_id)
+        self.last_beacon_id = bytes(beacon_id_buffer_array[0:BCM_FIXED_SIZES_Enum.BCM_SIZE_BEACONID])
+
+        bcm_logger.debug(f"Latest Beacon ID in hex: {self.last_beacon_id.hex().upper()}")
+        return self.last_beacon_id
+    
     # Defining the Callback and Alarm default functions (they are both callback functions)
     # But alarm has a state
     # As those callback functions are directly called by the internal thread which is
@@ -256,7 +270,13 @@ class BeaconManager:
         bst_datagram = custom_der_decoders.encode_bst_datagram(self.frag_header, manufacturer_id, individual_id, mandapplications, profile, profile_list, non_mand_applications)
         if len(bst_datagram) > BCM_SIZEMAX_Enum.BCM_SIZEMAX_BST:
             bcm_logger.error(f"Datagram is too big! Will probably cause a BST error")
-        self.start_bst_wrapper(bytes(bst_datagram), bst_type)
+        result = self.start_bst_wrapper(bytes(bst_datagram), bst_type)
+
+        bcm_logger.debug("We not get the lastest BeaconID just after starting the BST")
+        self.update_beacon_id()
+        bcm_logger.debug(f"Last BeaconID: {self.last_beacon_id.hex().upper()}")
+
+        return result
         
     def start_bst_wrapper(self, bst_datagram:bytes, bst_type:int):
         bst_datagram_buffer = ctypes.create_string_buffer(bst_datagram, size=len(bst_datagram))
@@ -264,6 +284,7 @@ class BeaconManager:
         lp_bst_datagram = ctypes.cast(bst_datagram_buffer, POINTER(BYTE))
         byte_bst_type = BYTE(bst_type)
         bcm_logger.info(f"BST to be sent in hex format: {bst_datagram.hex().upper()}")
+        bcm_logger.info(f"Decoded BST: {bst_datagram.hex().upper()}")
 
         result = bcm_start_bst(self.reg_ptr,
                                lp_bst_datagram,
@@ -272,7 +293,8 @@ class BeaconManager:
         bcm_error_handler(result)
         bcm_logger.debug("No errors occurred: BST started!")
         st_bcm_reg_ptr_value = ctypes.cast(self.reg_ptr, ctypes.c_void_p).value
-        bcm_logger.debug(f"ST_BCM_REG (dereferenced value): {st_bcm_reg_ptr_value}")
+        #bcm_logger.debug(f"ST_BCM_REG (dereferenced value): {st_bcm_reg_ptr_value}")
+        return result
         
     
     # Wait for the application to be notified through a callback
