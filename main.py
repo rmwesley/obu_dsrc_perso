@@ -76,6 +76,10 @@ def main():
     result = beacon_manager.update_state()
     root_logger.debug(beacon_manager.beacon_state)
 
+    root_logger.debug("We now update/get the BeaconID according to the beacon before sending the BST")
+    result = beacon_manager.update_beacon_id()
+    root_logger.debug(f"BeaconID according to beacon: {beacon_manager.last_beacon_id.hex().upper()}")
+
     root_logger.debug("Initialization: Starting BST and getting VST...")
     vst_obj = beacon_manager.initialization()
 
