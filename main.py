@@ -128,11 +128,11 @@ def main():
         root_logger.info(f"Sending a GET request on EID {eid} for attribute 16, the LPN")
         response = beacon_manager.send_get_request(eid, access_credentials, [16])
         decoded_get_response = custom_der_decoders.decode_response(response)
-        root_logger.info(f"GET.response decoded: {decoded_get_response}")
+        root_logger.info(f"GET.response decoded: {json.dumps(decoded_get_response, indent=2)}")
         #root_logger.debug(f"Latest sent command decoded AttributesList: {beacon_manager.decode_last_get_response()}")
 
         decoded_lpn = custom_der_decoders.DSRC_Data_Container(bytes.fromhex("20" + efc_cm)).__repr__()
-        root_logger.debug(f"LPN decoding: {decoded_lpn}")
+        root_logger.debug(f"LPN decoding: {json.dumps(decoded_lpn, indent=2)}")
         
         # CARDME transaction required attributes
         #root_logger.debug(f"Sending a GET request on EID {eid} for multiple attributes at once")
@@ -142,12 +142,12 @@ def main():
         root_logger.info(f"Sending a GET request on EID {eid} for attributes {attribute_list}")
         response = beacon_manager.send_get_request(eid, access_credentials, attribute_list)
         decoded_get_response = custom_der_decoders.decode_response(response)
-        root_logger.info(f"GET.response decoded: {decoded_get_response}")
+        root_logger.info(f"GET.response decoded: {json.dumps(decoded_get_response, indent=2)}")
         
         root_logger.debug(f"Sending a GET_STAMPED request on EID {eid} for attribute 32, the PaymenMeans")
         response = beacon_manager.presentation_request(eid, access_credentials, [32])
         decoded_get_stamped_response = custom_der_decoders.decode_response(response)
-        root_logger.info(f"GET_STAMPED.response decoded: {decoded_get_stamped_response}")
+        root_logger.info(f"GET_STAMPED.response decoded: {json.dumps(decoded_get_stamped_response, indent=2)}")
 
         if decoded_get_stamped_response is not None:
             size = decoded_get_stamped_response['ResponseParameter']['AttributeList_size']
@@ -173,7 +173,7 @@ def main():
     root_logger.debug("We should send a SetMMI command on the main Thread to close the transaction")
     root_logger.debug("Otherwise, the transaction will remain unclosed and cause an error on the next execution")
     beacon_manager.set_mmi(True)
-    root_logger.info(f"VST: {vst_obj}")
+    root_logger.info(f"VST: {json.dumps(vst_obj, indent=2)}")
 
 # Main execution
 if __name__ == "__main__":
