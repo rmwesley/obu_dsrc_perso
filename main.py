@@ -1,8 +1,10 @@
 import os
+import json
+
 try:
     os.environ['MK_PATH']
 except:
-    os.environ['MK_PATH'] = r"..\..\master_keys_test.json"
+    os.environ['MK_PATH'] = r"..\master_keys_test.json"
 
 import threading
 import logging
@@ -72,6 +74,7 @@ def main():
     
     beacon_manager.change_mode(BCM_MODE_Enum.BCM_MOD_Transparent)
     root_logger.debug("Changed mode to transparent!")
+    
     root_logger.debug("Getting beacon state...")
     result = beacon_manager.update_state()
     root_logger.debug(beacon_manager.beacon_state)
@@ -81,14 +84,22 @@ def main():
     root_logger.debug(f"BeaconID according to beacon: {beacon_manager.last_beacon_id.hex().upper()}")
 
     root_logger.debug("Initialization: Starting BST and getting VST...")
-    vst_obj = beacon_manager.initialization()
+    vst_obj = beacon_manager.initialization(0x2221, 0x2777, mandapplications= [20], bst_type=BCM_BST_TYPE_Enum.BCM_BST_ChangeBID)
 
-    eid = 4
-    root_logger.debug(f"Getting the attribute 32=0x20, PaymentMeans, for the instance with EID {eid}...")
-    response = beacon_manager.send_get_request(eid, attribute_ids=[0x20])
-    root_logger.debug(f"BCM last command response in hex format: {beacon_manager.last_cmd_response.hex().upper()}")
+    # Requesting EFC, CCC and UNI
+    #required_applications = [1, 20, 29]
+    #Requesting only CCC
+    required_applications = [20]
+    root_logger.info(f"Preparing a BST requesting AIDs {required_applications}")
 
-    eid = 7
+    READ_TIS = False
+    if READ_TIS:
+        eid = 4
+        root_logger.debug(f"Getting the attribute 32=0x20, PaymentMeans, for the instance with EID {eid}...")
+        response = beacon_manager.send_get_request(eid, attribute_ids=[0x20])
+        root_logger.debug(f"BCM last command response in hex format: {beacon_manager.last_cmd_response.hex().upper()}")
+
+    eid = 99
     vst_application_index = vst_obj.get_eid_info(eid)
 
     # The EID is present in the VST! The beacon operator can do a transaction
@@ -114,45 +125,55 @@ def main():
         #root_logger.debug(f"AttributeList in hex: {attribute_list}")
 
 
-        root_logger.debug(f"Sending a GET request on EID {eid} for attribute 16, the LPN")
+        root_logger.info(f"Sending a GET request on EID {eid} for attribute 16, the LPN")
         response = beacon_manager.send_get_request(eid, access_credentials, [16])
-        root_logger.info(f"GET.response decoded: {custom_der_decoders.decode_response(response)}")
+        decoded_get_response = custom_der_decoders.decode_response(response)
+        root_logger.info(f"GET.response decoded: {decoded_get_response}")
         #root_logger.debug(f"Latest sent command decoded AttributesList: {beacon_manager.decode_last_get_response()}")
 
-        root_logger.debug(f"LPN decoding: {custom_der_decoders.DSRC_Data_Container(bytes.fromhex("20" + efc_cm)).__repr__()}")
-        root_logger.debug(f"Sending a GET request on EID {eid} for multiple attributes at once")
+        decoded_lpn = custom_der_decoders.DSRC_Data_Container(bytes.fromhex("20" + efc_cm)).__repr__()
+        root_logger.debug(f"LPN decoding: {decoded_lpn}")
         
-        response = beacon_manager.send_get_request(eid, access_credentials, [0, 16, 17, 20, 26, 33, 34])
-        root_logger.info(f"GET.response decoded: {custom_der_decoders.decode_response(response)}")
+        # CARDME transaction required attributes
+        #root_logger.debug(f"Sending a GET request on EID {eid} for multiple attributes at once")
+        cardme_attribute_list = [0, 16, 17, 20, 26, 33, 34]
+        belgium_attribute_list = [0, 16, 17, 20]
+        attribute_list = belgium_attribute_list
+        root_logger.info(f"Sending a GET request on EID {eid} for attributes {attribute_list}")
+        response = beacon_manager.send_get_request(eid, access_credentials, attribute_list)
+        decoded_get_response = custom_der_decoders.decode_response(response)
+        root_logger.info(f"GET.response decoded: {decoded_get_response}")
         
         root_logger.debug(f"Sending a GET_STAMPED request on EID {eid} for attribute 32, the PaymenMeans")
         response = beacon_manager.presentation_request(eid, access_credentials, [32])
         decoded_get_stamped_response = custom_der_decoders.decode_response(response)
         root_logger.info(f"GET_STAMPED.response decoded: {decoded_get_stamped_response}")
 
-        size = decoded_get_stamped_response['ResponseParameter']['AttributeList_size']
-        provided_authenticator = decoded_get_stamped_response['ResponseParameter']['Authenticator']
-        attribute_list_bytes = bytes(response[4 : 4 + size])
-        root_logger.debug(f"AttibuteList in hex: {attribute_list_bytes.hex().upper()}")
-        rnd_rse = beacon_manager.rnd_rse
-        root_logger.debug(f"RndRSE value: {rnd_rse:04X}")
+        if decoded_get_stamped_response is not None:
+            size = decoded_get_stamped_response['ResponseParameter']['AttributeList_size']
+            provided_authenticator = decoded_get_stamped_response['ResponseParameter']['Authenticator']
+            attribute_list_bytes = bytes(response[4 : 4 + size])
+            root_logger.debug(f"AttibuteList in hex: {attribute_list_bytes.hex().upper()}")
+            rnd_rse = beacon_manager.rnd_rse
+            root_logger.debug(f"RndRSE value: {rnd_rse:04X}")
 
-        pan_id = decoded_get_stamped_response['ResponseParameter']['AttributeList'][0]['representation']['PAN']
-        print("PAN ID:", pan_id)
+            pan_id = decoded_get_stamped_response['ResponseParameter']['AttributeList'][0]['representation']['PAN']
+            print("PAN ID:", pan_id)
 
-        authenticator = key_derivation.compute_authenticator_with_auk_ref(pan_id, efc_cm, attribute_list_bytes, rnd_rse, 115)
-        root_logger.debug(f"Authenticator provided by OBE: {provided_authenticator:08X}")
-        root_logger.debug(f"Authenticator computed by RSE: {authenticator:08X}")
+            authenticator = key_derivation.compute_authenticator_with_auk_ref(pan_id, efc_cm, attribute_list_bytes, rnd_rse, 115)
+            root_logger.debug(f"Authenticator provided by OBE: {provided_authenticator:08X}")
+            root_logger.debug(f"Authenticator computed by RSE: {authenticator:08X}")
 
-        if provided_authenticator != authenticator:
-            root_logger.error(f"The OBE is fraudulent!!")
-        else:
-            root_logger.info(f"OBE is authentic!!!")
+            if provided_authenticator != authenticator:
+                root_logger.error(f"The OBE is fraudulent!!")
+            else:
+                root_logger.info(f"OBE is authentic!!!")
 
 
     root_logger.debug("We should send a SetMMI command on the main Thread to close the transaction")
     root_logger.debug("Otherwise, the transaction will remain unclosed and cause an error on the next execution")
     beacon_manager.set_mmi(True)
+    root_logger.info(f"VST: {vst_obj}")
 
 # Main execution
 if __name__ == "__main__":
