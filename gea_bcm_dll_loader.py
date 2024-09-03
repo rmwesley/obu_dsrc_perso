@@ -448,7 +448,7 @@ BCM_LPFN_GetConfig = ctypes.WINFUNCTYPE(BCM_ERR,
                                          ST_BCM_REG_PTR,
                                          ST_BCM_CONFIG_PTR)
 BCM_LPFN_GetBeaconID = ctypes.WINFUNCTYPE(BCM_ERR,
-                                           POINTER(ST_BCM_REG_PTR),
+                                           ST_BCM_REG_PTR,
                                            POINTER(BYTE))
 BCM_LPFN_GetATLIO = ctypes.WINFUNCTYPE(BCM_ERR,
                                         POINTER(ST_BCM_REG_PTR),
