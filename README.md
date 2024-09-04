@@ -23,6 +23,8 @@ To execute main.py on the windows command line (cmd) or on PowerShell, just run:
 ## Recalculating the derived keys for an instance in a personalization's request body (JSON)
 Inside the `devices/` subfolder, you will find some python modules to update personalization requests!
 
+Remember to set the correct keyset name in the MasterKey file json.
+
 You need to put the original personalization inside the `perso_db.json` file.
 Then, also update the `pan_ids_to_update` variable (hardcoded for now).
 The, also update the masterkeys to be used in the `master_keys_test.json`.
@@ -32,6 +34,8 @@ After doing these 3 things, you can finally run the script :
 
 Then just take the contents of `proxy_format.json` and send it to the Proxy.
 
+# Generating SST004 Trust Objects for BALM
+Simply run `.venv\Scripts\python.exe TC_EETS_mks\sst004_xml_preparation.py`
 
 # Installing dependencies
 For the time being we cannot run scripts.
