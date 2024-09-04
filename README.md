@@ -22,19 +22,24 @@ To execute main.py on the windows command line (cmd) or on PowerShell, just run:
 
 ## Recalculating the derived keys for an instance in a personalization's request body (JSON)
 Inside the `devices/` subfolder, you will find some python modules to update personalization requests!
+Here I describe the procedure to generate a new personalization request json file with the derived keys recalculated and updated.
 
-Remember to set the correct keyset name in the MasterKey file json.
-
+1. Remember to set the correct keyset name in the MasterKey file json.
 You need to put the original personalizations inside the `perso_db.json` file.
 It is a JSON mapping each PAN to a unique personalization request.
+I manually updated the EFC-CM values (attribute 0) for the Asfinag (EG) instance for the MEDIA EG devices.
 
-Then, also update the `pan_ids_to_update` variable (hardcoded for now) in the `update_derived_keys_in_perso.py` module
-Then, also update the masterkeys to be used in the `master_keys_test.json`.
+2. Then, also update the `pan_ids_to_update` list (hardcoded for now) in the `update_derived_keys_in_perso.py` module.
+These are the only PANs that are going to be updated.
+
+3. Finally, update the masterkeys to be used in the `master_keys_test.json`.
 
 After doing these 3 things, you can finally run the script :
 `.venv\Scripts\python.exe -m devices.update_derived_keys_in_perso`
 
-Then just take the contents of `proxy_format.json` and send it to the Proxy.
+Then just take the contents of `proxy_format_fix.json` or `proxy_format_full.json`, validate and verify it, and send it to the Proxy.
+Use the `check_derived_keys.py` Python module to verify the derived keys.
+I also recommend to take the latest personalization sent and compare (do a diff) with the newly prepared one to confirm that only the attributes 111 through 118 and 120 were modified.
 
 # Generating SST004 Trust Objects for BALM
 Simply run `.venv\Scripts\python.exe TC_EETS_mks\sst004_xml_preparation.py`
