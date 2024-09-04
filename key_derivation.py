@@ -50,13 +50,13 @@ def compute_access_key(efc_cm, ac_cr_key_ref):
     key_derivation_logger.info(f"Access Key in hex: {access_key.hex().upper()}")
     return access_key
 
-def decrypt_access_key(efc_cm, access_key):
+def decrypt_access_key(efc_cm, access_key:bytes):
     key_derivation_logger.debug("Preparing the Master Access Key (MAcK) 3DES cipher")
     cipher = prepare_3DES_cipher(efc_cm, '120')
 
-    decrypted_ciphertext = cipher.decrypt(access_key)
-    key_derivation_logger.info(f"Ciphertext in hex: {decrypted_ciphertext.hex().upper()}")
-    return decrypted_ciphertext
+    decrypted_access_key = cipher.decrypt(access_key)
+    key_derivation_logger.info(f"Ciphertext (decrypted access key) in hex: {decrypted_access_key.hex().upper()}")
+    return decrypted_access_key
 
 def compute_access_credentials(contract_provider, rnd_obe, ac_cr_key_ref):
     # Compute the Access Key
@@ -75,10 +75,6 @@ def compute_access_credentials_with_access_key(contract_provider, rnd_obe:int, a
     ac_cr = int.from_bytes(output[:4])
     key_derivation_logger.info(f"Access Credentials in hex: {ac_cr:08X}")
     return ac_cr
-
-
-
-
 
 def compute_authenticator_with_auk_ref(pan_id, efc_cm, attribute_list_bytes, rnd_rse, auk_ref=115):
     authenticator_key = compute_auth_key_with_mauk_ref(pan_id, efc_cm, auk_ref)
@@ -100,8 +96,14 @@ def compute_authenticator_with_auk_ref(pan_id, efc_cm, attribute_list_bytes, rnd
 
     authenticator = int.from_bytes(des_output[0:4])
     return authenticator
-    
 
+def decrypt_auth_key(efc_cm, auth_key:bytes, auk_ref=115):
+    key_derivation_logger.debug("Preparing the Master Authentication Key (MAuK) 3DES cipher")
+    cipher = prepare_3DES_cipher(efc_cm, auk_ref)
+
+    decrypted_auth_key = cipher.decrypt(auth_key)
+    key_derivation_logger.info(f"Ciphertext (decrypted authentication key) in hex: {decrypted_auth_key.hex().upper()}")
+    return decrypted_auth_key
 
 # CODE FOR DERIVED AUTHENTICATION KEYS (Uses MasterKeys with ref 111 through 118)
 def compact_pan_type1(pan_str: str):
