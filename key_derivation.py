@@ -9,6 +9,11 @@ key_derivation_logger = logging.getLogger(__name__)
 
 # Loading the Master Keys from a JSON into a Python dict
 # This dict maps an EFC-CM in hex format to a MasterKeySet also in hex format
+try:
+    os.environ['MK_PATH']
+except:
+    os.environ['MK_PATH'] = r"..\master_keys_test.json"
+
 mk_path = os.environ['MK_PATH']
 master_keys = {}
 with open(mk_path) as json_file:
