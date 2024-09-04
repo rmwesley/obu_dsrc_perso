@@ -25,9 +25,11 @@ Inside the `devices/` subfolder, you will find some python modules to update per
 
 Remember to set the correct keyset name in the MasterKey file json.
 
-You need to put the original personalization inside the `perso_db.json` file.
-Then, also update the `pan_ids_to_update` variable (hardcoded for now).
-The, also update the masterkeys to be used in the `master_keys_test.json`.
+You need to put the original personalizations inside the `perso_db.json` file.
+It is a JSON mapping each PAN to a unique personalization request.
+
+Then, also update the `pan_ids_to_update` variable (hardcoded for now) in the `update_derived_keys_in_perso.py` module
+Then, also update the masterkeys to be used in the `master_keys_test.json`.
 
 After doing these 3 things, you can finally run the script :
 `.venv\Scripts\python.exe -m devices.update_derived_keys_in_perso`
