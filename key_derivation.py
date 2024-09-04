@@ -21,20 +21,25 @@ with open(mk_path) as json_file:
     for efc_cm, keyset_name in master_keys_config['efc_cm_to_keysets'].items():
         master_keys[efc_cm] = master_keys_config['keysets'][keyset_name]
 
-
-# CODE FOR DERIVED ACCESS KEY (Uses MasterKey with ref 120)
-def compute_access_key(efc_cm, ac_cr_key_ref):
-    # Get the Master Access Key (MAcK)
+def prepare_3DES_cipher(efc_cm:str, key_ref:str):
+    # In case key_ref is passed as an int instead of string...
+    key_ref = str(key_ref)
+    key_derivation_logger.debug(f"Getting the Master Key with ref {key_ref} for EFC-CM {efc_cm}")
     try :
-        master_access_key = bytes.fromhex(master_keys[efc_cm]["120"])
+        master_access_key = bytes.fromhex(master_keys[efc_cm][key_ref])
     except KeyError as e:
         key_derivation_logger.error(e)
         key_derivation_logger.error(f"We do not possess the masterkeys for EFC-CM {efc_cm}")
         key_derivation_logger.info(f"Please note: TIS instances have security level 0. They are thus not really protected and can be read freely.")
         raise(e)
-    # key_derivation_logger.debug(f"Master Access Key in hex: {master_access_key.hex().upper()}")
-    # Prepare the 3DES cipher with the MAcK
+    key_derivation_logger.debug("Preparing the 3DES cipher with the provided Master Key")
     cipher = DES3.new(master_access_key, DES3.MODE_ECB)
+    return cipher
+
+# CODE FOR DERIVED ACCESS KEY (Uses MasterKey with ref 120)
+def compute_access_key(efc_cm, ac_cr_key_ref):
+    key_derivation_logger.debug("Preparing the Master Access Key (MAcK) 3DES cipher")
+    cipher = prepare_3DES_cipher(efc_cm, '120')
     
     # We concatenate the AC_CR-KeyRef 4 times to get 8 bytes
     ciphertext = ac_cr_key_ref.to_bytes(2, 'big') * 4
@@ -44,6 +49,14 @@ def compute_access_key(efc_cm, ac_cr_key_ref):
     access_key = cipher.encrypt(ciphertext)
     key_derivation_logger.info(f"Access Key in hex: {access_key.hex().upper()}")
     return access_key
+
+def decrypt_access_key(efc_cm, access_key):
+    key_derivation_logger.debug("Preparing the Master Access Key (MAcK) 3DES cipher")
+    cipher = prepare_3DES_cipher(efc_cm, '120')
+
+    decrypted_ciphertext = cipher.decrypt(access_key)
+    key_derivation_logger.info(f"Ciphertext in hex: {decrypted_ciphertext.hex().upper()}")
+    return decrypted_ciphertext
 
 def compute_access_credentials(contract_provider, rnd_obe, ac_cr_key_ref):
     # Compute the Access Key
