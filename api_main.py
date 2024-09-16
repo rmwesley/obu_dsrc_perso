@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, APIRouter
 from pydantic import BaseModel, Field
 
 from fastapi.staticfiles import StaticFiles
@@ -27,8 +27,9 @@ async def beacon_manager_lifespan(beacon_manager_app: FastAPI):
     '''
     beacon_manager_app.state.beacon_manager.close()
 
-app = FastAPI(title="TSP tester app")
-beacon_manager_app = FastAPI(title="Beacon Manager", lifespan=beacon_manager_lifespan)
+app = FastAPI(title="TSP Testing API")
+beacon_manager_app = FastAPI(title="Beacon Manager API", lifespan=beacon_manager_lifespan)
+security_management_app = FastAPI(title="Security API")
 
 # Endpoint to get the current beacon state
 @beacon_manager_app.get("/beacon-state")
@@ -110,11 +111,11 @@ async def efc_function(request: EFCFunctionRequest):
     
     return {"response": response}
 
-app.mount("/beacon_management", beacon_manager_app)
+app.mount("/beacon", beacon_manager_app)
+app.mount("/security", beacon_manager_app)
 
-# Serve the index.html file
-app.mount("/", StaticFiles(directory="static/home/", html=True))
-
-# Serve the beacon_manager.html file
-beacon_manager_app.mount("/", StaticFiles(directory="static/beacon_manager/", html=True))
+# Serve the static HTML files for each subapp
+app.mount("/", StaticFiles(directory="static/", html=True), name="home")
+# beacon_manager_app.mount("/beacon_management", StaticFiles(directory="static/beacon_management/", html=True), name="Beacon Manager")
+# security_management_app.mount("/security_management", StaticFiles(directory="static/security_management/", html=True), name="Security Management")
 

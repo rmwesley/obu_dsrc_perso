@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <title>Automated UAT</title>
+  <meta charset="utf-8">
+  <meta name="description" content="Internal Axxès UAT tests">
+  <meta name="keywords" content="uat, testing">
+  <body>
+    <p>Sent PAN ID: {{ pan_id }}</p>
+    <p>Generated Auth Key: {{ generated_key }}</p>
+    <p>For key number {{ key_number }} of issuer {{ issuer_id }}</p>
+    <hr>
+    <p>Sent Auth Key: {{ auth_key }}</p>
+    <p>Deciphered Auth Key: {{ deciphered_ciphertext }}</p>
+    <hr>
+    <form action="/security_management/generate_auth_key", method="post">
+      <label for="pan_id">Device's PAN:</label>
+      <input id="pan_id" type="text" name="pan_id" value="{{ pan_id }}"/>
+      <label for="issuer_id">PAN issuer:</label>
+      <input id="issuer_id" type="text" name="issuer_id" value="{{ issuer_id }}"/>
+      <label for="key_number">Key number:</label>
+      <input id="key_number" type="int" name="key_number" value="{{ key_number }}"/>
+      <input type="submit" value="OK"/>
+    </form>
+    <hr>
+    <form action="/security_management/decipher_auth_key", method="post">
+      <label for="auth_key">Auth Key:</label>
+      <input id="auth_key" type="text" name="auth_key" value="{{ auth_key }}"/>
+      <label for="issuer_id">PAN issuer:</label>
+      <input id="issuer_id" type="text" name="issuer_id" value="{{ issuer_id }}"/>
+      <label for="key_number">Key number:</label>
+      <input id="key_number" type="int" name="key_number" value="{{ key_number }}"/>
+      <input type="submit" value="OK"/>
+    </form>
+  </body>
+</html>
