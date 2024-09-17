@@ -37,7 +37,7 @@ def prepare_3DES_cipher(efc_cm:str, key_ref:str):
     return cipher
 
 # CODE FOR DERIVED ACCESS KEY (Uses MasterKey with ref 120)
-def compute_access_key(efc_cm, ac_cr_key_ref):
+def compute_access_key(efc_cm:str, ac_cr_key_ref:int):
     key_derivation_logger.debug("Preparing the Master Access Key (MAcK) 3DES cipher")
     cipher = prepare_3DES_cipher(efc_cm, '120')
     
@@ -173,8 +173,12 @@ def compute_all_auth_keys(pan_id: str, efc_cm: str):
         auth_keys[key_ref] = compute_auth_key_with_mauk_value_and_ciphertext(ciphertext, mauk)
     return auth_keys
 
+def compute_all_auth_keys_and_return_hex(pan_id:str, efc_cm:str):
+    auth_keys_dict = compute_all_auth_keys(pan_id, efc_cm).items()
+    return {key_ref: computed_auk.hex().upper() for (key_ref, computed_auk) in auth_keys_dict}
 
-def decipher_auth_key_with_mauk_value(auth_key: str, mauk: str):
+
+def decipher_auth_key_with_mauk_value(auth_key: str, mauk: str) -> bytes:
     bytes_master_key = bytes.fromhex(mauk)
     # Prepare/configure the cipher with the master key
     cipher = DES3.new(bytes_master_key, DES3.MODE_ECB)
@@ -182,9 +186,9 @@ def decipher_auth_key_with_mauk_value(auth_key: str, mauk: str):
     # Decipher
     deciphered_ciphertext = cipher.decrypt(bytes.fromhex(auth_key))
 
-    return deciphered_ciphertext.hex().upper()
+    return deciphered_ciphertext
 
 
-def decipher_auth_key_with_mauk_ref(auth_key: str, efc_cm: str, key_number: int):
+def decipher_auth_key_with_mauk_ref(auth_key: str, efc_cm: str, key_number: int) -> bytes:
     mauk = master_keys[efc_cm][key_number - 1]
     return decipher_auth_key_with_mauk_value(auth_key, mauk)
