@@ -84,22 +84,24 @@ def main():
     root_logger.debug(f"BeaconID according to beacon: {beacon_manager.last_beacon_id.hex().upper()}")
 
     root_logger.debug("Initialization: Starting BST and getting VST...")
-    vst_obj = beacon_manager.initialization(0x2221, 0x2777, mandapplications= [20], bst_type=BCM_BST_TYPE_Enum.BCM_BST_ChangeBID)
+    # vst_obj = beacon_manager.initialization(0x221, 0x277, mandapplications= [20], bst_type=BCM_BST_TYPE_Enum.BCM_BST_ChangeBID)
+    vst_obj = beacon_manager.initialization(0x221, 0x277, mandapplications= [1, 20], bst_type=BCM_BST_TYPE_Enum.BCM_BST_ChangeBID)
 
     # Requesting EFC, CCC and UNI
-    #required_applications = [1, 20, 29]
+    required_applications = [1, 20, 29]
     #Requesting only CCC
-    required_applications = [20]
+    #required_applications = [20]
     root_logger.info(f"Preparing a BST requesting AIDs {required_applications}")
 
-    READ_TIS = False
+    READ_TIS = True
     if READ_TIS:
         eid = 4
         root_logger.debug(f"Getting the attribute 32=0x20, PaymentMeans, for the instance with EID {eid}...")
         response = beacon_manager.send_get_request(eid, attribute_ids=[0x20])
-        root_logger.debug(f"BCM last command response in hex format: {beacon_manager.last_cmd_response.hex().upper()}")
+        decoded_get_response = custom_der_decoders.decode_response(response)
+        root_logger.info(f"GET.response decoded: {json.dumps(decoded_get_response, indent=2)}")
 
-    eid = 99
+    eid = 2
     vst_application_index = vst_obj.get_eid_info(eid)
 
     # The EID is present in the VST! The beacon operator can do a transaction
