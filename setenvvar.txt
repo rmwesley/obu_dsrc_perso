@@ -1,1 +1,1 @@
-$env:MK_PATH = Resolve-Path '..\..\master_keys_test.json' | select -ExpandProperty Path
+$env:MK_PATH = Resolve-Path '..\master_keys_test.json' | select -ExpandProperty Path
