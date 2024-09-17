@@ -68,7 +68,7 @@ class AuthKeyDeciphReq(BaseModel):
             "examples": [
                 {
                     "efc_cm": "B2803100066F",
-                    "auth_key": "3156496003252000650",
+                    "auth_key": "5533F4A7E5D0EDC0",
                     "key_ref": 111
                 }
             ]

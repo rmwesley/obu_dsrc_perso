@@ -189,6 +189,6 @@ def decipher_auth_key_with_mauk_value(auth_key: str, mauk: str) -> bytes:
     return deciphered_ciphertext
 
 
-def decipher_auth_key_with_mauk_ref(auth_key: str, efc_cm: str, key_number: int) -> bytes:
-    mauk = master_keys[efc_cm][key_number - 1]
+def decipher_auth_key_with_mauk_ref(auth_key: str, efc_cm: str, key_ref: int) -> bytes:
+    mauk = master_keys[efc_cm][str(key_ref)]
     return decipher_auth_key_with_mauk_value(auth_key, mauk)
