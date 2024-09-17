@@ -9,7 +9,7 @@ except:
 import threading
 import logging
 import custom_der_decoders
-import key_derivation
+import dsrc_security
 
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
@@ -116,7 +116,7 @@ def main():
         ac_cr_key_ref = operator_application["AC_CR-KeyRef"]
 
         rnd_obe = operator_application["RndOBE"]
-        access_credentials = key_derivation.compute_access_credentials(efc_cm, rnd_obe, ac_cr_key_ref)
+        access_credentials = dsrc_security.compute_access_credentials(efc_cm, rnd_obe, ac_cr_key_ref)
         root_logger.debug(f"Generated Access Credentials in hex format: {access_credentials:08X}")
 
         # Operator auth key is optional, it is set to 111 by default
@@ -162,7 +162,7 @@ def main():
             pan_id = decoded_get_stamped_response['ResponseParameter']['AttributeList'][0]['representation']['PAN']
             print("PAN ID:", pan_id)
 
-            authenticator = key_derivation.compute_authenticator_with_auk_ref(pan_id, efc_cm, attribute_list_bytes, rnd_rse, 115)
+            authenticator = dsrc_security.compute_authenticator_with_auk_ref(pan_id, efc_cm, attribute_list_bytes, rnd_rse, 115)
             root_logger.debug(f"Authenticator provided by OBE: {provided_authenticator:08X}")
             root_logger.debug(f"Authenticator computed by RSE: {authenticator:08X}")
 
