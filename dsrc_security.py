@@ -183,10 +183,14 @@ def compute_all_auth_keys(pan_id: str, efc_cm: str):
         auth_keys[key_ref] = compute_auth_key_with_mauk_value_and_ciphertext(ciphertext, mauk)
     return auth_keys
 
-def compute_all_auth_keys_and_return_hex(pan_id:str, efc_cm:str):
-    auth_keys_dict = compute_all_auth_keys(pan_id, efc_cm).items()
-    return {key_ref: computed_auk.hex().upper() for (key_ref, computed_auk) in auth_keys_dict}
+def compute_all_auth_keys_and_return_hex_dict(pan_id:str, efc_cm:str):
+    auth_keys_dict = compute_all_auth_keys(pan_id, efc_cm)
+    return {key_ref: computed_auk.hex().upper() for (key_ref, computed_auk) in auth_keys_dict.items()}
 
+def compute_all_derived_keys_and_return_hex_dict(pan_id:str, efc_cm:str, ac_cr_key_ref:int):
+    derived_keys_dict = compute_all_auth_keys(pan_id, efc_cm)
+    derived_keys_dict[120] = compute_access_key(efc_cm, ac_cr_key_ref)
+    return {key_ref: computed_auk.hex().upper() for (key_ref, computed_auk) in derived_keys_dict.items()}
 
 def decipher_auth_key_with_mauk_value(auth_key: str, mauk: str) -> bytes:
     bytes_master_key = bytes.fromhex(mauk)
