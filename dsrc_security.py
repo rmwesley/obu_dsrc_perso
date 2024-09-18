@@ -21,6 +21,16 @@ with open(mk_path) as json_file:
     for efc_cm, keyset_name in master_keys_config['efc_cm_to_keysets'].items():
         master_keys[efc_cm] = master_keys_config['keysets'][keyset_name]
 
+
+def compute_master_key_kcv(master_key: bytes) -> dict[int, str]:
+    return DES3.new(master_key, DES3.MODE_ECB).encrypt(bytearray(8))[:3]
+
+def compute_kcvs_for_efc_cm_keyset(efc_cm: str):
+    kcv_dict = {}
+    for key_ref, master_key in master_keys[efc_cm].items():
+        kcv_dict[key_ref] = compute_master_key_kcv(bytes.fromhex(master_key)).hex().upper()
+    return kcv_dict
+
 def prepare_3DES_cipher(efc_cm:str, key_ref:str):
     # In case key_ref is passed as an int instead of string...
     key_ref = str(key_ref)

@@ -26,7 +26,23 @@ def home(request: Request):
         request,
         name="security_interface.html")
 
-class AccessKeyGenReq(BaseModel):
+class ComputeKCVsReq(BaseModel):
+    efc_cm: str
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "efc_cm": "B2803100066F"
+                }
+            ]
+        }
+    }
+@router.post("/compute_kcvs")
+def compute_key_checksum_values(req_body: ComputeKCVsReq):
+    return dsrc_security.compute_kcvs_for_efc_cm_keyset(req_body.efc_cm)
+
+class ComputeAccessKeyReq(BaseModel):
     efc_cm: str
     ac_cr_key_ref: constr(max_length=4)
 
@@ -41,7 +57,7 @@ class AccessKeyGenReq(BaseModel):
         }
     }
 
-class AuthKeyGenReq(BaseModel):
+class ComputeAuthKeyReq(BaseModel):
     pan_id: str
     efc_cm: str
     key_ref: Optional[int] = None
@@ -76,7 +92,7 @@ class AuthKeyDeciphReq(BaseModel):
     }
 
 @router.post("/compute_access_key")
-def compute_access_key(req_body: AccessKeyGenReq) -> str:
+def compute_access_key(req_body: ComputeAccessKeyReq) -> str:
     efc_cm = req_body.efc_cm
     ac_cr_key_ref = int(req_body.ac_cr_key_ref, 16)
     generated_key = dsrc_security.compute_access_key(efc_cm, ac_cr_key_ref).hex().upper()
@@ -84,7 +100,7 @@ def compute_access_key(req_body: AccessKeyGenReq) -> str:
     return generated_key
 
 @router.post("/compute_auth_keys")
-def compute_auth_keys(req_body: AuthKeyGenReq) -> dict[int, str]:
+def compute_auth_keys(req_body: ComputeAuthKeyReq) -> dict[int, str]:
     pan_id = req_body.pan_id
     efc_cm = req_body.efc_cm
     key_ref = req_body.key_ref
