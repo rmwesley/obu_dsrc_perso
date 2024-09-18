@@ -8,10 +8,10 @@ Required PIP libraries:
 # Rememeber to set the MK_PATH environment variable!
 This is the variable containing the path to the masterkey sets used for DSRC key derivation.
 To do so, either run the main class or run the following command on PowerShell:
-`$env:MK_PATH = Resolve-Path '..\..\master_keys_test.json' | select -ExpandProperty Path`
+`$env:MK_PATH = Resolve-Path '..\master_keys.json' | select -ExpandProperty Path`
 
 You can also directly set this environment variable in Python code like so:
-`os.environ['MK_PATH'] = r"..\..\master_keys_test.json"`
+`os.environ['MK_PATH'] = r"..\master_keys.json"`
 
 This is exactly the code that is executed in the `main.py` module to set the `MK_PATH` environment variable
 
@@ -32,7 +32,7 @@ I manually updated the EFC-CM values (attribute 0) for the Asfinag (EG) instance
 2. Then, also update the `pan_ids_to_update` list (hardcoded for now) in the `update_derived_keys_in_perso.py` module.
 These are the only PANs that are going to be updated.
 
-3. Finally, update the masterkeys to be used in the `master_keys_test.json`.
+3. Finally, update the masterkeys to be used in the `master_keys.json` file.
 
 After doing these 3 things, you can finally run the script :
 `.venv\Scripts\python.exe -m devices.update_derived_keys_in_perso`

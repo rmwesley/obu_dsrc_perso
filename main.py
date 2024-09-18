@@ -4,7 +4,7 @@ import json
 try:
     os.environ['MK_PATH']
 except:
-    os.environ['MK_PATH'] = r"..\master_keys_test.json"
+    os.environ['MK_PATH'] = r"..\master_keys.json"
 
 import threading
 import logging

@@ -12,7 +12,7 @@ key_derivation_logger = logging.getLogger(__name__)
 try:
     os.environ['MK_PATH']
 except:
-    os.environ['MK_PATH'] = r"..\master_keys_test.json"
+    os.environ['MK_PATH'] = r"..\master_keys.json"
 
 mk_path = os.environ['MK_PATH']
 master_keys = {}
