@@ -258,14 +258,10 @@ class ST_BCM_STATE(ctypes.Structure):
     _fields_ = [("state", BYTE),
                 ("mode", BYTE),
                 ("trxInProgress", BYTE)]
+    def getdict(self):
+        return {"state": self.state, "mode": self.mode, "trxInProgress": self.trxInProgress}
     def __repr__(self):
-        str_state = f"<ST_BCM_STATE:\n"
-            
-        for field_name, field_type in self._fields_:
-            str_state += f"  {field_name}: {getattr(self, field_name)}\n"
-        str_state += f">"
-        
-        return str_state
+        return repr(self.getdict())
     def get_description(self):
         str_state = f"BCM_STATE:\n"
         if self.state == BCM_ERR_Enum.BCM_NoError:

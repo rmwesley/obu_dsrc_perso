@@ -222,7 +222,7 @@ class BeaconManager:
         bcm_logger.debug(f"Beacon state: {self.beacon_state}")
         return result
     def get_last_beacon_state(self):
-        return vars(self.beacon_state)
+        return repr(self.beacon_state)
     
     def get_config(self):
         bcm_config = ST_BCM_CONFIG()
