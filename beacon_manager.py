@@ -15,7 +15,9 @@ import custom_der_decoders
 bcm_logger = logging.getLogger(__name__)
 SERIAL_MODE = True
 
-def bcm_error_handler(bcm_error):
+def bcm_error_handler(bcm_error: BCMError):
+    if not isinstance(bcm_error, int):
+        raise TypeError(bcm_error)
     if bcm_error != BCM_ERR_Enum.BCM_NoError:
         bcm_logger.error(f"Beacon Manager Error {bcm_error}: {BCMError.get_error_description(bcm_error)}")
 
@@ -31,12 +33,11 @@ def cb_error_handler(callback_code, error_code):
         # No Exception/Error is raised on callbacks.
         # We only log them
         bcm_logger.error(f"Callback Error ({callback_code}), with BCM error code {error_code}")
-        bcm_logger.error(f"Callback Error ({callback_code}), with BCM error code {error_code}")
         bcm_error_handler(error_code)
 
 # Defining the BeaconManager class
 class BeaconManager:
-    def __init__(self, beacon_alarm_state_polling_ms=1000, external_callback:callable = None, external_alarm:callable = None):
+    def __init__(self, serial_port=None, beacon_alarm_state_polling_ms=1000, external_callback:callable = None, external_alarm:callable = None):
         self.beacon_state_ok_trigger = threading.Event()
         self.no_transaction_in_progress = threading.Event()
         self.callback_received_notifier = threading.Condition()
@@ -74,7 +75,8 @@ class BeaconManager:
         user_registration = 7
         user_params = None
         if SERIAL_MODE:
-            serial_port = 1
+            if serial_port is None:
+                serial_port = 10
             serial_port_speed = BaudRate_Enum.BCM_CFG_115200
             result = bcm_init_manager_fnc(
                 ctypes.byref(self.reg_ptr),
@@ -272,7 +274,7 @@ class BeaconManager:
             bcm_logger.error(f"Datagram is too big! Will probably cause a BST error")
         result = self.start_bst_wrapper(bytes(bst_datagram), bst_type)
 
-        bcm_logger.debug("We not get the lastest BeaconID just after starting the BST")
+        bcm_logger.debug("We now get the lastest BeaconID just after starting the BST")
         self.update_beacon_id()
         bcm_logger.debug(f"Last BeaconID: {self.last_beacon_id.hex().upper()}")
 
