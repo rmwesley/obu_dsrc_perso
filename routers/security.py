@@ -82,7 +82,9 @@ def compute_key_checksum_values(req_body: ComputeAllDerivedKeysReq):
     derived_keys_hex_dict = dsrc_security.compute_all_derived_keys_and_return_hex_dict(req_body.pan_id, req_body.efc_cm, ac_cr_key_ref)
     return [{
         "attributeId": key_ref,
-        "attributeValue": "0208" + derived_key_value
+        "attributeValue": {
+            "octet_string": "0208" + derived_key_value
+        }
     } for key_ref, derived_key_value in derived_keys_hex_dict.items()]
 
 @router.post("/compute_all_derived_keys_in_proxy_format")

@@ -38,14 +38,24 @@ async def update_beacon_state(request: Request):
     request.app.state.beacon_manager.update_state()
     return {"beacon_state": request.app.state.beacon_manager.get_last_beacon_state()}
 
-class ChangeModeRequest(BaseModel):
+class ChangeModeRequest(Request):
     mode: int
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "mode": 1
+                }
+            ]
+        }
+    }
 # Endpoint to change the beacon mode
 @router.post("/change-mode")
 async def change_mode(request: ChangeModeRequest):
-    mode = request.mode
+    mode = (await request.json())["mode"]
     request.app.state.beacon_manager.change_mode(mode)
-    return {"message": f"Changed mode to {mode}"}
+    return {"message": f"Changed mode to {mode}!"}
 
 # Endpoint to initialize the beacon to access EFC functions
 @router.post("/initialize-transaction")
@@ -83,7 +93,7 @@ async def get_rq(request: Request):
     command_respose = request.app.state.beacon_manager.send_get_stamped_request()
     return {"command_respose" : command_respose}
 
-class EFCFunctionRequest(BaseModel):
+class EFCFunctionRequest(Request):
     function_type: str
     eid: int
     attribute_id_list: list = Field(default_factory=list)
@@ -92,16 +102,17 @@ class EFCFunctionRequest(BaseModel):
 # Endpoint to handle EFC functions
 @router.post("/efc-function")
 async def efc_function(request: EFCFunctionRequest):
-    function_type = request.function_type
-    eid = request.eid
-    attribute_id_list = request.attribute_id_list
+    request_body = (await request.json())
+    function_type = request_body.function_type
+    eid = request_body.eid
+    attribute_id_list = request_body.attribute_id_list
 
     if function_type == "GET":
         response = request.app.state.beacon_manager.send_get_request(eid, attribute_id_list)
     elif function_type == "SET":
         response = request.app.state.beacon_manager.send_set_request(eid, attribute_id_list)
     elif function_type == "ACTION":
-        action_type = request.action_type
+        action_type = request_body.action_type
         response = request.app.state.beacon_manager.send_action_request(eid, action_type, attribute_id_list)
     else:
         raise HTTPException(status_code=400, detail="Invalid function type")
