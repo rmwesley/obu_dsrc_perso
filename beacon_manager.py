@@ -2,8 +2,7 @@ import ctypes
 from ctypes import POINTER, wintypes, c_void_p, c_char_p, c_uint, c_int, c_byte, c_bool, c_ulong, c_ushort
 from ctypes.wintypes import HWND, LPCWSTR, UINT, BYTE, WORD, DWORD, CHAR, BOOL, LPBYTE
 
-import time
-import sys
+import json
 import threading
 import logging
 
@@ -12,8 +11,10 @@ import logging
 from gea_bcm_dll_loader import *
 import custom_ITS_per_decoders
 
+with open('settings/beacon_config.json', 'r') as beacon_settings_file:
+    beacon_settings = json.load(beacon_settings_file)
+
 bcm_logger = logging.getLogger(__name__)
-SERIAL_MODE = True
 
 def bcm_error_handler(bcm_error: BCMError):
     if not isinstance(bcm_error, int):
@@ -74,9 +75,9 @@ class BeaconManager:
         # It is thus free for use in our application
         user_registration = 7
         user_params = None
-        if SERIAL_MODE:
+        if beacon_settings["communication_mode"] == "serial":
             if serial_port is None:
-                serial_port = 10
+                serial_port = beacon_settings["serial_config"]["beacon_serial_port"]
             serial_port_speed = BaudRate_Enum.BCM_CFG_115200
             result = bcm_init_manager_fnc(
                 ctypes.byref(self.reg_ptr),
@@ -91,14 +92,14 @@ class BeaconManager:
                 self.c_alarm
             )
         else:
-            beacon_ip_address = '133.38.40.152'.encode('utf-8')
-            beacon_tcp_port = 10001
+            beacon_ip_address_bytes = beacon_settings["tcp_ip_config"]["ip_address"].encode('utf-8')
+            beacon_tcp_port = beacon_settings["tcp_ip_config"]["tcp_port"]
 
             result = bcm_init_manager_fnc_ip(
                 ctypes.byref(self.reg_ptr),
                 user_registration,
                 user_params,
-                beacon_ip_address,
+                beacon_ip_address_bytes,
                 beacon_tcp_port,
                 BCM_STATION_Enum.BCM_Secondary,
                 beacon_alarm_state_polling_ms,
@@ -196,7 +197,6 @@ class BeaconManager:
         if self.beacon_state.mode != BCM_MODE_Enum.BCM_MOD_Stopped:
             self.change_mode(BCM_MODE_Enum.BCM_MOD_Stopped)
             bcm_logger.debug("Changed operating mode to stopped!")
-            #self.close()
         self.update_state()
         return self.beacon_state
 
@@ -461,4 +461,3 @@ class BeaconManager:
         if self.beacon_state.mode != BCM_MODE_Enum.BCM_MOD_Stopped:
             self.change_mode(BCM_MODE_Enum.BCM_MOD_Stopped)
             bcm_logger.debug("Changed mode to stopped!")
-            #self.close()

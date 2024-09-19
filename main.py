@@ -77,7 +77,6 @@ def main():
     
     root_logger.debug("Getting beacon state...")
     result = beacon_manager.update_state()
-    root_logger.debug(beacon_manager.beacon_state)
 
     root_logger.debug("We now update/get the BeaconID according to the beacon before sending the BST")
     result = beacon_manager.update_beacon_id()
