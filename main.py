@@ -8,7 +8,7 @@ except:
 
 import threading
 import logging
-import custom_der_decoders
+import custom_ITS_per_decoders
 import dsrc_security
 
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
@@ -98,7 +98,7 @@ def main():
         eid = 4
         root_logger.debug(f"Getting the attribute 32=0x20, PaymentMeans, for the instance with EID {eid}...")
         response = beacon_manager.send_get_request(eid, attribute_ids=[0x20])
-        decoded_get_response = custom_der_decoders.decode_response(response)
+        decoded_get_response = custom_ITS_per_decoders.decode_response(response)
         root_logger.info(f"GET.response decoded: {json.dumps(decoded_get_response, indent=2)}")
 
     eid = 2
@@ -110,7 +110,7 @@ def main():
         operator_application = vst_obj['Applications'][vst_application_index]
 
         efc_cm = operator_application['EFC-CM']
-        root_logger.debug(f"EFC-CM decoding: {custom_der_decoders.DSRC_Data_Container(bytes.fromhex("20" + efc_cm)).__repr__()}")
+        root_logger.debug(f"EFC-CM decoding: {custom_ITS_per_decoders.DSRC_Data_Container(bytes.fromhex("20" + efc_cm)).__repr__()}")
 
         root_logger.debug(f"AC_CR-KeyRef in hex: {operator_application["AC_CR-KeyRef"]:04X}")
         ac_cr_key_ref = operator_application["AC_CR-KeyRef"]
@@ -129,11 +129,11 @@ def main():
 
         root_logger.info(f"Sending a GET request on EID {eid} for attribute 16, the LPN")
         response = beacon_manager.send_get_request(eid, access_credentials, [16])
-        decoded_get_response = custom_der_decoders.decode_response(response)
+        decoded_get_response = custom_ITS_per_decoders.decode_response(response)
         root_logger.info(f"GET.response decoded: {json.dumps(decoded_get_response, indent=2)}")
         #root_logger.debug(f"Latest sent command decoded AttributesList: {beacon_manager.decode_last_get_response()}")
 
-        decoded_lpn = custom_der_decoders.DSRC_Data_Container(bytes.fromhex("20" + efc_cm)).__repr__()
+        decoded_lpn = custom_ITS_per_decoders.DSRC_Data_Container(bytes.fromhex("20" + efc_cm)).__repr__()
         root_logger.debug(f"LPN decoding: {json.dumps(decoded_lpn, indent=2)}")
         
         # CARDME transaction required attributes
@@ -143,12 +143,12 @@ def main():
         attribute_list = belgium_attribute_list
         root_logger.info(f"Sending a GET request on EID {eid} for attributes {attribute_list}")
         response = beacon_manager.send_get_request(eid, access_credentials, attribute_list)
-        decoded_get_response = custom_der_decoders.decode_response(response)
+        decoded_get_response = custom_ITS_per_decoders.decode_response(response)
         root_logger.info(f"GET.response decoded: {json.dumps(decoded_get_response, indent=2)}")
         
         root_logger.debug(f"Sending a GET_STAMPED request on EID {eid} for attribute 32, the PaymenMeans")
         response = beacon_manager.presentation_request(eid, access_credentials, [32])
-        decoded_get_stamped_response = custom_der_decoders.decode_response(response)
+        decoded_get_stamped_response = custom_ITS_per_decoders.decode_response(response)
         root_logger.info(f"GET_STAMPED.response decoded: {json.dumps(decoded_get_stamped_response, indent=2)}")
 
         if decoded_get_stamped_response is not None:

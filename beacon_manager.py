@@ -10,7 +10,7 @@ import logging
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
 from gea_bcm_dll_loader import *
-import custom_der_decoders
+import custom_ITS_per_decoders
 
 bcm_logger = logging.getLogger(__name__)
 SERIAL_MODE = True
@@ -265,14 +265,14 @@ class BeaconManager:
         vst_datagram = self.get_vst()
         bcm_logger.debug("We now instantiate a VST object from the response")
         # Decoding VST
-        self.last_vst_obj = custom_der_decoders.VST(vst_datagram)
+        self.last_vst_obj = custom_ITS_per_decoders.VST(vst_datagram)
 
         bcm_logger.debug(f'Decoded VST: {self.last_vst_obj}')
         return self.last_vst_obj
 
     # Start sending a BST
     def start_bst(self, manufacturer_id=0x31, individual_id=0x111, mandapplications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
-        bst_datagram = custom_der_decoders.encode_bst_datagram(self.frag_header, manufacturer_id, individual_id, mandapplications, profile, profile_list, non_mand_applications)
+        bst_datagram = custom_ITS_per_decoders.encode_bst_datagram(self.frag_header, manufacturer_id, individual_id, mandapplications, profile, profile_list, non_mand_applications)
         if len(bst_datagram) > BCM_SIZEMAX_Enum.BCM_SIZEMAX_BST:
             bcm_logger.error(f"Datagram is too big! Will probably cause a BST error")
         result = self.start_bst_wrapper(bytes(bst_datagram), bst_type)
@@ -376,7 +376,7 @@ class BeaconManager:
         return self.last_cmd_response
     
     def send_get_request(self, eid, access_credentials=None, attribute_ids=None, close = False):
-        datagram = custom_der_decoders.encode_get_request_datagram(self.frag_header, eid, access_credentials, attribute_ids, close)
+        datagram = custom_ITS_per_decoders.encode_get_request_datagram(self.frag_header, eid, access_credentials, attribute_ids, close)
         return self.send_command(datagram)
 
     def presentation_request(self, eid:int, access_credentials:int, attribute_ids=[], operator_auk_ref=111, response_expected=True, close=False):
@@ -419,7 +419,7 @@ class BeaconManager:
         # Attribute 0x20 = 32 is the PAN, or PaymentMeans
         # So the AttributeIdList is set by default to [0x20]
 
-        self.rnd_rse = custom_der_decoders.encode_date_and_time()
+        self.rnd_rse = custom_ITS_per_decoders.encode_date_and_time()
         rnd_rse_list = [4] + list(self.rnd_rse.to_bytes(4, 'big'))
         presentation_request = [self.frag_header, action_req_header, eid, action_type] + ac_cr_list  + [GetStampedRq_action_type] + attribute_id_list + rnd_rse_list + [operator_auk_ref]
         
@@ -435,13 +435,13 @@ class BeaconManager:
         set_mmi_datagram = bytes(set_mmi_request)
         self.send_command(set_mmi_datagram, close)
     def decode_last_get_response(self):
-        decoded_response = custom_der_decoders.decode_response(self.last_cmd_response)
+        decoded_response = custom_ITS_per_decoders.decode_response(self.last_cmd_response)
         if decoded_response is None:
             return
         try:
             return_status = decoded_response["ReturnStatus"]
             raise(return_status)
-        except custom_der_decoders.ReturnStatus:
+        except custom_ITS_per_decoders.ReturnStatus:
             bcm_logger.error(return_status.message)
         decoded_response
 
