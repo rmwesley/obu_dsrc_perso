@@ -166,9 +166,10 @@ class BeaconManager:
             Beacon not in stopped mode
             etc."""
 
-        bcm_logger.debug("Trying to update beacon state...")
+        bcm_logger.debug("Trying get the updated beacon's state...")
         result = self.update_state()
 
+        bcm_logger.debug(f"Beacon State iterator keys: {list(iter(self.beacon_state))}")
         bcm_logger.debug(self.beacon_state)
 
         if result == BCM_ERR_Enum.BCM_NoError:
@@ -211,18 +212,20 @@ class BeaconManager:
         bcm_logger.debug("\tCB notification received!!! You can receive a VST now.")
         
     def update_state(self):
+        bcm_logger.debug(f"Udpating beacon state...")
         if self.beacon_state.trxInProgress:
             bcm_logger.error(f"Do not try to update the state: A transaction is in progress! Otherwise, an Exception will be raised.")
             return
         
-        bcm_logger.debug(f"Getting beacon state...")
-        
         result = bcm_check_state(self.reg_ptr, ctypes.byref(self.beacon_state))
-        
+        bcm_error_handler(result)
+
         bcm_logger.debug(f"Beacon state: {self.beacon_state}")
         return result
     def get_last_beacon_state(self):
-        return repr(self.beacon_state)
+        bcm_logger.debug(f"Beacon state dict: {dict(self.beacon_state)}")
+        # return vars(self.beacon_state)
+        return dict(self.beacon_state)
     
     def get_config(self):
         bcm_config = ST_BCM_CONFIG()
