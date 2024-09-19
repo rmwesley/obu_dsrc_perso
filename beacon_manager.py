@@ -235,7 +235,7 @@ class BeaconManager:
     def change_mode(self, operating_mode_code):
         result = bcm_change_mode(self.reg_ptr, operating_mode_code)
         bcm_error_handler(result)
-    def close(self):
+    def shutdown(self):
         result = bcm_close_manager(ctypes.byref(self.reg_ptr))
         bcm_error_handler(result)
         
