@@ -51,8 +51,9 @@ Exemple:
 `.venv\Scripts\python.exe -m pip install requests_pkcs12`
 
 # Deploying the FastAPI in development mode
-To deploy the FastAPI, just run:
+To deploy the FastAPI on localhost:8000, just run:
 `.venv\Scripts\fastapi.exe dev .\api_main.py`
+or even `.venv\Scripts\fastapi.exe dev api_main.py --port 8001` if the port 8000 is occupied.
 The main UI (HMI) is contained in the index.html file and it is served in the root.
 So just go to localhost:8000 in your browser to view the index.
 To view FastAPI's Swagger UI instead, visit localhost:8000/docs.
