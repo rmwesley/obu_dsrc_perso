@@ -1,7 +1,7 @@
 {
   "communication_mode": "serial",
   "serial_config": {
-    "beacon_serial_port": 5
+    "beacon_serial_port": 10
   },
   "tcp_ip_config": {
     "ip_address": "133.38.40.152",

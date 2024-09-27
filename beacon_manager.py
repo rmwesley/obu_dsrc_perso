@@ -16,7 +16,9 @@ with open('settings/beacon_config.json', 'r') as beacon_settings_file:
 
 bcm_logger = logging.getLogger(__name__)
 
-def bcm_error_handler(bcm_error: BCMError):
+class BeaconInitError(Exception):
+    pass
+def bcm_error_wrapper(bcm_error: BCMError):
     if not isinstance(bcm_error, int):
         raise TypeError(bcm_error)
     if bcm_error != BCM_ERR_Enum.BCM_NoError:
@@ -25,8 +27,9 @@ def bcm_error_handler(bcm_error: BCMError):
         # Handle error case if needed
         if bcm_error == BCM_ERR_Enum.BCM_TrxInProgress:
             bcm_logger.error(f"Cannot execute function because a transaction is in progress!")
-
-        bcm_logger.error(f"Beacon Manager Error {bcm_error}: {BCMError.get_error_description(bcm_error)}")
+        if bcm_error == -1010:
+            raise BeaconInitError(f"Beacon Manager Error {bcm_error}: {BCMError.get_error_description(bcm_error)}")
+        raise Exception(f"Unknown Beacon Manager Error {bcm_error}: {BCMError.get_error_description(bcm_error)}")
 
 def cb_error_handler(callback_code, error_code):
     if callback_code == BCM_CALLBACK_Enum.BCM_CB_ERR:
@@ -34,7 +37,7 @@ def cb_error_handler(callback_code, error_code):
         # No Exception/Error is raised on callbacks.
         # We only log them
         bcm_logger.error(f"Callback Error ({callback_code}), with BCM error code {error_code}")
-        bcm_error_handler(error_code)
+        bcm_error_wrapper(error_code)
 
 # Defining the BeaconManager class
 class BeaconManager:
@@ -108,7 +111,7 @@ class BeaconManager:
                 self.c_alarm
             )
 
-        bcm_error_handler(result)
+        bcm_error_wrapper(result)
         self.update_beacon_id()
         self.handle_init_errors()
     def update_beacon_id(self):
@@ -139,7 +142,7 @@ class BeaconManager:
 
         try:
             cb_error_handler(callback_type, error_code)
-            bcm_error_handler(error_code)
+            bcm_error_wrapper(error_code)
             bcm_logger.debug("CB: OK! No error occurred in callback: This means a VST was received!")
             bcm_logger.debug("CB: We thus notify all threads waiting on the callback_received_notifier condition")
             with self.callback_received_notifier:
@@ -179,7 +182,7 @@ class BeaconManager:
             bcm_logger.error("Wait for socket to connect before sending commands!")
         else:
             bcm_logger.error("We could not handle the error, so it will be raised")
-            bcm_error_handler(result)
+            bcm_error_wrapper(result)
         
         self.wait_until_ok()
 
@@ -218,7 +221,7 @@ class BeaconManager:
             return
         
         result = bcm_check_state(self.reg_ptr, ctypes.byref(self.beacon_state))
-        bcm_error_handler(result)
+        bcm_error_wrapper(result)
 
         bcm_logger.debug(f"Beacon state: {self.beacon_state}")
         return result
@@ -231,20 +234,20 @@ class BeaconManager:
         bcm_config = ST_BCM_CONFIG()
         
         result = bcm_get_config(self.reg_ptr, ctypes.byref(bcm_config))
-        bcm_error_handler(result)
+        bcm_error_wrapper(result)
 
         return bcm_config
     
     def change_mode(self, operating_mode_code):
         result = bcm_change_mode(self.reg_ptr, operating_mode_code)
-        bcm_error_handler(result)
+        bcm_error_wrapper(result)
     def shutdown(self):
         result = bcm_close_manager(ctypes.byref(self.reg_ptr))
-        bcm_error_handler(result)
+        bcm_error_wrapper(result)
         
     def reset_manager(self):
         result = bcm_reset(self.reg_ptr)
-        bcm_error_handler(result)
+        bcm_error_wrapper(result)
     
     def initialization(self, manufacturer_id=0x31, individual_id=0x111, mandapplications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
         if self.beacon_state.trxInProgress:
@@ -295,7 +298,7 @@ class BeaconManager:
                                lp_bst_datagram,
                                DWORD(len(bst_datagram)),
                                byte_bst_type)
-        bcm_error_handler(result)
+        bcm_error_wrapper(result)
         bcm_logger.debug("No errors occurred: BST started!")
         st_bcm_reg_ptr_value = ctypes.cast(self.reg_ptr, ctypes.c_void_p).value
         #bcm_logger.debug(f"ST_BCM_REG (dereferenced value): {st_bcm_reg_ptr_value}")
@@ -332,7 +335,7 @@ class BeaconManager:
                              )
         
         bcm_logger.debug("Handling errors...")
-        bcm_error_handler(result)
+        bcm_error_wrapper(result)
         bcm_logger.debug("VST received!")
 
         # Slicing a ctypes array or pointer will automatically produce a Python list
@@ -367,7 +370,7 @@ class BeaconManager:
             close
             )
         self.last_cmd_req = bytes(datagram)
-        bcm_error_handler(result)
+        bcm_error_wrapper(result)
 
         # Iterating cmd response pointer to get its value/contents
         response_as_list = lp_cmd_response_datagram[:cmd_response_size.value]
