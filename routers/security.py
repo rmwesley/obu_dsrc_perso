@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Request
-
+from fastapi.responses import FileResponse
 from fastapi.templating import Jinja2Templates
-import logging
 
 from pydantic import BaseModel, Field
 from typing import Optional
 
+import logging
 import dsrc_security
 
 templates = Jinja2Templates(directory="templates")
@@ -24,6 +24,9 @@ def home(request: Request):
     return templates.TemplateResponse(
         request,
         name="security_interface.html")
+@router.get('/security.svg', include_in_schema=False)
+async def favicon():
+    return FileResponse('static/security_interface/security.svg')
 
 class ComputeKCVsReq(BaseModel):
     efc_cm: str

@@ -1,4 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import FileResponse
+from fastapi.templating import Jinja2Templates
 
 from pydantic import BaseModel, Field
 from beacon_manager import BeaconManager
@@ -6,6 +8,16 @@ from beacon_manager import BeaconManager
 router = APIRouter(
     prefix="/beacon",
     tags=["Beacon Interface"])
+
+templates = Jinja2Templates(directory="templates")
+@router.get('/', include_in_schema=False)
+def get_beacon_interface(request: Request):
+    return templates.TemplateResponse(
+        request,
+        name="beacon_interface.html")
+@router.get('/beacon.svg', include_in_schema=False)
+async def favicon():
+    return FileResponse('static/beacon_interface/beacon.svg')
 
 # Endpoint to initialize the Beacon Manager
 # It instantiates a BeaconManager object and keeps it as a global attribute
