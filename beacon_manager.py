@@ -16,7 +16,7 @@ with open('settings/beacon_config.json', 'r') as beacon_settings_file:
 
 bcm_logger = logging.getLogger(__name__)
 
-class BeaconInitError(Exception):
+class BeaconError(Exception):
     pass
 def bcm_error_wrapper(bcm_error: BCMError):
     if not isinstance(bcm_error, int):
@@ -27,9 +27,7 @@ def bcm_error_wrapper(bcm_error: BCMError):
         # Handle error case if needed
         if bcm_error == BCM_ERR_Enum.BCM_TrxInProgress:
             bcm_logger.error(f"Cannot execute function because a transaction is in progress!")
-        if bcm_error == -1010:
-            raise BeaconInitError(f"Beacon Manager Error {bcm_error}: {BCMError.get_error_description(bcm_error)}")
-        raise Exception(f"Unknown Beacon Manager Error {bcm_error}: {BCMError.get_error_description(bcm_error)}")
+        raise BeaconError(f"{bcm_error}: {BCMError.get_error_description(bcm_error)}")
 
 def cb_error_handler(callback_code, error_code):
     if callback_code == BCM_CALLBACK_Enum.BCM_CB_ERR:
