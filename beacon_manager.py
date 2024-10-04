@@ -174,8 +174,10 @@ class BeaconManager:
             etc."""
 
         bcm_logger.debug("Trying get the updated beacon's state...")
+        bcm_logger.debug("Trying get the updated beacon's state...")
         result = self.update_state()
 
+        bcm_logger.debug(f"Beacon State iterator keys: {list(iter(self.beacon_state))}")
         bcm_logger.debug(f"Beacon State iterator keys: {list(iter(self.beacon_state))}")
         bcm_logger.debug(self.beacon_state)
 
@@ -219,6 +221,7 @@ class BeaconManager:
         
     def update_state(self):
         bcm_logger.debug(f"Udpating beacon state...")
+        bcm_logger.debug(f"Udpating beacon state...")
         if self.beacon_state.trxInProgress:
             bcm_logger.error(f"Do not try to update the state: A transaction is in progress! Otherwise, an Exception will be raised.")
             return
@@ -229,6 +232,9 @@ class BeaconManager:
         bcm_logger.debug(f"Beacon state: {self.beacon_state}")
         return result
     def get_last_beacon_state(self):
+        bcm_logger.debug(f"Beacon state dict: {dict(self.beacon_state)}")
+        # return vars(self.beacon_state)
+        return dict(self.beacon_state)
         bcm_logger.debug(f"Beacon state dict: {dict(self.beacon_state)}")
         # return vars(self.beacon_state)
         return dict(self.beacon_state)
