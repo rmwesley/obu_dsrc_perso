@@ -11,10 +11,10 @@ import logging
 from gea_bcm_dll_loader import *
 import custom_ITS_per_decoders
 
-with open('settings/beacon_config.json', 'r') as beacon_settings_file:
-    beacon_settings = json.load(beacon_settings_file)
-
 bcm_logger = logging.getLogger(__name__)
+
+with open('settings/beacon_manager_config.json', 'r') as beacon_manager_settings_file:
+    beacon_manager_settings = json.load(beacon_manager_settings_file)
 
 class BeaconError(Exception):
     pass
@@ -76,9 +76,14 @@ class BeaconManager:
         # It is thus free for use in our application
         user_registration = 7
         user_params = None
+
+        bcm_logger.debug(f"Current beacon manager settings in moment of initialization: {json.dumps(beacon_manager_settings, indent=2)}")
+        beacon_name = beacon_manager_settings["chosen_beacon_name"]
+        beacon_settings = beacon_manager_settings["TGBV"]
         if beacon_settings["communication_mode"] == "serial":
             if serial_port is None:
                 serial_port = beacon_settings["serial_config"]["beacon_serial_port"]
+            bcm_logger.info(f"Beacon serial port: {serial_port}")
             serial_port_speed = BaudRate_Enum.BCM_CFG_115200
             result = bcm_init_manager_fnc(
                 ctypes.byref(self.reg_ptr),

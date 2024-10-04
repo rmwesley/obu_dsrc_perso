@@ -156,7 +156,7 @@ class BCMError:
     }
     
     def get_error_description(error_code):
-        return BCMError.errors.get(error_code, "Unknown error")
+        return BCMError.errors.get(error_code, "Unknown error or no description")
 
 # Define necessary types from ctypes and wintypes
 BCM_ERR = c_int
