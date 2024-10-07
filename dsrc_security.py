@@ -49,7 +49,10 @@ def prepare_3DES_cipher(efc_cm:str, key_ref:str):
 # CODE FOR DERIVED ACCESS KEY (Uses MasterKey with ref 120)
 def compute_access_key(efc_cm:str, ac_cr_key_ref:int):
     key_derivation_logger.debug("Preparing the Master Access Key (MAcK) 3DES cipher")
-    cipher = prepare_3DES_cipher(efc_cm, '120')
+    try:
+        cipher = prepare_3DES_cipher(efc_cm, '120')
+    except:
+        return bytes(0)
     
     # We concatenate the AC_CR-KeyRef 4 times to get 8 bytes
     ciphertext = ac_cr_key_ref.to_bytes(2, 'big') * 4
@@ -152,7 +155,11 @@ def compute_ciphertext(pan_id, contract_provider):
 
 def compute_auth_key_with_mauk_value_and_ciphertext(ciphertext, master_key: bytes):
     # Prepare/configure the cipher with the master key
-    cipher = DES3.new(master_key, DES3.MODE_ECB)
+    try:
+        cipher = DES3.new(master_key, DES3.MODE_ECB)
+    except:
+        return bytes(0)
+    
     auth_key = cipher.encrypt(ciphertext)
 
     key_derivation_logger.debug(f'Computed Auth key: {auth_key.hex().upper()}')
