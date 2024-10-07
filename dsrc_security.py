@@ -192,6 +192,14 @@ def compute_all_derived_keys_and_return_hex_dict(pan_id:str, efc_cm:str, ac_cr_k
     derived_keys_dict[120] = compute_access_key(efc_cm, ac_cr_key_ref)
     return {key_ref: computed_auk.hex().upper() for (key_ref, computed_auk) in derived_keys_dict.items()}
 
+def compute_all_derived_keys_for_available_keysets_and_return_hex_dict(pan_id:str, ac_cr_key_ref:int):
+    efc_cm_to_derived_keys = {}
+    for efc_cm in master_keys:
+        derived_keys_dict = compute_all_auth_keys(pan_id, efc_cm)
+        derived_keys_dict[120] = compute_access_key(efc_cm, ac_cr_key_ref)
+        efc_cm_to_derived_keys[efc_cm] = {key_ref: computed_auk.hex().upper() for (key_ref, computed_auk) in derived_keys_dict.items()}
+    return efc_cm_to_derived_keys
+
 def decipher_auth_key_with_mauk_value(auth_key: str, mauk: str) -> bytes:
     bytes_master_key = bytes.fromhex(mauk)
     # Prepare/configure the cipher with the master key
