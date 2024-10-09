@@ -201,6 +201,15 @@ def compute_all_derived_keys_and_return_hex_dict(pan_id:str, efc_cm:str, ac_cr_k
     derived_keys_dict[120] = compute_access_key(efc_cm, ac_cr_key_ref)
     return {key_ref: computed_auk.hex().upper() for (key_ref, computed_auk) in derived_keys_dict.items()}
 
+def compute_all_derived_keys_for_device_type_and_return_hex_dict(pan_id:str, device_type:str, ac_cr_key_ref:int):
+    efc_cm_to_derived_keys = {}
+    for efc_cm, keyset_name in device_type_to_keyset_mapping[device_type].items():
+        derived_keys_dict = compute_all_auth_keys(pan_id, efc_cm)
+        derived_keys_dict[120] = compute_access_key(efc_cm, ac_cr_key_ref)
+        efc_cm_to_derived_keys[efc_cm] = {key_ref: computed_auk.hex().upper() for (key_ref, computed_auk) in derived_keys_dict.items()}
+    return efc_cm_to_derived_keys
+
+
 def compute_all_derived_keys_for_available_keysets_and_return_hex_dict(pan_id:str, ac_cr_key_ref:int):
     efc_cm_to_derived_keys = {}
     for efc_cm in master_keys:
