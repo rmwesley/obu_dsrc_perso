@@ -18,9 +18,11 @@ mk_path = os.environ['MK_PATH']
 master_keys = {}
 with open(mk_path) as json_file:
     master_keys_config = json.load(json_file)
-    for efc_cm, keyset_name in master_keys_config['efc_cm_to_keysets'].items():
-        master_keys[efc_cm] = master_keys_config['keysets'][keyset_name]
 
+    device_type_to_keyset_mapping = master_keys_config["device_type_to_efc_cm_keyset_name_pairs_mapping"]
+    for efc_cm_to_keyset_name_mapping in device_type_to_keyset_mapping.values():
+        for efc_cm, keyset_name in efc_cm_to_keyset_name_mapping.items():
+            master_keys[efc_cm] = master_keys_config['keysets'][keyset_name]
 
 def compute_master_key_kcv(master_key: bytes) -> dict[int, str]:
     return DES3.new(master_key, DES3.MODE_ECB).encrypt(bytearray(8))[:3]
