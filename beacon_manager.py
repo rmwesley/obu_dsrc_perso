@@ -388,7 +388,7 @@ class BeaconManager:
         return self.last_cmd_response
     
     def send_get_request(self, eid, access_credentials=None, attribute_ids=None, close = False):
-        datagram = custom_ITS_per_decoders.encode_get_request_datagram(self.frag_header, eid, access_credentials, attribute_ids, close)
+        datagram = custom_ITS_per_decoders.encode_get_request_datagram(self.frag_header, eid, access_credentials, attribute_ids)
         return self.send_command(datagram)
 
     def presentation_request(self, eid:int, access_credentials:int, attribute_ids=[], operator_auk_ref=111, response_expected=True, close=False):

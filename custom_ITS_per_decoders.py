@@ -300,7 +300,7 @@ def decode_action_request(datagram):
     if action_type == 10:
         decoder_logger("Decoding a SET_MMI.request...")
 
-def encode_get_request_datagram(frag_header, eid, access_credentials=None, attribute_ids=None, close = False):
+def encode_get_request_datagram(frag_header, eid, access_credentials=None, attribute_ids=None):
     decoder_logger.debug(f"Preparing a GET.request to get attributes with ids {attribute_ids}")
     # 0b0110 0000 = 0x60
     get_req_header = 0x60
