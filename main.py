@@ -8,13 +8,15 @@ except:
 
 import threading
 import logging
-import custom_ITS_per_decoders
 import dsrc_security
+
+from ASN.compiled_DSRC_instances import CCCv4_1 as CCC2019
+from ASN.compiled_DSRC_instances import EFCv10_1 as EFC
+from ASN.compiled_DSRC_instances import LACv2_1
 
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
-from gea_bcm_dll_loader import *
-from beacon_manager import BeaconManager
+from gea_bcm_dll_wrapper import *
 
 root_logger = logging.getLogger()
 root_logger.setLevel(logging.DEBUG)
@@ -51,7 +53,7 @@ console_handler.setFormatter(console_formatter)
 root_logger.addHandler(console_handler)
 
 # SETTING UP LOGGER FILE HANDLER
-file_handler = logging.FileHandler('gea_bcm_dll_python_loader.log')
+file_handler = logging.FileHandler('gea_bcm_dll_python_wrapper.log')
 file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
 file_handler.setFormatter(file_formatter)
 root_logger.addHandler(file_handler)
@@ -83,8 +85,8 @@ def main():
     root_logger.debug(f"BeaconID according to beacon: {beacon_manager.last_beacon_id.hex().upper()}")
 
     root_logger.debug("Initialization: Starting BST and getting VST...")
-    # vst_obj = beacon_manager.initialization(0x221, 0x277, mandapplications= [20], bst_type=BCM_BST_TYPE_Enum.BCM_BST_ChangeBID)
-    vst_obj = beacon_manager.initialization(0x221, 0x277, mandapplications= [1, 20], bst_type=BCM_BST_TYPE_Enum.BCM_BST_ChangeBID)
+
+    vst_obj = beacon_manager.initialization()
 
     # Requesting EFC, CCC and UNI
     required_applications = [1, 20, 29]
@@ -96,12 +98,11 @@ def main():
     if READ_TIS:
         eid = 4
         root_logger.debug(f"Getting the attribute 32=0x20, PaymentMeans, for the instance with EID {eid}...")
-        response = beacon_manager.send_get_request(eid, attribute_ids=[0x20])
-        decoded_get_response = custom_ITS_per_decoders.decode_response(response)
-        root_logger.info(f"GET.response decoded: {json.dumps(decoded_get_response, indent=2)}")
+        get_response = beacon_manager.send_get_request(eid, attrIdList=[0x20])
+        root_logger.info(f"GET.response decoded: {get_response}")
 
-    eid = 2
-    vst_application_index = vst_obj.get_eid_info(eid)
+    eid = 3
+    vst_application_index = beacon_manager.get_eid_info(eid)
 
     # The EID is present in the VST! The beacon operator can do a transaction
     if vst_application_index >= 0:
