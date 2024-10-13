@@ -1,123 +1,29 @@
-import ctypes
-from ctypes import POINTER, wintypes, c_void_p, c_char_p, c_uint, c_int, c_byte, c_bool, c_ulong, c_ushort
-from ctypes.wintypes import HWND, LPCWSTR, UINT, BYTE, WORD, DWORD, CHAR, BOOL, LPBYTE
+from ASN.compiled_DSRC_instances import CCCv4_1 as CCC2019
+from ASN.compiled_DSRC_instances import EFCv10_1 as EFC
+from ASN.compiled_DSRC_instances import LACv2_1
 
-import json
-import threading
+from datetime import datetime
 import logging
 
-# Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
-# Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
-from gea_bcm_dll_loader import *
-import custom_ITS_per_decoders
+from gea_bcm_dll_wrapper import BCM_GEA_DLL_Wrapper
 
 bcm_logger = logging.getLogger(__name__)
 
-with open('settings/beacon_manager_config.json', 'r') as beacon_manager_settings_file:
-    beacon_manager_settings = json.load(beacon_manager_settings_file)
-
-class BeaconError(Exception):
-    pass
-def bcm_error_wrapper(bcm_error: BCMError):
-    if not isinstance(bcm_error, int):
-        raise TypeError(bcm_error)
-    if bcm_error != BCM_ERR_Enum.BCM_NoError:
-        bcm_logger.error(f"Beacon Manager Error {bcm_error}: {BCMError.get_error_description(bcm_error)}")
-
-        # Handle error case if needed
-        if bcm_error == BCM_ERR_Enum.BCM_TrxInProgress:
-            bcm_logger.error(f"Cannot execute function because a transaction is in progress!")
-        raise BeaconError(f"{bcm_error}: {BCMError.get_error_description(bcm_error)}")
-
-def cb_error_handler(callback_code, error_code):
-    if callback_code == BCM_CALLBACK_Enum.BCM_CB_ERR:
-        bcm_logger.error(BCM_Callback.get_description(callback_code))
-        # No Exception/Error is raised on callbacks.
-        # We only log them
-        bcm_logger.error(f"Callback Error ({callback_code}), with BCM error code {error_code}")
-        bcm_error_wrapper(error_code)
-
 # Defining the BeaconManager class
 class BeaconManager:
-    def __init__(self, serial_port=None, beacon_alarm_state_polling_ms=1000, external_callback:callable = None, external_alarm:callable = None):
-        self.beacon_state_ok_trigger = threading.Event()
-        self.no_transaction_in_progress = threading.Event()
-        self.callback_received_notifier = threading.Condition()
-        self.transaction_lock = threading.Lock()
-        self.transaction_in_progress = False
-
-        self.external_callback = external_callback
-        self.external_alarm = external_alarm
-
-        # This is the BCM structure pointer. It is managed by the DLL
-        self.reg_ptr = ST_BCM_REG_PTR()
-        # This is the BCM state pointer. It is managed by the DLL
-        self.beacon_state = ST_BCM_STATE()
-        # Last received VST
-        self.last_vst = bytes()
-        self.last_vst_obj = {}
-        
-        # PDU cannot be 0 or 1
-        pdu = 0x2
-        # PDU is at most 4 bits
-        pdu &= 0xF
-        # The fragmentation header is 0b1xxxx001, where xxxx is the PDU
-        self.frag_header = 0x81 | (pdu << 3)
-        
-        self.c_callback = BCM_CB_HANDLER(self.bcm_callback)
-        self.c_alarm = BCM_ALARM_HANDLER(self.bcm_alarm)
-        
-        bcm_logger.debug("Initializing GEA BCM...")
-        
-        send_event_polling_OK = False
-        if beacon_alarm_state_polling_ms > 0:
-            send_event_polling_OK = True
-        # The user registration number is not used internally by the BCM DLL
-        # It is thus free for use in our application
-        user_registration = 7
-        user_params = None
-
-        bcm_logger.debug(f"Current beacon manager settings in moment of initialization: {json.dumps(beacon_manager_settings, indent=2)}")
-        beacon_name = beacon_manager_settings["chosen_beacon_name"]
-        beacon_settings = beacon_manager_settings["TGBV"]
-        if beacon_settings["communication_mode"] == "serial":
-            if serial_port is None:
-                serial_port = beacon_settings["serial_config"]["beacon_serial_port"]
-            bcm_logger.info(f"Beacon serial port: {serial_port}")
-            serial_port_speed = BaudRate_Enum.BCM_CFG_115200
-            result = bcm_init_manager_fnc(
-                ctypes.byref(self.reg_ptr),
-                user_registration,
-                user_params,
-                serial_port,
-                serial_port_speed,
-                BCM_STATION_Enum.BCM_Secondary,
-                beacon_alarm_state_polling_ms,
-                send_event_polling_OK,
-                self.c_callback,
-                self.c_alarm
-            )
-        else:
-            beacon_ip_address_bytes = beacon_settings["tcp_ip_config"]["ip_address"].encode('utf-8')
-            beacon_tcp_port = beacon_settings["tcp_ip_config"]["tcp_port"]
-
-            result = bcm_init_manager_fnc_ip(
-                ctypes.byref(self.reg_ptr),
-                user_registration,
-                user_params,
-                beacon_ip_address_bytes,
-                beacon_tcp_port,
-                BCM_STATION_Enum.BCM_Secondary,
-                beacon_alarm_state_polling_ms,
-                send_event_polling_OK,
-                self.c_callback,
-                self.c_alarm
-            )
-
-        bcm_error_wrapper(result)
-        self.update_beacon_id()
-        self.handle_init_errors()
-    def update_beacon_id(self):
+    def __init__(self):
+        chosen_beacon_name = beacon_manager_settings["chosen_beacon_name"]
+        self.switch_beacon(chosen_beacon_name)
+    def switch_beacon(self, chosen_beacon_name):
+        if chosen_beacon_name == "TGBV":
+            self.beacon_l7_wrapper.close()
+            self.beacon_l7_wrapper = BCM_GEA_DLL_Wrapper()
+    def update_beacon_id(self) -> EFC.EfcDsrcGeneric.BeaconID:
+        """
+        This is a specific function for TGBV hardware since managing the BeaconId is not straightforward and maybe even buggy with it.
+        There seems to be a bug for GEA_CATL_TGB_V1_3#.
+        Not a bug in GEA_TGB_VOIE_V1.5# and TGB_VOIE#1.8.0#, though.
+        """
         bcm_logger.debug("Getting Beacon ID...")
         
         beacon_id_buffer_array = ctypes.create_string_buffer(BCM_FIXED_SIZES_Enum.BCM_SIZE_BEACONID)
@@ -130,141 +36,53 @@ class BeaconManager:
 
         bcm_logger.debug(f"Latest Beacon ID in hex: {self.last_beacon_id.hex().upper()}")
         return self.last_beacon_id
-    
-    # Defining the Callback and Alarm default functions (they are both callback functions)
-    # But alarm has a state
-    # As those callback functions are directly called by the internal thread which is
-    # managing the communication with the beacon they should return as
-    # quickly as possible
-    def bcm_callback(self, reg_ptr, callback_type, error_code):
-        bcm_logger.debug("CB: Callback notification received!")
-        if callable(self.external_callback):
-            bcm_logger.debug("CB: External callback function present! (from the frontend, for exemple)")
-            bcm_logger.debug("CB: We now call/notify it!")
-            self.external_callback(callback_type, error_code)
+    # Start sending a BST
+    def start_bst(self, manufacturer_id=0x31, individual_id=0x111, mandapplications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
+        mandApplications = [{'aid': mandatory_aid} for mandatory_aid in mandapplications]
 
-        try:
-            cb_error_handler(callback_type, error_code)
-            bcm_error_wrapper(error_code)
-            bcm_logger.debug("CB: OK! No error occurred in callback: This means a VST was received!")
-            bcm_logger.debug("CB: We thus notify all threads waiting on the callback_received_notifier condition")
-            with self.callback_received_notifier:
-                self.callback_received_notifier.notify_all()
-        except:
-            bcm_logger.error(f"CB: Error, with BCM error code {error_code}")
-            return
-    def bcm_alarm(self, reg_ptr, alarm_type, alarm_state):
-        bcm_logger.debug(f"AL: Alarm notification ({alarm_type}) received!")
-        if callable(self.external_alarm):
-            bcm_logger.debug("AL: External alarm function present! (from the frontend, for exemple)")
-            bcm_logger.debug("AL: We now call/notify it!")
-            self.external_alarm(alarm_type, alarm_state)
+        bst_value = {
+            'rsu': {
+                'manufacturerid': manufacturer_id,
+                'individualid': individual_id
+                },
+            'time': datetime.utcnow().timestamp(),
+            'profile': profile,
+            'mandApplications': mandApplications,
+            'profileList': profile_list
+            }
+        EFC.EfcDsrcGeneric.BST.set_val(bst_value)
+        self.last_sent_bst = EFC.EfcDsrcGeneric.BST.to_uper()
+        bcm_logger.debug(f"BST in UPER encoding in hex: {self.last_sent_bst.hex().upper()}")
 
-        if alarm_type == BCM_ALARMS_Enum.BCM_AlarmPeriph or alarm_type == BCM_ALARMS_Enum.BCM_AlarmBeacon:
-            bcm_logger.error(f"Error in Alarm! Description: {BCM_Alarm.get_description(alarm_type)}")
-            return
-        bcm_logger.debug(f"Alarm description: {BCM_Alarm.get_description(alarm_type)}")
-        if alarm_type == BCM_ALARMS_Enum.BCM_EventPollingOK:
-            self.beacon_state_ok_trigger.set()
-        return
-    def handle_init_errors(self):
-        """This function handles initialization issues, like:
-            Unclosed transactions
-            Beacon not in stopped mode
-            etc."""
+        EFC.EfcDsrcGeneric.T_APDUs.set_val(('initialisation-request', EFC.EfcDsrcGeneric.BST._val))
+        bcm_logger.debug(f"T_APDU containing BST in JER: {EFC.EfcDsrcGeneric.T_APDUs.to_jer()}")
 
-        bcm_logger.debug("Trying get the updated beacon's state...")
-        bcm_logger.debug("Trying get the updated beacon's state...")
-        result = self.update_state()
+        self.last_sent_fragmented_t_apdu_containing_bst = self.frag_header + EFC.EfcDsrcGeneric.T_APDUs.to_uper()
+        bcm_logger.debug(f"Fragmented T_APDU containing BST: {self.last_sent_fragmented_t_apdu_containing_bst.hex().upper()}")
 
-        bcm_logger.debug(f"Beacon State iterator keys: {list(iter(self.beacon_state))}")
-        bcm_logger.debug(f"Beacon State iterator keys: {list(iter(self.beacon_state))}")
-        bcm_logger.debug(self.beacon_state)
+        if len(self.last_sent_bst) > BCM_SIZEMAX_Enum.BCM_SIZEMAX_BST:
+            bcm_logger.error(f"Datagram is too big! Will probably cause a BST error")
+        result = self.start_bst_wrapper(self.last_sent_fragmented_t_apdu_containing_bst, bst_type)
 
-        if result == BCM_ERR_Enum.BCM_NoError:
-            pass
-        elif result == BCM_ERR_Enum.BCM_SocketNotConnected:
-            bcm_logger.error("Wait for socket to connect before sending commands!")
-        else:
-            bcm_logger.error("We could not handle the error, so it will be raised")
-            bcm_error_wrapper(result)
-        
-        self.wait_until_ok()
+        bcm_logger.debug("We now get the lastest BeaconID just after starting the BST")
+        self.update_beacon_id()
+        bcm_logger.debug(f"Last BeaconID: {self.last_beacon_id.hex().upper()}")
 
-        bcm_logger.debug("Updating beacon state (It should now be OK)...")
-        result = self.update_state()
-
-        # If a previous transaction was not closed, we forcefully reset the beacon
-        if self.beacon_state.trxInProgress:
-            bcm_logger.error("Previously unclosed transaction in progress!")
-            bcm_logger.info("We will forcefully reset the beacon...")
-            self.reset_manager()
-            
-            self.wait_until_ok()
-
-        if self.beacon_state.mode != BCM_MODE_Enum.BCM_MOD_Stopped:
-            self.change_mode(BCM_MODE_Enum.BCM_MOD_Stopped)
-            bcm_logger.debug("Changed operating mode to stopped!")
-        self.update_state()
-        return self.beacon_state
-
-    def wait_until_ok(self):
-        bcm_logger.debug("Polling the beacon state until it is in an OK state...")
-        self.beacon_state_ok_trigger.wait()
-        bcm_logger.debug("Beacon is OK!!!")
-
-    def display_cb_event_trigger(self):
-        bcm_logger.debug("\tWaiting for CB notification...")
-        with self.callback_received_notifier:
-            self.callback_received_notifier.wait()
-        bcm_logger.debug("\tCB notification received!!! You can receive a VST now.")
-        
-    def update_state(self):
-        bcm_logger.debug(f"Udpating beacon state...")
-        bcm_logger.debug(f"Udpating beacon state...")
-        if self.beacon_state.trxInProgress:
-            bcm_logger.error(f"Do not try to update the state: A transaction is in progress! Otherwise, an Exception will be raised.")
-            return
-        
-        result = bcm_check_state(self.reg_ptr, ctypes.byref(self.beacon_state))
-        bcm_error_wrapper(result)
-
-        bcm_logger.debug(f"Beacon state: {self.beacon_state}")
         return result
-    def get_last_beacon_state(self):
-        bcm_logger.debug(f"Beacon state dict: {dict(self.beacon_state)}")
-        # return vars(self.beacon_state)
-        return dict(self.beacon_state)
-        bcm_logger.debug(f"Beacon state dict: {dict(self.beacon_state)}")
-        # return vars(self.beacon_state)
-        return dict(self.beacon_state)
     
-    def get_config(self):
-        bcm_config = ST_BCM_CONFIG()
-        
-        result = bcm_get_config(self.reg_ptr, ctypes.byref(bcm_config))
-        bcm_error_wrapper(result)
+    def initialize_transaction(self, manufacturer_id=0x31, individual_id=0x111, mandapplications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
+        """
+        The initialization phase comprises 2 steps for the beacon:
+        Start of a BST, and
+        wait for a VST
 
-        return bcm_config
-    
-    def change_mode(self, operating_mode_code):
-        result = bcm_change_mode(self.reg_ptr, operating_mode_code)
-        bcm_error_wrapper(result)
-    def shutdown(self):
-        result = bcm_close_manager(ctypes.byref(self.reg_ptr))
-        bcm_error_wrapper(result)
-        
-    def reset_manager(self):
-        result = bcm_reset(self.reg_ptr)
-        bcm_error_wrapper(result)
-    
-    def initialization(self, manufacturer_id=0x31, individual_id=0x111, mandapplications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
+        The initialization phase locks the transaction thread when a VST is received!
+        When the transaction is closed (no longer in progress) the transaction lock is released.
+        """
         if self.beacon_state.trxInProgress:
             bcm_logger.error("Do not try to initilize a transaction! One is already in progress!")
             return
         bcm_logger.debug("We lock the thread until the opened transaction is closed!")
-        #self.no_transaction_in_progress.wait()
-        #self.no_transaction_in_progress.clear()
 
         self.start_bst(manufacturer_id, individual_id, mandapplications, profile, profile_list, non_mand_applications, bst_type)
         bcm_logger.debug("No errors occurred when starting BST!")
@@ -273,203 +91,236 @@ class BeaconManager:
         self.wait_for_vst_notification()
         #self.no_transaction_in_progress.set()
 
-        bcm_logger.debug("A VST notification was received! We now get the VST")
-        vst_datagram = self.get_vst()
-        bcm_logger.debug("We now instantiate a VST object from the response")
+        bcm_logger.info("A VST notification was received! We now get the VST")
+        fragmented_t_apdu_init_resp_datagram = self.beacon_l7_wrapper.get_vst()
+        bcm_logger.info(f"Fragmented T_APDU containing VST: {fragmented_t_apdu_init_resp_datagram.hex().upper()}")
+        
+        bcm_logger.debug("We now remove the fragmentation header and instantiate an T_APDU object from the response!")
+        t_apdu_init_resp_datagram = bytes(fragmented_t_apdu_init_resp_datagram[1:])
+        EFC.EfcDsrcGeneric.T_APDUs.from_uper(t_apdu_init_resp_datagram)
+        bcm_logger.debug(f"T-APDU without fragmentation header: {t_apdu_init_resp_datagram}")
+        
+        bcm_logger.debug("We now instantiate a T_APDU object from the response!")
+        bcm_logger.info(f"T_APDU containing VST in JER: {EFC.EfcDsrcGeneric.T_APDUs.to_jer()}")
+        bcm_logger.debug(f"Instantiated T_APDU object value: {EFC.EfcDsrcGeneric.T_APDUs._val}")
+        bcm_logger.info(f"Instantiated T_APDU in JER: {EFC.EfcDsrcGeneric.T_APDUs.to_jer()}")
+
         # Decoding VST
-        self.last_vst_obj = custom_ITS_per_decoders.VST(vst_datagram)
+        bcm_logger.debug("We now obtain the VST object from the T_APDU response!")
+        bcm_logger.debug("VST is a parameterized type, so we cannot decode/encode it, only the APDU!")
+        self.last_received_vst = EFC.EfcDsrcGeneric.T_APDUs._to_jval()["initialisation-response"]
 
-        bcm_logger.debug(f'Decoded VST: {self.last_vst_obj}')
-        return self.last_vst_obj
+        bcm_logger.debug(f'Decoded VST: {self.last_received_vst}')
+        return self.last_received_vst
 
-    # Start sending a BST
-    def start_bst(self, manufacturer_id=0x31, individual_id=0x111, mandapplications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
-        bst_datagram = custom_ITS_per_decoders.encode_bst_datagram(self.frag_header, manufacturer_id, individual_id, mandapplications, profile, profile_list, non_mand_applications)
-        if len(bst_datagram) > BCM_SIZEMAX_Enum.BCM_SIZEMAX_BST:
-            bcm_logger.error(f"Datagram is too big! Will probably cause a BST error")
-        result = self.start_bst_wrapper(bytes(bst_datagram), bst_type)
-
-        bcm_logger.debug("We now get the lastest BeaconID just after starting the BST")
-        self.update_beacon_id()
-        bcm_logger.debug(f"Last BeaconID: {self.last_beacon_id.hex().upper()}")
-
-        return result
-        
-    def start_bst_wrapper(self, bst_datagram:bytes, bst_type:int):
-        bst_datagram_buffer = ctypes.create_string_buffer(bst_datagram, size=len(bst_datagram))
-        # Pointer to the buffered BST datagram
-        lp_bst_datagram = ctypes.cast(bst_datagram_buffer, POINTER(BYTE))
-        byte_bst_type = BYTE(bst_type)
-        bcm_logger.info(f"BST to be sent in hex format: {bst_datagram.hex().upper()}")
-        bcm_logger.info(f"Decoded BST: {bst_datagram.hex().upper()}")
-
-        result = bcm_start_bst(self.reg_ptr,
-                               lp_bst_datagram,
-                               DWORD(len(bst_datagram)),
-                               byte_bst_type)
-        bcm_error_wrapper(result)
-        bcm_logger.debug("No errors occurred: BST started!")
-        st_bcm_reg_ptr_value = ctypes.cast(self.reg_ptr, ctypes.c_void_p).value
-        #bcm_logger.debug(f"ST_BCM_REG (dereferenced value): {st_bcm_reg_ptr_value}")
-        return result
-        
-    
-    # Wait for the application to be notified through a callback
-    def wait_for_vst_notification(self):
-        with self.callback_received_notifier:
-            self.callback_received_notifier.wait()
-
-    # Wait for a notification then get the VST
-    def wait_and_get_vst(self):
-        self.wait_for_vst_notification()
-        return self.get_vst()
-    
-    # Get the VST
-    # This function should only be called inside the callback declared to the
-    # BCM Init Manager
-    def get_vst(self):
-        bcm_logger.debug("Getting VST...")
-        
-        dword_max_size = DWORD(BCM_SIZEMAX_Enum.BCM_SIZEMAX_ANSWER)
-        vst_answer_buffer_array = ctypes.create_string_buffer(BCM_SIZEMAX_Enum.BCM_SIZEMAX_ANSWER)
-        vst_answer_size = DWORD()
-
-        # Pointer where the VST datagram answer will be stored by BCM
-        lp_vst_response_datagram = ctypes.cast(vst_answer_buffer_array, POINTER(BYTE))
-        
-        result = bcm_get_vst(self.reg_ptr,
-                             lp_vst_response_datagram,
-                             ctypes.byref(vst_answer_size),
-                             dword_max_size
-                             )
-        
-        bcm_logger.debug("Handling errors...")
-        bcm_error_wrapper(result)
-        bcm_logger.debug("VST received!")
-
-        # Slicing a ctypes array or pointer will automatically produce a Python list
-        # We slice it at the given size, not the buffer's maximum size
-        received_vst_list = lp_vst_response_datagram[:vst_answer_size.value]
-
-        # Converting VST to bytes structure and storing it in last_vst attribute
-        self.last_vst = bytes(received_vst_list)
-
-        # Log the VST
-        bcm_logger.info(f"Received VST in hex format: {self.last_vst.hex().upper()}")
-        return self.last_vst
-    
-    def send_command(self, datagram: bytes, close=False):
-        lp_cmd_datagram = ctypes.cast(datagram, POINTER(BYTE))
-        
-        # Buffers and pointers for command response datagrams
-        cmd_response_buffer_array = ctypes.create_string_buffer(BCM_SIZEMAX_Enum.BCM_SIZEMAX_CMD)
-        dword_cmd_resonse_max_size = DWORD(BCM_SIZEMAX_Enum.BCM_SIZEMAX_CMD)
-        lp_cmd_response_datagram = ctypes.cast(cmd_response_buffer_array, POINTER(BYTE))
-        cmd_response_size = DWORD()
-
-        bcm_logger.debug(f"Command to be sent in hex format: {datagram.hex().upper()}")
-
-        result = bcm_send_cmd(
-            self.reg_ptr,
-            lp_cmd_datagram,
-            DWORD(len(datagram)),
-            lp_cmd_response_datagram,
-            ctypes.byref(cmd_response_size),
-            dword_cmd_resonse_max_size,
-            close
-            )
-        self.last_cmd_req = bytes(datagram)
-        bcm_error_wrapper(result)
-
-        # Iterating cmd response pointer to get its value/contents
-        response_as_list = lp_cmd_response_datagram[:cmd_response_size.value]
-        self.last_cmd_response = bytes(response_as_list)
+    def send_command(self):
+        self.last_cmd_response = self.beacon_l7_wrapper.send_command(datagram=)
         bcm_logger.debug(f"Command response in hex format: {self.last_cmd_response.hex().upper()}")
         return self.last_cmd_response
     
-    def send_get_request(self, eid, access_credentials=None, attribute_ids=None, close = False):
-        datagram = custom_ITS_per_decoders.encode_get_request_datagram(self.frag_header, eid, access_credentials, attribute_ids)
-        return self.send_command(datagram)
+    def send_req_t_apdu_and_obtain_resp_t_apdu(self, asn1_request_t_apdu_value, close=False) -> dict:
+        bcm_logger.debug(f"Preparing request T_APDU to be sent...")
+        EFC.EfcDsrcGeneric.T_APDUs.set_val(asn1_request_t_apdu_value)
+        bcm_logger.debug(f"Request T_APDU value: {EFC.EfcDsrcGeneric.T_APDUs._val}")
+        bcm_logger.debug(f"T_APDU in JER: {EFC.EfcDsrcGeneric.T_APDUs.to_jer()}")
+        fragmented_t_apdu = self.frag_header + EFC.EfcDsrcGeneric.T_APDUs.to_uper()
 
-    def presentation_request(self, eid:int, access_credentials:int, attribute_ids=[], operator_auk_ref=111, response_expected=True, close=False):
-        return self.send_get_stamped_request(eid, access_credentials, attribute_ids, operator_auk_ref, response_expected, close)
-    def send_get_stamped_request(self, eid:int, access_credentials:int, attribute_ids=[], operator_auk_ref=111, response_expected=True, close=False):
-        datagram = self.get_stamped_request_datagram_preparation(eid, access_credentials, attribute_ids, operator_auk_ref, response_expected, close)
-        return self.send_command(datagram)
-    def get_stamped_request_datagram_preparation(self, eid:int, access_credentials:int, attribute_ids=[], operator_auk_ref=111, response_expected=True, close = False):
-        bcm_logger.debug(f"Preparing a GET_STAMPED.request to get attributes with ids {attribute_ids}")
-        action_req_header = 0
+        bcm_logger.info(f"Sending fragmented T_APDU: {fragmented_t_apdu.hex().upper()}")
+        fragmented_t_apdu_with_get_response_bytes = self.send_command(fragmented_t_apdu, close)
+        bcm_logger.debug(f"Decoding received response T_APDU...")
+        bcm_logger.info(f"Fragmented T_APDU response obtained from beacon in hex (supposed to be UPER): {fragmented_t_apdu_with_get_response_bytes.hex().upper()}")
+        t_apdu_with_get_response_bytes = bytes(fragmented_t_apdu_with_get_response_bytes[1:])
 
-        # The ActionParameter is always present in a GET_STAMPED request
-        # Also, its container type/choice is set to 17 = 0x11 for a GetStampedRq
-        action_req_header = action_req_header | 0b0100
-        GetStampedRq_action_type = 0x11
-
-        if response_expected:
-            action_req_header = action_req_header | 1
-
-        if access_credentials is not None:
-            # Access Credentials is present!
-            action_req_header = action_req_header | 0b1000
-            # Length + Value
-            ac_cr_list = [4] + list(access_credentials.to_bytes(4, 'big'))
-        else:
-            ac_cr_list = []
-
-        # ActionParamater is always present, so AttributeIdList must be present even if just an empty list (thus with length = 0)
-        if attribute_ids is None:
-            attribute_ids = []
-        if attribute_ids:
-            # AttributeIdList is present!
-            # Length + Value
-            attribute_id_list = [len(attribute_ids)] + attribute_ids
-        #else:
-        #    attribute_id_list = [00]
+        EFC.EfcDsrcGeneric.T_APDUs.from_uper(t_apdu_with_get_response_bytes)
+        bcm_logger.debug(f"Response T_APDU value: {EFC.EfcDsrcGeneric.T_APDUs._val}")
+        bcm_logger.debug(f"Response T_APDU decoded with JER: {EFC.EfcDsrcGeneric.T_APDUs.to_jer()}")
+        json_encoded_response_t_apdu = EFC.EfcDsrcGeneric.T_APDUs._to_jval()
+        bcm_logger.debug(f"Response T_APDU in JSON value: {json_encoded_response_t_apdu}")
         
-        # ActionType is a GET_STAMPED
-        action_type = 0
-        # Attribute 0x20 = 32 is the PAN, or PaymentMeans
-        # So the AttributeIdList is set by default to [0x20]
-
-        self.rnd_rse = custom_ITS_per_decoders.encode_date_and_time()
-        rnd_rse_list = [4] + list(self.rnd_rse.to_bytes(4, 'big'))
-        presentation_request = [self.frag_header, action_req_header, eid, action_type] + ac_cr_list  + [GetStampedRq_action_type] + attribute_id_list + rnd_rse_list + [operator_auk_ref]
-        
-        bcm_logger.debug(f"Presentation request: {presentation_request}")
-        
-        # Converting command request to bytes structure and returning it
-        return bytes(presentation_request)
-
-    def set_mmi(self, close = False):
-        bcm_logger.debug(f"Preparing a SET_MMI.request")
-        # SetMMI ActionType is 0xA, or 10 in decimal
-        set_mmi_request = [self.frag_header, 0x05, 0x00, 0x0A, 0x00, 0x00]
-        set_mmi_datagram = bytes(set_mmi_request)
-        self.send_command(set_mmi_datagram, close)
-    def decode_last_get_response(self):
-        decoded_response = custom_ITS_per_decoders.decode_response(self.last_cmd_response)
-        if decoded_response is None:
-            return
+        bcm_logger.info(f"Checking if T-APDU contains a return (ret) value (error code)...")
         try:
-            return_status = decoded_response["ReturnStatus"]
-            raise(return_status)
-        except custom_ITS_per_decoders.ReturnStatus:
-            bcm_logger.error(return_status.message)
-        decoded_response
+            return_code = json_encoded_response_t_apdu["ret"]
+            if return_code == 0:
+                bcm_logger.info(f"Return code is present and is 0! (No errors)")
+            else:
+                bcm_logger.error(f"Error code present! Return Code: {return_code}") 
+        except KeyError:
+            bcm_logger.info(f"No return code in T-APDU! (No errors)")
+        return json_encoded_response_t_apdu
 
-    def send_close_transaction_to_obu(self):
-        command_response = self.set_mmi(True)
-        self.no_transaction_in_progress.clear()
-        return command_response
-    def stopping(self):
-        bcm_logger.info(f"Stopping Beacon Manager!")
-        # If a transaction is still open, we close it
-        if self.beacon_state.trxInProgress:
-            bcm_logger.info(f"A transaction was in progress according to the DLL! Closing it...")
-            self.send_close_transaction_to_obu()
+    def get_eid_info_from_last_vst(self, eid:int) -> int:
+        vst_application_index = -1
+        bcm_logger.debug(f"Getting application with EID {eid}")
+        for index, application in enumerate(self.last_received_vst['applications']):
+            bcm_logger.debug(f"Application details: {application}")
+            if application["eid"] == eid:
+                vst_application_index = index
+        if vst_application_index == -1:
+            bcm_logger.info(f"EID {eid} is not present!")
+        else:
+            bcm_logger.debug(f"Index of EID {eid} on VST is {vst_application_index}")
+        return vst_application_index
+    
+    def send_get_request(self, eid, accessCredentials=None, attrIdList=None, close = False) -> EFC.EfcDsrcGeneric.Get_Response:
+        # Get.Request is filled with 1 bit valued at 0
+        get_req_value = {
+            'eid': eid,
+            'accessCredentials': accessCredentials,
+            'attrIdList': attrIdList,
+            'fill': (0, 1)
+        }
+        # Ignore keys in dict that map to None!!
+        # That is, remove optional elements that map to None
+        # This is specially the case for the optional accessCredentials
+        get_req_value = {key: value for key, value in get_req_value.items() if value is not None}
+
+        EFC.EfcDsrcGeneric.Get_Request.set_val(get_req_value)
+        bcm_logger.debug(f"Get.Request value: {EFC.EfcDsrcGeneric.Get_Request._val}")
+        bcm_logger.info(f"Get.Request in JER: {EFC.EfcDsrcGeneric.Get_Request.to_jer()}")
+
+        t_apdu_with_get_request_value = ('get-request', get_req_value)
+        json_encoded_response_t_apdu = self.send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_get_request_value)
+
+        bcm_logger.debug("We now obtain the GET.response object from the T_APDU response!")
+        bcm_logger.debug("GET.response is a parameterized type, so we cannot encode/decode it, only the T_APDU!")
         
-        self.update_state()
+        return json_encoded_response_t_apdu
 
-        if self.beacon_state.mode != BCM_MODE_Enum.BCM_MOD_Stopped:
-            self.change_mode(BCM_MODE_Enum.BCM_MOD_Stopped)
-            bcm_logger.debug("Changed mode to stopped!")
+    def send_action_request(self,
+            mode=True,
+            eid=0,
+            actionType=0xA,
+            accessCredentials = None,
+            actionParameter = None,
+            iid = None,
+            close = False):
+        if not actionParameter:
+            actionParameter = ('setmmirq', 0)
+        bcm_logger.debug(f"Preparing an ACTION.request...")
+        bcm_logger.debug(f"ActionType value is {actionParameter[0]}")
+
+        # ACTION.request has a parameter, which needs to be inside a container
+        EFC.EfcDsrcGeneric.EfcContainer.set_val(actionParameter)
+        parameter_tag = EFC.EfcDsrcGeneric.EfcContainer.TAG
+
+        bcm_logger.debug(f"ActionParameter is an EfcContainer of Type {actionParameter[0]} (tag {parameter_tag}) value decoded with JER: {EFC.EfcDsrcGeneric.EfcContainer.to_jer()}")
+        bcm_logger.debug(f"ActionParameter is an EfcContainer of Type {actionParameter[0]} (tag {parameter_tag}) value decoded with PER: {EFC.EfcDsrcGeneric.EfcContainer.to_uper()}")
+        
+        t_apdu_with_action_req_value = ('action-request', {
+            'mode': mode,
+            'eid': eid,
+            'actionType': actionType,
+            'accessCredentials': accessCredentials,
+            'actionParameter': actionParameter,
+            'iid': iid
+            })
+        # Ignore keys in dict that map to None!!
+        # That is, remove optional elements that map to None
+        # This is specially the case for the optional accessCredentials and iid
+        t_apdu_with_action_req_value = {key: value for key, value in t_apdu_with_action_req_value.items() if value is not None}
+
+        EFC.EfcDsrcGeneric.T_APDUs.set_val(t_apdu_with_action_req_value)
+        bcm_logger.info(f"ACTION.request with ActionType {actionType} and actionParameter of type {actionParameter[0]} being now sent...")
+
+        json_encoded_response_t_apdu = self.send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_set_mmi_action_req_value, close)
+        return json_encoded_response_t_apdu
+
+    def presentation_request(self,
+            eid:int,
+            accessCredentials:int,
+            attrIdList=[],
+            operator_auk_ref=111,
+            response_expected=True,
+            close=False):
+        return self.send_get_stamped_request(eid, accessCredentials, attrIdList, operator_auk_ref, response_expected, close)
+    def send_get_stamped_request(self,
+            eid:int,
+            accessCredentials:int,
+            attrIdList=[],
+            operator_auk_ref=111,
+            response_expected=True,
+            close=False):
+        actionParameter = self.get_stamped_request_action_parameter_preparation(eid, accessCredentials, attrIdList, operator_auk_ref, response_expected, close)
+
+        bcm_logger.debug("Sending a GET_STAMPED.request (Presentation request)...")
+        t_apdu_with_get_request_value = ('get-request', get_req_value)
+        json_encoded_response_t_apdu = self.send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_get_request_value)
+
+        bcm_logger.debug("We now obtain the GET_STAMPED.response object from the T_APDU response!")
+        bcm_logger.debug("GET_STAMPED.response is a parameterized type, so we cannot encode/decode it, only the T_APDU!")
+        
+        # ActionType is 0 for GET_STAMPED.request and Mode is True (Always expects a response)
+        json_encoded_response_t_apdu = self.send_action_request(True, eid, 0, accessCredentials, actionParameter, close)
+
+        bcm_logger.debug("We now obtain the GET_STAMPED.request object from the T_APDU response!")
+        bcm_logger.debug("GET_STAMPED.request is a parameterized type, so we cannot encode/decode it, only the T_APDU!")
+        try:
+            bcm_logger.debug(f"GET_STAMPED.response (Presentation response): {json_encoded_response_t_apdu['action-response']['responseParameter']}")
+        except KeyError:
+            bcm_logger.error(f"Reponse Parameter not present in GET_STAMPED.reponse!")
+        return json_encoded_response_t_apdu
+    
+    def get_stamped_request_action_parameter_preparation(self,
+            eid:int,
+            accessCredentials:int,
+            attrIdList=[],
+            operator_auk_ref=111):
+        """
+        ACTION.request of type GET_STAMPED.request (ActionType=0).
+
+        The ActionParameter is thus of type GetStampedRs
+        """
+        if not attrIdList:
+            attrIdList = []
+
+        bcm_logger.debug(f"Preparing a GET_STAMPED.request to get attributes with ids {attrIdList}")
+        bcm_logger.debug(f"Computing RndRSE value...")
+
+        rnd_rse = EFC.EfcDataDictionary.DateAndTime.set_val({ 
+            'timeDate':{
+                'year': datetime.utcnow().year,
+                'month': datetime.utcnow().month,
+                'day': datetime.utcnow().day,
+            },
+            'timeCompact':{
+                'hours': datetime.utcnow().hour,
+                'mins': datetime.utcnow().minute,
+                'doubleSecs': datetime.utcnow().second // 2
+            }
+        })
+        bcm_logger.debug(f"RndRSE or SessionTime value (of type DateAndTime) in JER: {EFC.EfcDataDictionary.DateAndTime.to_jer()}")
+
+        get_stamped_req_value = {
+            'attributeIdList': attrIdList,
+            'nonce': rnd_rse,
+            'keyRef': operator_auk_ref
+            }
+        EFC.EfcDsrcApplication.GetStampedRs.set_val(get_stamped_req_value)
+        
+        bcm_logger.debug(f"GetStampedRs value: {EFC.EfcDsrcGeneric.Get_Request._val}")
+        bcm_logger.info(f"GetStampedRs in JER: {EFC.EfcDsrcGeneric.Get_Request.to_jer()}")
+        return get_stamped_req_value
+
+    def set_mmi(self, eid=0, close=False):
+        bcm_logger.debug(f"Preparing a SET_MMI.request")
+        bcm_logger.debug(f"The function to send ACTION.requests is defined to send a SET_MMI by default if no arguments are provided!")
+
+        # SetMMI is a parameterized type, so it needs to be inside a container
+        set_mmi_efc_container_value = ('setmmirq', set_mmi_request_value)
+        EFC.EfcDsrcGeneric.EfcContainer.set_val(set_mmi_efc_container_value)
+        bcm_logger.debug(f"EfcContainer of Type 69 (SET_MMI) value decoded with JER: {EFC.EfcDsrcGeneric.EfcContainer.to_jer()}")
+        bcm_logger.debug(f"EfcContainer of Type 69 (SET_MMI) value decoded with PER: {EFC.EfcDsrcGeneric.EfcContainer.to_uper()}")
+        
+        # SetMMI ActionType is 0xA, or 10 in decimal
+        set_mmi_action_request_val = {
+            'mode': True,
+            'eid': eid,
+            'actionType': 0xA,
+            'actionParameter': set_mmi_efc_container_value
+            }
+        
+        t_apdu_with_set_mmi_action_req_value = ('action-request', set_mmi_action_request_val)
+        bcm_logger.info(f"ACTION.request of Type 10 (SET_MMI) being now sent...")
+
+        t_apdu_with_action_response = self.send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_set_mmi_action_req_value, close)
+        return t_apdu_with_action_response

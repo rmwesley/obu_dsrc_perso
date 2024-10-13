@@ -3,7 +3,8 @@
   "TGBV":{
     "communication_mode": "serial",
     "serial_config": {
-      "beacon_serial_port": 10
+      "beacon_serial_port": 10,
+      "beacon_alarm_state_polling_ms": 2000
     },
     "tcp_ip_config": {
       "ip_address": "133.38.40.152",

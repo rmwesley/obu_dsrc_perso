@@ -84,85 +84,85 @@ class BCM_ERR_Enum(ctypes.c_int):
 
     CUSTOM_COULD_NOT_CONNECT_VIA_TCP_IP = 10060
 
-class BCMError:
-    errors = {
-        None: "No error",
-        0: "No error",
-        
-        # Layer 7 errors
-        0x01: "Command refused because the operating mode is not correct, or because the datagram sent is not correct",
-        0x02: "Command refused because there is a transaction in progress",
-        0x03: "Command refused because the beacon is out of order and the mode requested is not BCM_MOD_Stopped",
-        0x09: "The beacon has lost the OBE.",
-        0x0A: "The beacon has been reset.",
-        0x0B: "Command refused because a parameter is not correct",
-        0x0C: "Problem on the configuration file?",
-        0x1D: "Command refused because the beacon has not been configured",
-        
-        # Beacon Manager errors
-        -100: "Bad parameter",
-        -101: "Memory error",
-        -104: "Busy",
-        -105: "Collision",
-        -106: "Communication aborted",
-        -107: "Communication timeout",
-        -108: "Error response",
-        -120: "Error creating event",
-        -121: "Error creating mutex",
-        -122: "Error creating timer",
-        -123: "Event error",
-        -1000: "Communication bad parameter",
-        -1001: "Port not active",
-        -1002: "Port frozen",
-        -1003: "Port output busy",
-        -1004: "Error creating buffer",
-        -1005: "Communication error creating event",
-        -1006: "Error creating thread",
-        -1007: "Error setting priority",
-        -1008: "Error setting event",
-        -1009: "Port type error",
-        -1010: "Port open error. This could mean the beacon is not connected or already in use.",
-        -1011: "Port configuration error",
-        -1012: "Port close error",
-        -1013: "Port read error",
-        -1014: "Port write error",
-        -1015: "Port event error",
-        -1050: "Socket bad parameter",
-        -1051: "Socket error creating buffer",
-        -1052: "Socket error creating event",
-        -1053: "Socket error creating thread",
-        -1054: "Socket event select error",
-        -1055: "Socket wait event error",
-        -1056: "Socket set event error",
-        -1057: "Socket not connected",
-        -1058: "Socket buffer full",
-        -1061: "Socket startup error",
-        -1062: "Socket cleanup error",
-        -1063: "Socket create error",
-        -1064: "Socket option error",
-        -1065: "Socket control error",
-        -1066: "Socket bind error",
-        -1067: "Socket listen error",
-        -1068: "Socket accept event error",
-        -1069: "Socket accept error",
-        -1070: "Socket connect event error",
-        -1071: "Socket connect error",
-        -1072: "Socket send event error",
-        -1073: "Socket send error",
-        -1074: "Socket receive event error",
-        -1075: "Socket receive error",
-        -1076: "Socket shutdown error",
-        -1077: "Socket close event error",
-        -1078: "Socket close error",
-        -1079: "Socket close timeout error",
-        -1080: "Socket get host error",
-
-        10060: "CUSTOM: Couldn't connect via the TCP/IP. Check the provided ip and tcp port addresses.\n"
-        "Reminder: TGB v2 has no TCP/IP support"
-    }
+error_descriptions = {
+    None: "No error",
+    0: "No error",
     
+    # Layer 7 errors
+    0x01: "Command refused because the operating mode is not correct, or because the datagram sent is not correct",
+    0x02: "Command refused because there is a transaction in progress",
+    0x03: "Command refused because the beacon is out of order and the mode requested is not BCM_MOD_Stopped",
+    0x09: "The beacon has lost the OBE.",
+    0x0A: "The beacon has been reset.",
+    0x0B: "Command refused because a parameter is not correct",
+    0x0C: "Problem on the configuration file?",
+    0x1D: "Command refused because the beacon has not been configured",
+    
+    # Beacon Manager errors
+    -100: "Bad parameter",
+    -101: "Memory error",
+    -104: "Busy",
+    -105: "Collision",
+    -106: "Communication aborted",
+    -107: "Communication timeout",
+    -108: "Error response",
+    -120: "Error creating event",
+    -121: "Error creating mutex",
+    -122: "Error creating timer",
+    -123: "Event error",
+    -1000: "Communication bad parameter",
+    -1001: "Port not active",
+    -1002: "Port frozen",
+    -1003: "Port output busy",
+    -1004: "Error creating buffer",
+    -1005: "Communication error creating event",
+    -1006: "Error creating thread",
+    -1007: "Error setting priority",
+    -1008: "Error setting event",
+    -1009: "Port type error",
+    -1010: "Port open error. This could mean the beacon is not connected or already in use.",
+    -1011: "Port configuration error",
+    -1012: "Port close error",
+    -1013: "Port read error",
+    -1014: "Port write error",
+    -1015: "Port event error",
+    -1050: "Socket bad parameter",
+    -1051: "Socket error creating buffer",
+    -1052: "Socket error creating event",
+    -1053: "Socket error creating thread",
+    -1054: "Socket event select error",
+    -1055: "Socket wait event error",
+    -1056: "Socket set event error",
+    -1057: "Socket not connected",
+    -1058: "Socket buffer full",
+    -1061: "Socket startup error",
+    -1062: "Socket cleanup error",
+    -1063: "Socket create error",
+    -1064: "Socket option error",
+    -1065: "Socket control error",
+    -1066: "Socket bind error",
+    -1067: "Socket listen error",
+    -1068: "Socket accept event error",
+    -1069: "Socket accept error",
+    -1070: "Socket connect event error",
+    -1071: "Socket connect error",
+    -1072: "Socket send event error",
+    -1073: "Socket send error",
+    -1074: "Socket receive event error",
+    -1075: "Socket receive error",
+    -1076: "Socket shutdown error",
+    -1077: "Socket close event error",
+    -1078: "Socket close error",
+    -1079: "Socket close timeout error",
+    -1080: "Socket get host error",
+
+    10060: "CUSTOM: Couldn't connect via the TCP/IP. Check the provided ip and tcp port addresses.\n"
+    "Reminder: TGB v2 has no TCP/IP support"
+}
+
+class BCMError:
     def get_error_description(error_code):
-        return BCMError.errors.get(error_code, "Unknown error or no description")
+        return error_descriptions.get(error_code, "Unknown error or no description")
 
 # Define necessary types from ctypes and wintypes
 BCM_ERR = c_int
@@ -260,6 +260,12 @@ class ST_BCM_REG(ctypes.Structure):
     pass
 ST_BCM_REG_PTR = POINTER(ST_BCM_REG)
 
+bcm_mode_descriptions = {
+    BCM_MODE_Enum.BCM_MOD_Stopped: f"Mode: Stopped. To switch off the HF, and to read or change the parameters of the beacon.\n",
+    BCM_MODE_Enum.BCM_MOD_Transparent: f"Mode: Transparent. The beacon can be used to communicate with a device\n",
+    BCM_MODE_Enum.BCM_MOD_Maintenance: f"Mode: Maintenance. The beacon should not be used!\n"
+}
+
 class ST_BCM_STATE(ctypes.Structure):
     _fields_ = [("state", BYTE),
                 ("mode", BYTE),
@@ -272,26 +278,12 @@ class ST_BCM_STATE(ctypes.Structure):
         return repr(dict(self))
     
     def get_description(self):
-        str_state = f"BCM_STATE:\n"
-        if self.state == BCM_ERR_Enum.BCM_NoError:
-            str_state += f"  State: OK\n"
-        if self.state == BCM_ERR_Enum.BCM_PbBeacon:
-            str_state += f"  State: The beacon is out of order\n"
-        if self.state == BCM_ERR_Enum.BCM_ResetBeacon:
-            str_state += f"  State: The beacon has been reset\n"
-            
-        if self.mode == BCM_MODE_Enum.BCM_MOD_Stopped:
-            str_state += f"  Mode: Stopped. To switch off the HF, and to read or change the parameters of the beacon.\n"
-        if self.mode == BCM_MODE_Enum.BCM_MOD_Transparent:
-            str_state += f"  State: Transaction. To allow a transation\n"
-        if self.mode == BCM_MODE_Enum.BCM_MOD_Transparent:
-            str_state += f"  State: Maintenant. The beacon should not be used!\n"
-            
-        if self.trxInProgress == True:
-            str_state += f"  Transaction: True. There is a transaction in progress.\n"
-        else:
-            str_state += f"  Transaction: False.\n"
-        return str_state
+        return {
+            'state': BCMError(bcm.state).get_error_description()
+            'mode': bcm_mode_descriptions[self.mode],
+            'trxInProgress': self.trxInProgress
+            }
+
 ST_BCM_STATE_PTR = POINTER(ST_BCM_STATE)
 
 class ST_BCM_CONFIG(ctypes.Structure):
@@ -520,12 +512,7 @@ gea_dll_loader_logger.debug(bytes_dll_version)
 
 gea_dll_loader_logger.info(f"Loaded DLL version: {bytes_dll_version[1]}.{bytes_dll_version[2]}.{bytes_dll_version[3]}")
 
-
-from ASN.compiled_DSRC_instances import CCCv4_1 as CCC2019
-from ASN.compiled_DSRC_instances import EFCv10_1 as EFC
-from ASN.compiled_DSRC_instances import LACv2_1
-
-import time
+import threading
 
 gea_dll_wrapper_logger = logging.getLogger(__name__)
 
@@ -553,14 +540,13 @@ def cb_error_handler(callback_code, error_code):
         gea_dll_wrapper_logger.error(f"Callback Error ({callback_code}), with BCM error code {error_code}")
         bcm_error_wrapper(error_code)
 
-# Defining the BeaconManager class
-class BeaconManager:
-    def __init__(self, serial_port=None, beacon_alarm_state_polling_ms=1000, external_callback:callable = None, external_alarm:callable = None):
+# Defining the BCM (Beacon Manager) GEA DLL Python wrapper class
+class BCM_GEA_DLL_Wrapper:
+    def __init__(self, external_callback:callable = None, external_alarm:callable = None):
         self.beacon_state_ok_trigger = threading.Event()
-        self.no_transaction_in_progress = threading.Event()
         self.callback_received_notifier = threading.Condition()
         self.transaction_lock = threading.Lock()
-        self.transaction_in_progress = False
+        self.beacon_name = "TGBV"
 
         self.external_callback = external_callback
         self.external_alarm = external_alarm
@@ -594,11 +580,11 @@ class BeaconManager:
         user_params = None
 
         gea_dll_wrapper_logger.debug(f"Current beacon manager settings in moment of initialization: {json.dumps(beacon_manager_settings, indent=2)}")
-        beacon_name = beacon_manager_settings["chosen_beacon_name"]
-        beacon_settings = beacon_manager_settings["TGBV"]
-        if beacon_settings["communication_mode"] == "serial":
+        tgbv_beacon_settings = beacon_manager_settings["TGBV"]
+        if tgbv_beacon_settings["communication_mode"] == "serial":
             if serial_port is None:
-                serial_port = beacon_settings["serial_config"]["beacon_serial_port"]
+                serial_port = tgbv_beacon_settings["serial_config"]["beacon_serial_port"]
+                beacon_alarm_state_polling_ms = tgbv_beacon_settings["serial_config"]["beacon_alarm_state_polling_ms"]
             gea_dll_wrapper_logger.info(f"Beacon serial port: {serial_port}")
             serial_port_speed = BaudRate_Enum.BCM_CFG_115200
             result = bcm_init_manager_fnc(
@@ -614,8 +600,8 @@ class BeaconManager:
                 self.c_alarm
             )
         else:
-            beacon_ip_address_bytes = beacon_settings["tcp_ip_config"]["ip_address"].encode('utf-8')
-            beacon_tcp_port = beacon_settings["tcp_ip_config"]["tcp_port"]
+            beacon_ip_address_bytes = tgbv_beacon_settings["tcp_ip_config"]["ip_address"].encode('utf-8')
+            beacon_tcp_port = tgbv_beacon_settings["tcp_ip_config"]["tcp_port"]
 
             result = bcm_init_manager_fnc_ip(
                 ctypes.byref(self.reg_ptr),
@@ -633,27 +619,107 @@ class BeaconManager:
         bcm_error_wrapper(result)
         self.update_beacon_id()
         self.handle_init_errors()
-    
-    def update_beacon_id(self) -> EFC.EfcDsrcGeneric.BeaconID:
-        gea_dll_wrapper_logger.debug("Getting Beacon ID...")
         
-        beacon_id_buffer_array = ctypes.create_string_buffer(BCM_FIXED_SIZES_Enum.BCM_SIZE_BEACONID)
+    def start_bst_wrapper(self, bst_datagram:bytes, bst_type:int):
+        bst_datagram_buffer = ctypes.create_string_buffer(bst_datagram, size=len(bst_datagram))
+        # Pointer to the buffered BST datagram
+        lp_bst_datagram = ctypes.cast(bst_datagram_buffer, POINTER(BYTE))
+        byte_bst_type = BYTE(bst_type)
+        gea_dll_wrapper_logger.info(f"BST to be sent in hex format: {bst_datagram.hex().upper()}")
+        gea_dll_wrapper_logger.info(f"Decoded BST: {bst_datagram.hex().upper()}")
 
-        # Pointer where the BeaconID will be stored by BCM
-        lp_beacon_id = ctypes.cast(beacon_id_buffer_array, POINTER(BYTE))
-
-        bcm_get_beacon_id(self.reg_ptr, lp_beacon_id)
-        self.last_beacon_id = bytes(beacon_id_buffer_array[0:BCM_FIXED_SIZES_Enum.BCM_SIZE_BEACONID])
-
-        gea_dll_wrapper_logger.debug(f"Latest Beacon ID in hex: {self.last_beacon_id.hex().upper()}")
-        return self.last_beacon_id
+        result = bcm_start_bst(self.reg_ptr,
+                               lp_bst_datagram,
+                               DWORD(len(bst_datagram)),
+                               byte_bst_type)
+        bcm_error_wrapper(result)
+        gea_dll_wrapper_logger.debug("No errors occurred: BST started!")
+        st_bcm_reg_ptr_value = ctypes.cast(self.reg_ptr, ctypes.c_void_p).value
+        #bcm_logger.debug(f"ST_BCM_REG (dereferenced value): {st_bcm_reg_ptr_value}")
+        return result
     
-    # Defining the Callback and Alarm default functions (they are both callback functions)
-    # But alarm has a state
-    # As those callback functions are directly called by the internal thread which is
-    # managing the communication with the beacon they should return as
-    # quickly as possible
+    # Wait for the application to be notified through a callback
+    def wait_for_vst_notification(self):
+        with self.callback_received_notifier:
+            self.callback_received_notifier.wait()
+
+    # Wait for a notification then get the VST
+    def wait_and_get_vst(self):
+        self.wait_for_vst_notification()
+        return self.get_vst()
+
+    def get_vst(self):
+        """
+        Get the VST
+        This function should only be called inside the callback
+        function passed declared to the BCM Init Manager
+        """
+        gea_dll_wrapper_logger.debug("Getting VST...")
+        
+        dword_max_size = DWORD(BCM_SIZEMAX_Enum.BCM_SIZEMAX_ANSWER)
+        vst_answer_buffer_array = ctypes.create_string_buffer(BCM_SIZEMAX_Enum.BCM_SIZEMAX_ANSWER)
+        vst_answer_size = DWORD()
+
+        # Pointer where the VST datagram answer will be stored by BCM
+        lp_vst_response_datagram = ctypes.cast(vst_answer_buffer_array, POINTER(BYTE))
+        
+        result = bcm_get_vst(self.reg_ptr,
+                             lp_vst_response_datagram,
+                             ctypes.byref(vst_answer_size),
+                             dword_max_size
+                             )
+        
+        gea_dll_wrapper_logger.debug("Handling errors...")
+        bcm_error_wrapper(result)
+        gea_dll_wrapper_logger.debug("VST received!")
+
+        # Slicing a ctypes array or pointer will automatically produce a Python list
+        # We slice it at the given size, not the buffer's maximum size
+        received_vst_list = lp_vst_response_datagram[:vst_answer_size.value]
+
+        # Converting VST to bytes structure and storing it in last_vst attribute
+        t_apdu_containing_vst = bytes(received_vst_list)
+
+        # Log the VST
+        gea_dll_wrapper_logger.info(f"Received VST in hex format: {t_apdu_containing_vst.hex().upper()}")
+        return t_apdu_containing_vst
+
+    def send_command(self, datagram: bytes, close_transaction_transaction=False):
+        lp_cmd_datagram = ctypes.cast(datagram, POINTER(BYTE))
+        
+        # Buffers and pointers for command response datagrams
+        cmd_response_buffer_array = ctypes.create_string_buffer(BCM_SIZEMAX_Enum.BCM_SIZEMAX_CMD)
+        dword_cmd_resonse_max_size = DWORD(BCM_SIZEMAX_Enum.BCM_SIZEMAX_CMD)
+        lp_cmd_response_datagram = ctypes.cast(cmd_response_buffer_array, POINTER(BYTE))
+        cmd_response_size = DWORD()
+
+        gea_dll_wrapper_logger.debug(f"Command to be sent in hex format: {datagram.hex().upper()}")
+
+        result = bcm_send_cmd(
+            self.reg_ptr,
+            lp_cmd_datagram,
+            DWORD(len(datagram)),
+            lp_cmd_response_datagram,
+            ctypes.byref(cmd_response_size),
+            dword_cmd_resonse_max_size,
+            close_transaction_transaction
+            )
+        self.last_cmd_req = bytes(datagram)
+        bcm_error_wrapper(result)
+
+        # Iterating cmd response pointer to get its value/contents
+        response_as_list = lp_cmd_response_datagram[:cmd_response_size.value]
+        return bytes(response_as_list)
+    
+
     def bcm_callback(self, reg_ptr, callback_type, error_code):
+        """
+        This is the default Callback function.
+
+        As callback functions are directly called by the internal thread which is
+        managing the communication with the beacon they should return as
+        quickly as possible
+        """
         gea_dll_wrapper_logger.debug("CB: Callback notification received!")
         if callable(self.external_callback):
             gea_dll_wrapper_logger.debug("CB: External callback function present! (from the frontend, for exemple)")
@@ -668,9 +734,15 @@ class BeaconManager:
             with self.callback_received_notifier:
                 self.callback_received_notifier.notify_all()
         except:
-            gea_dll_wrapper_logger.error(f"CB: Error, with BCM error code {error_code}")
-            return
+            gea_dll_wrapper_logger.error(f"CB: Error, with BCM error code {error_code}") 
     def bcm_alarm(self, reg_ptr, alarm_type, alarm_state):
+        """
+        This is the default Alarm function (it is a callback function)
+        
+        Differently from the other callback function, 'alarm' has a state/flag.
+        The state of the alarm is True until it disappears.
+        This is useful to display the beacon's state (according to its L7 interface).
+        """
         gea_dll_wrapper_logger.debug(f"AL: Alarm notification ({alarm_type}) received!")
         if callable(self.external_alarm):
             gea_dll_wrapper_logger.debug("AL: External alarm function present! (from the frontend, for exemple)")
@@ -678,8 +750,7 @@ class BeaconManager:
             self.external_alarm(alarm_type, alarm_state)
 
         if alarm_type == BCM_ALARMS_Enum.BCM_AlarmPeriph or alarm_type == BCM_ALARMS_Enum.BCM_AlarmBeacon:
-            gea_dll_wrapper_logger.error(f"Error in Alarm! Description: {BCM_Alarm.get_description(alarm_type)}")
-            return
+            gea_dll_wrapper_logger.error(f"Error in Alarm! Description: {BCM_Alarm.get_description(alarm_type)}") 
         gea_dll_wrapper_logger.debug(f"Alarm description: {BCM_Alarm.get_description(alarm_type)}")
         if alarm_type == BCM_ALARMS_Enum.BCM_EventPollingOK:
             self.beacon_state_ok_trigger.set()
@@ -738,10 +809,8 @@ class BeaconManager:
         
     def update_state(self):
         gea_dll_wrapper_logger.debug(f"Udpating beacon state...")
-        gea_dll_wrapper_logger.debug(f"Udpating beacon state...")
         if self.beacon_state.trxInProgress:
-            gea_dll_wrapper_logger.error(f"Do not try to update the state: A transaction is in progress! Otherwise, an Exception will be raised.")
-            return
+            gea_dll_wrapper_logger.error(f"Do not try to update the state: A transaction is in progress! Otherwise, an Exception will be raised.") 
         
         result = bcm_check_state(self.reg_ptr, ctypes.byref(self.beacon_state))
         bcm_error_wrapper(result)
@@ -749,9 +818,6 @@ class BeaconManager:
         gea_dll_wrapper_logger.debug(f"Beacon state: {self.beacon_state}")
         return result
     def get_last_beacon_state(self):
-        gea_dll_wrapper_logger.debug(f"Beacon state dict: {dict(self.beacon_state)}")
-        # return vars(self.beacon_state)
-        return dict(self.beacon_state)
         gea_dll_wrapper_logger.debug(f"Beacon state dict: {dict(self.beacon_state)}")
         # return vars(self.beacon_state)
         return dict(self.beacon_state)
@@ -774,314 +840,28 @@ class BeaconManager:
     def reset_manager(self):
         result = bcm_reset(self.reg_ptr)
         bcm_error_wrapper(result)
-    
-    def initialization(self, manufacturer_id=0x31, individual_id=0x111, mandapplications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
-        if self.beacon_state.trxInProgress:
-            gea_dll_wrapper_logger.error("Do not try to initilize a transaction! One is already in progress!")
-            return
-        gea_dll_wrapper_logger.debug("We lock the thread until the opened transaction is closed!")
 
-        self.start_bst(manufacturer_id, individual_id, mandapplications, profile, profile_list, non_mand_applications, bst_type)
-        gea_dll_wrapper_logger.debug("No errors occurred when starting BST!")
-        
-        gea_dll_wrapper_logger.info("We now wait on the main thread until we a VST notification is received...")
-        self.wait_for_vst_notification()
-        #self.no_transaction_in_progress.set()
-
-        gea_dll_wrapper_logger.info("A VST notification was received! We now get the VST")
-        fragmented_t_apdu_init_resp_datagram = self.get_vst()
-        gea_dll_wrapper_logger.info(f"Fragmented T_APDU containing VST: {fragmented_t_apdu_init_resp_datagram.hex().upper()}")
-        
-        gea_dll_wrapper_logger.debug("We now remove the fragmentation header and instantiate an T_APDU object from the response!")
-        t_apdu_init_resp_datagram = bytes(fragmented_t_apdu_init_resp_datagram[1:])
-        EFC.EfcDsrcGeneric.T_APDUs.from_uper(t_apdu_init_resp_datagram)
-        gea_dll_wrapper_logger.debug(f"T-APDU without fragmentation header: {t_apdu_init_resp_datagram}")
-        
-        gea_dll_wrapper_logger.debug("We now instantiate a T_APDU object from the response!")
-        gea_dll_wrapper_logger.info(f"T_APDU containing VST in JER: {EFC.EfcDsrcGeneric.T_APDUs.to_jer()}")
-        gea_dll_wrapper_logger.debug(f"Instantiated T_APDU object value: {EFC.EfcDsrcGeneric.T_APDUs._val}")
-        gea_dll_wrapper_logger.info(f"Instantiated T_APDU in JER: {EFC.EfcDsrcGeneric.T_APDUs.to_jer()}")
-
-        # Decoding VST
-        gea_dll_wrapper_logger.debug("We now obtain the VST object from the T_APDU response!")
-        gea_dll_wrapper_logger.debug("VST is a parameterized type, so we cannot decode/encode it, only the APDU!")
-        self.last_vst_obj = EFC.EfcDsrcGeneric.T_APDUs._to_jval()["initialisation-response"]
-
-        gea_dll_wrapper_logger.debug(f'Decoded VST: {self.last_vst_obj}')
-        return self.last_vst_obj
-
-    # Start sending a BST
-    def start_bst(self, manufacturer_id=0x31, individual_id=0x111, mandapplications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
-        mandApplications = [{'aid': mandatory_aid} for mandatory_aid in mandapplications]
-        # profileList = [{'profile': profile_id} for profile_id in profile_list]
-
-        bst_value = {
-            'rsu': {
-                'manufacturerid': manufacturer_id,
-                'individualid': individual_id
-                },
-            'time': int(time.time()),
-            'profile': profile,
-            'mandApplications': mandApplications,
-            'profileList': profile_list
-            }
-        EFC.EfcDsrcGeneric.BST.set_val(bst_value)
-        bst_datagram = EFC.EfcDsrcGeneric.BST.to_uper()
-        gea_dll_wrapper_logger.debug(f"BST in UPER encoding in hex: {bst_datagram.hex().upper()}")
-
-        EFC.EfcDsrcGeneric.T_APDUs.set_val(('initialisation-request', EFC.EfcDsrcGeneric.BST._val))
-        gea_dll_wrapper_logger.debug(f"T_APDU containing BST in JER: {EFC.EfcDsrcGeneric.T_APDUs.to_jer()}")
-
-        fragmented_t_apdu_init_req_datagram = self.frag_header + EFC.EfcDsrcGeneric.T_APDUs.to_uper()
-        gea_dll_wrapper_logger.debug(f"Fragmented T_APDU containing BST: {fragmented_t_apdu_init_req_datagram.hex().upper()}")
-
-        if len(bst_datagram) > BCM_SIZEMAX_Enum.BCM_SIZEMAX_BST:
-            gea_dll_wrapper_logger.error(f"Datagram is too big! Will probably cause a BST error")
-        result = self.start_bst_wrapper(fragmented_t_apdu_init_req_datagram, bst_type)
-
-        gea_dll_wrapper_logger.debug("We now get the lastest BeaconID just after starting the BST")
-        self.update_beacon_id()
-        gea_dll_wrapper_logger.debug(f"Last BeaconID: {self.last_beacon_id.hex().upper()}")
-
-        return result
-        
-    def start_bst_wrapper(self, bst_datagram:bytes, bst_type:int):
-        bst_datagram_buffer = ctypes.create_string_buffer(bst_datagram, size=len(bst_datagram))
-        # Pointer to the buffered BST datagram
-        lp_bst_datagram = ctypes.cast(bst_datagram_buffer, POINTER(BYTE))
-        byte_bst_type = BYTE(bst_type)
-        gea_dll_wrapper_logger.info(f"BST to be sent in hex format: {bst_datagram.hex().upper()}")
-        gea_dll_wrapper_logger.info(f"Decoded BST: {bst_datagram.hex().upper()}")
-
-        result = bcm_start_bst(self.reg_ptr,
-                               lp_bst_datagram,
-                               DWORD(len(bst_datagram)),
-                               byte_bst_type)
-        bcm_error_wrapper(result)
-        gea_dll_wrapper_logger.debug("No errors occurred: BST started!")
-        st_bcm_reg_ptr_value = ctypes.cast(self.reg_ptr, ctypes.c_void_p).value
-        #bcm_logger.debug(f"ST_BCM_REG (dereferenced value): {st_bcm_reg_ptr_value}")
-        return result
-        
-    
-    # Wait for the application to be notified through a callback
-    def wait_for_vst_notification(self):
-        with self.callback_received_notifier:
-            self.callback_received_notifier.wait()
-
-    # Wait for a notification then get the VST
-    def wait_and_get_vst(self):
-        self.wait_for_vst_notification()
-        return self.get_vst()
-    
-    # Get the VST
-    # This function should only be called inside the callback declared to the
-    # BCM Init Manager
-    def get_vst(self):
-        gea_dll_wrapper_logger.debug("Getting VST...")
-        
-        dword_max_size = DWORD(BCM_SIZEMAX_Enum.BCM_SIZEMAX_ANSWER)
-        vst_answer_buffer_array = ctypes.create_string_buffer(BCM_SIZEMAX_Enum.BCM_SIZEMAX_ANSWER)
-        vst_answer_size = DWORD()
-
-        # Pointer where the VST datagram answer will be stored by BCM
-        lp_vst_response_datagram = ctypes.cast(vst_answer_buffer_array, POINTER(BYTE))
-        
-        result = bcm_get_vst(self.reg_ptr,
-                             lp_vst_response_datagram,
-                             ctypes.byref(vst_answer_size),
-                             dword_max_size
-                             )
-        
-        gea_dll_wrapper_logger.debug("Handling errors...")
-        bcm_error_wrapper(result)
-        gea_dll_wrapper_logger.debug("VST received!")
-
-        # Slicing a ctypes array or pointer will automatically produce a Python list
-        # We slice it at the given size, not the buffer's maximum size
-        received_vst_list = lp_vst_response_datagram[:vst_answer_size.value]
-
-        # Converting VST to bytes structure and storing it in last_vst attribute
-        self.last_vst = bytes(received_vst_list)
-
-        # Log the VST
-        gea_dll_wrapper_logger.info(f"Received VST in hex format: {self.last_vst.hex().upper()}")
-        return self.last_vst
-    
-    def send_command(self, datagram: bytes, close=False):
-        lp_cmd_datagram = ctypes.cast(datagram, POINTER(BYTE))
-        
-        # Buffers and pointers for command response datagrams
-        cmd_response_buffer_array = ctypes.create_string_buffer(BCM_SIZEMAX_Enum.BCM_SIZEMAX_CMD)
-        dword_cmd_resonse_max_size = DWORD(BCM_SIZEMAX_Enum.BCM_SIZEMAX_CMD)
-        lp_cmd_response_datagram = ctypes.cast(cmd_response_buffer_array, POINTER(BYTE))
-        cmd_response_size = DWORD()
-
-        gea_dll_wrapper_logger.debug(f"Command to be sent in hex format: {datagram.hex().upper()}")
-
-        result = bcm_send_cmd(
-            self.reg_ptr,
-            lp_cmd_datagram,
-            DWORD(len(datagram)),
-            lp_cmd_response_datagram,
-            ctypes.byref(cmd_response_size),
-            dword_cmd_resonse_max_size,
-            close
-            )
-        self.last_cmd_req = bytes(datagram)
-        bcm_error_wrapper(result)
-
-        # Iterating cmd response pointer to get its value/contents
-        response_as_list = lp_cmd_response_datagram[:cmd_response_size.value]
-        self.last_cmd_response = bytes(response_as_list)
-        gea_dll_wrapper_logger.debug(f"Command response in hex format: {self.last_cmd_response.hex().upper()}")
-        return self.last_cmd_response
-    
-    def send_req_t_apdu_and_obtain_resp_t_apdu(self, asn1_request_t_apdu_value, close=False) -> dict:
-        gea_dll_wrapper_logger.debug(f"Preparing request T_APDU to be sent...")
-        EFC.EfcDsrcGeneric.T_APDUs.set_val(asn1_request_t_apdu_value)
-        gea_dll_wrapper_logger.debug(f"Request T_APDU value: {EFC.EfcDsrcGeneric.T_APDUs._val}")
-        gea_dll_wrapper_logger.debug(f"T_APDU in JER: {EFC.EfcDsrcGeneric.T_APDUs.to_jer()}")
-        fragmented_t_apdu = self.frag_header + EFC.EfcDsrcGeneric.T_APDUs.to_uper()
-
-        gea_dll_wrapper_logger.info(f"Sending fragmented T_APDU: {fragmented_t_apdu.hex().upper()}")
-        fragmented_t_apdu_with_get_response_bytes = self.send_command(fragmented_t_apdu, close)
-        gea_dll_wrapper_logger.debug(f"Decoding received response T_APDU...")
-        gea_dll_wrapper_logger.info(f"Fragmented T_APDU response obtained from beacon in hex (supposed to be UPER): {fragmented_t_apdu_with_get_response_bytes.hex().upper()}")
-        t_apdu_with_get_response_bytes = bytes(fragmented_t_apdu_with_get_response_bytes[1:])
-
-        EFC.EfcDsrcGeneric.T_APDUs.from_uper(t_apdu_with_get_response_bytes)
-        gea_dll_wrapper_logger.debug(f"Response T_APDU value: {EFC.EfcDsrcGeneric.T_APDUs._val}")
-        json_encoded_response_t_apdu = EFC.EfcDsrcGeneric.T_APDUs._to_jval()
-        gea_dll_wrapper_logger.debug(f"Response T_APDU in JSON value: {json_encoded_response_t_apdu}")
-        return json_encoded_response_t_apdu
-
-    def get_eid_info(self, eid:int) -> int:
-        vst_application_index = -1
-        gea_dll_wrapper_logger.debug(f"Getting application with EID {eid}")
-        for index, application in enumerate(self.last_vst_obj['applications']):
-            gea_dll_wrapper_logger.debug(f"Application details: {application}")
-            if application["eid"] == eid:
-                vst_application_index = index
-        if vst_application_index == -1:
-            gea_dll_wrapper_logger.info(f"EID {eid} is not present!")
-        else:
-            gea_dll_wrapper_logger.debug(f"Index of EID {eid} on VST is {vst_application_index}")
-        return vst_application_index
-    
-    def send_get_request(self, eid, accessCredentials=None, attrIdList=None, close = False) -> EFC.EfcDsrcGeneric.Get_Response:
-        # Get.Request is filled with 1 bit valued at 0
-        get_req_value = {
-            'eid': eid,
-            'accessCredentials': accessCredentials,
-            'attrIdList': attrIdList,
-            'fill': (0, 1)
-        }
-        # Ignore keys in dict that map to None!!
-        get_req_value = {key: value for key, value in get_req_value.items() if value is not None}
-
-        EFC.EfcDsrcGeneric.Get_Request.set_val(get_req_value)
-        gea_dll_wrapper_logger.debug(f"Get.Request value: {EFC.EfcDsrcGeneric.Get_Request._val}")
-        gea_dll_wrapper_logger.info(f"Get.Request in JER: {EFC.EfcDsrcGeneric.Get_Request.to_jer()}")
-
-        asn1_request_t_apdu_value = ('get-request', get_req_value)
-        json_encoded_response_t_apdu = self.send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value)
-        # Obtaining GET.response contents
-        gea_dll_wrapper_logger.debug("We now obtain the VST object from the T_APDU response!")
-        gea_dll_wrapper_logger.debug("GET.request is a parameterized type, so we cannot encode/decode it, only the T_APDU!")
-        get_response = json_encoded_response_t_apdu['get-response']
-        return get_response
-
-    def presentation_request(self, eid:int, access_credentials:int, attribute_ids=[], operator_auk_ref=111, response_expected=True, close=False):
-        return self.send_get_stamped_request(eid, access_credentials, attribute_ids, operator_auk_ref, response_expected, close)
-    def send_get_stamped_request(self, eid:int, access_credentials:int, attribute_ids=[], operator_auk_ref=111, response_expected=True, close=False):
-        datagram = self.get_stamped_request_datagram_preparation(eid, access_credentials, attribute_ids, operator_auk_ref, response_expected, close)
-        return self.send_command(datagram)
-    def get_stamped_request_datagram_preparation(self, eid:int, access_credentials:int, attribute_ids=[], operator_auk_ref=111, response_expected=True, close = False):
-        gea_dll_wrapper_logger.debug(f"Preparing a GET_STAMPED.request to get attributes with ids {attribute_ids}")
-        action_req_header = 0
-
-        # The ActionParameter is always present in a GET_STAMPED request
-        # Also, its container type/choice is set to 17 = 0x11 for a GetStampedRq
-        action_req_header = action_req_header | 0b0100
-        GetStampedRq_action_type = 0x11
-
-        if response_expected:
-            action_req_header = action_req_header | 1
-
-        if access_credentials is not None:
-            # Access Credentials is present!
-            action_req_header = action_req_header | 0b1000
-            # Length + Value
-            ac_cr_list = [4] + list(access_credentials.to_bytes(4, 'big'))
-        else:
-            ac_cr_list = []
-
-        # ActionParamater is always present, so AttributeIdList must be present even if just an empty list (thus with length = 0)
-        if attribute_ids is None:
-            attribute_ids = []
-        if attribute_ids:
-            # AttributeIdList is present!
-            # Length + Value
-            attribute_id_list = [len(attribute_ids)] + attribute_ids
-        #else:
-        #    attribute_id_list = [00]
-        
-        # ActionType is a GET_STAMPED
-        action_type = 0
-        # Attribute 0x20 = 32 is the PAN, or PaymentMeans
-        # So the AttributeIdList is set by default to [0x20]
-
-        self.rnd_rse = custom_ITS_per_decoders.encode_date_and_time()
-        rnd_rse_list = [4] + list(self.rnd_rse.to_bytes(4, 'big'))
-        presentation_request = [self.frag_header, action_req_header, eid, action_type] + ac_cr_list  + [GetStampedRq_action_type] + attribute_id_list + rnd_rse_list + [operator_auk_ref]
-        
-        gea_dll_wrapper_logger.debug(f"Presentation request: {presentation_request}")
-        
-        # Converting command request to bytes structure and returning it
-        return bytes(presentation_request)
-
-    def set_mmi(self, eid=0, set_mmi_request_value=0, close = False):
-        gea_dll_wrapper_logger.debug(f"Preparing a SET_MMI.request")
-
-        # SetMMI is a parameterized type, so it needs to be inside a container
-        set_mmi_efc_container_value = ('setmmirq', set_mmi_request_value)
-        EFC.EfcDsrcGeneric.EfcContainer.set_val(set_mmi_efc_container_value)
-        gea_dll_wrapper_logger.debug(f"EfcContainer of Type 69 (SET_MMI) value decoded with JER: {EFC.EfcDsrcGeneric.EfcContainer.to_jer()}")
-        gea_dll_wrapper_logger.debug(f"EfcContainer of Type 69 (SET_MMI) value decoded with PER: {EFC.EfcDsrcGeneric.EfcContainer.to_uper()}")
-        
+    def set_mmi(self, close = False):
+        """
+        Simple SetMMI request.
+        This is used by the Layer 7 wrapper to close transactions.
+        This is probably useless in the Layer 7 application (We can just reset/stop the beacon).
+        """
         # SetMMI ActionType is 0xA, or 10 in decimal
-        set_mmi_action_request_val = {
-            'mode': True,
-            'eid': eid,
-            'actionType': 0xA,
-            'actionParameter': set_mmi_efc_container_value
-            }
-        
-        t_apdu_with_set_mmi_action_req_value = ('action-request', set_mmi_action_request_val)
-        gea_dll_wrapper_logger.info(f"ACTION.request of Type 10 (SET_MMI) being now sent...")
-
-        t_apdu_with_action_response = self.send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_set_mmi_action_req_value, close)
-        return t_apdu_with_action_response
-    def decode_last_get_response(self):
-        decoded_response = custom_ITS_per_decoders.decode_response(self.last_cmd_response)
-        if decoded_response is None:
-            return
-        try:
-            return_status = decoded_response["ReturnStatus"]
-            raise(return_status)
-        except custom_ITS_per_decoders.ReturnStatus:
-            gea_dll_wrapper_logger.error(return_status.message)
-        decoded_response
-
+        set_mmi_request = [self.frag_header, 0x05, 0x00, 0x0A, 0x00, 0x00]
+        set_mmi_datagram = bytes(set_mmi_request)
+        self.send_command(set_mmi_datagram, close)
     def send_close_transaction_to_obu(self):
+        """
+        To close the transaction, we just send a SetMMI request...
+        """
         command_response = self.set_mmi(True)
-        self.no_transaction_in_progress.clear()
         return command_response
-    def stopping(self):
+    def close(self):
         gea_dll_wrapper_logger.info(f"Stopping Beacon Manager!")
         # If a transaction is still open, we close it
         if self.beacon_state.trxInProgress:
+            # We probably don't need to close the transaction, this is an unnecessary step/precaution
             gea_dll_wrapper_logger.info(f"A transaction was in progress according to the DLL! Closing it...")
             self.send_close_transaction_to_obu()
         

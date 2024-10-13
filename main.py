@@ -17,6 +17,7 @@ from ASN.compiled_DSRC_instances import LACv2_1
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
 from gea_bcm_dll_wrapper import *
+from beacon_manager import BeaconManger
 
 root_logger = logging.getLogger()
 root_logger.setLevel(logging.DEBUG)
@@ -86,7 +87,7 @@ def main():
 
     root_logger.debug("Initialization: Starting BST and getting VST...")
 
-    vst_obj = beacon_manager.initialization()
+    vst_obj = beacon_manager.initialize_transaction()
 
     # Requesting EFC, CCC and UNI
     required_applications = [1, 20, 29]
@@ -102,12 +103,12 @@ def main():
         root_logger.info(f"GET.response decoded: {get_response}")
 
     eid = 3
-    vst_application_index = beacon_manager.get_eid_info(eid)
+    vst_application_index = beacon_manager.get_eid_info_from_last_vst(eid)
 
     # The EID is present in the VST! The beacon operator can do a transaction
     if vst_application_index >= 0:
         root_logger.debug(f"Operator application index: {vst_application_index}")
-        operator_application = vst_obj['Applications'][vst_application_index]
+        operator_application = vst_obj['applications'][vst_application_index]
 
         efc_cm = operator_application['EFC-CM']
         root_logger.debug(f"EFC-CM decoding: {custom_ITS_per_decoders.DSRC_Data_Container(bytes.fromhex("20" + efc_cm)).__repr__()}")
