@@ -159,8 +159,10 @@ error_descriptions = {
 }
 
 class BCMError:
-    def get_error_description(error_code):
-        return error_descriptions.get(error_code, "Unknown error or no description")
+    def __init__(self, error_code):
+        self.error_code = error_code
+    def get_error_description(self):
+        return error_descriptions.get(self.error_code, "Unknown error or no description")
 
 # Define necessary types from ctypes and wintypes
 BCM_ERR = c_int
@@ -259,9 +261,9 @@ class ST_BCM_REG(ctypes.Structure):
 ST_BCM_REG_PTR = POINTER(ST_BCM_REG)
 
 bcm_mode_descriptions = {
-    BCM_MODE_Enum.BCM_MOD_Stopped: f"Mode: Stopped. To switch off the HF, and to read or change the parameters of the beacon.\n",
-    BCM_MODE_Enum.BCM_MOD_Transparent: f"Mode: Transparent. The beacon can be used to communicate with a device\n",
-    BCM_MODE_Enum.BCM_MOD_Maintenance: f"Mode: Maintenance. The beacon should not be used!\n"
+    BCM_MODE_Enum.BCM_MOD_Stopped: f"Mode: Stopped. To switch off the HF, and to read or change the parameters of the beacon.",
+    BCM_MODE_Enum.BCM_MOD_Transparent: f"Mode: Transparent. The beacon can be used to communicate with a device",
+    BCM_MODE_Enum.BCM_MOD_Maintenance: f"Mode: Maintenance. The beacon should not be used!"
 }
 
 class ST_BCM_STATE(ctypes.Structure):
@@ -275,12 +277,18 @@ class ST_BCM_STATE(ctypes.Structure):
     def __repr__(self):
         return repr(dict(self))
     
-    def get_description(self):
+    def get_description_json(self):
         return {
-            'state': BCMError(bcm.state).get_error_description(),
+            'state': BCMError(self.state).get_error_description(),
             'mode': bcm_mode_descriptions[self.mode],
             'trxInProgress': self.trxInProgress
             }
+    def get_description(self):
+        return json.dumps(obj={
+            'state': BCMError(self.state).get_error_description(),
+            'mode': bcm_mode_descriptions[self.mode],
+            'trxInProgress': self.trxInProgress
+            }, indent=2)
 
 ST_BCM_STATE_PTR = POINTER(ST_BCM_STATE)
 
@@ -833,12 +841,13 @@ class BCM_GEA_DLL_Wrapper:
     def update_state(self):
         gea_dll_wrapper_logger.debug(f"Udpating beacon state...")
         if self.beacon_state.trxInProgress:
-            gea_dll_wrapper_logger.error(f"Do not try to update the state: A transaction is in progress! Otherwise, an Exception will be raised.") 
+            gea_dll_wrapper_logger.error(f"Do not try to update the state: A transaction is in progress! Otherwise, an Exception will be raised.")
         
         result = bcm_check_state(self.reg_ptr, ctypes.byref(self.beacon_state))
         bcm_error_wrapper(result)
 
         gea_dll_wrapper_logger.debug(f"Beacon state: {self.beacon_state}")
+        gea_dll_wrapper_logger.info(f"Beacon state description: {self.beacon_state.get_description()}")
         return result
     def get_last_beacon_state(self):
         gea_dll_wrapper_logger.debug(f"Beacon state dict: {dict(self.beacon_state)}")
