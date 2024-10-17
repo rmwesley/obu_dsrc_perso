@@ -2,8 +2,6 @@ import ctypes
 from ctypes import POINTER, wintypes, c_char_p, c_uint, c_int, c_byte, c_bool, c_ulong, c_ushort, c_void_p
 from ctypes.wintypes import HWND, LPCWSTR, UINT, BYTE, WORD, DWORD, CHAR, BOOL, LPVOID, LPBYTE
 
-import json
-import threading
 import logging
 
 gea_dll_loader_logger = logging.getLogger(__name__)
@@ -279,7 +277,7 @@ class ST_BCM_STATE(ctypes.Structure):
     
     def get_description(self):
         return {
-            'state': BCMError(bcm.state).get_error_description()
+            'state': BCMError(bcm.state).get_error_description(),
             'mode': bcm_mode_descriptions[self.mode],
             'trxInProgress': self.trxInProgress
             }
@@ -512,6 +510,7 @@ gea_dll_loader_logger.debug(bytes_dll_version)
 
 gea_dll_loader_logger.info(f"Loaded DLL version: {bytes_dll_version[1]}.{bytes_dll_version[2]}.{bytes_dll_version[3]}")
 
+import json
 import threading
 
 gea_dll_wrapper_logger = logging.getLogger(__name__)
@@ -542,7 +541,7 @@ def cb_error_handler(callback_code, error_code):
 
 # Defining the BCM (Beacon Manager) GEA DLL Python wrapper class
 class BCM_GEA_DLL_Wrapper:
-    def __init__(self, external_callback:callable = None, external_alarm:callable = None):
+    def __init__(self, external_callback:callable = None, external_alarm:callable = None, serial_port=None):
         self.beacon_state_ok_trigger = threading.Event()
         self.callback_received_notifier = threading.Condition()
         self.transaction_lock = threading.Lock()
@@ -571,9 +570,6 @@ class BCM_GEA_DLL_Wrapper:
         
         gea_dll_wrapper_logger.debug("Initializing GEA BCM...")
         
-        send_event_polling_OK = False
-        if beacon_alarm_state_polling_ms > 0:
-            send_event_polling_OK = True
         # The user registration number is not used internally by the BCM DLL
         # It is thus free for use in our application
         user_registration = 7
@@ -581,10 +577,13 @@ class BCM_GEA_DLL_Wrapper:
 
         gea_dll_wrapper_logger.debug(f"Current beacon manager settings in moment of initialization: {json.dumps(beacon_manager_settings, indent=2)}")
         tgbv_beacon_settings = beacon_manager_settings["TGBV"]
-        if tgbv_beacon_settings["communication_mode"] == "serial":
+
+        send_event_polling_OK = tgbv_beacon_settings["send_OK_state_as_well"]
+        beacon_alarm_state_polling_ms = tgbv_beacon_settings["beacon_alarm_state_polling_ms"]
+
+        if tgbv_beacon_settings["default_communication_mode"] == "serial":
             if serial_port is None:
                 serial_port = tgbv_beacon_settings["serial_config"]["beacon_serial_port"]
-                beacon_alarm_state_polling_ms = tgbv_beacon_settings["serial_config"]["beacon_alarm_state_polling_ms"]
             gea_dll_wrapper_logger.info(f"Beacon serial port: {serial_port}")
             serial_port_speed = BaudRate_Enum.BCM_CFG_115200
             result = bcm_init_manager_fnc(
@@ -620,17 +619,20 @@ class BCM_GEA_DLL_Wrapper:
         self.update_beacon_id()
         self.handle_init_errors()
         
-    def start_bst_wrapper(self, bst_datagram:bytes, bst_type:int):
-        bst_datagram_buffer = ctypes.create_string_buffer(bst_datagram, size=len(bst_datagram))
+    def start_bst_wrapper(self, t_apdu_bst_datagram:bytes, bst_type:int):
+        fragmented_t_apdu_bst_datagram = self.frag_header + t_apdu_bst_datagram
+        if len(fragmented_t_apdu_bst_datagram) > BCM_SIZEMAX_Enum.BCM_SIZEMAX_BST:
+            bcm_logger.error(f"Datagram is too big! Will probably cause a BST error")
+
+        bst_datagram_buffer = ctypes.create_string_buffer(fragmented_t_apdu_bst_datagram, size=len(fragmented_t_apdu_bst_datagram))
         # Pointer to the buffered BST datagram
         lp_bst_datagram = ctypes.cast(bst_datagram_buffer, POINTER(BYTE))
         byte_bst_type = BYTE(bst_type)
-        gea_dll_wrapper_logger.info(f"BST to be sent in hex format: {bst_datagram.hex().upper()}")
-        gea_dll_wrapper_logger.info(f"Decoded BST: {bst_datagram.hex().upper()}")
+        gea_dll_wrapper_logger.info(f"Fragmented T-APDU with BST to be sent in hex format: {fragmented_t_apdu_bst_datagram.hex().upper()}")
 
         result = bcm_start_bst(self.reg_ptr,
                                lp_bst_datagram,
-                               DWORD(len(bst_datagram)),
+                               DWORD(len(fragmented_t_apdu_bst_datagram)),
                                byte_bst_type)
         bcm_error_wrapper(result)
         gea_dll_wrapper_logger.debug("No errors occurred: BST started!")
@@ -684,8 +686,9 @@ class BCM_GEA_DLL_Wrapper:
         gea_dll_wrapper_logger.info(f"Received VST in hex format: {t_apdu_containing_vst.hex().upper()}")
         return t_apdu_containing_vst
 
-    def send_command(self, datagram: bytes, close_transaction_transaction=False):
-        lp_cmd_datagram = ctypes.cast(datagram, POINTER(BYTE))
+    def send_command(self, t_apdu_datagram: bytes, close_transaction_transaction=False):
+        fragmented_t_apdu_datagram = self.frag_header + t_apdu_datagram
+        lp_cmd_datagram = ctypes.cast(fragmented_t_apdu_datagram, POINTER(BYTE))
         
         # Buffers and pointers for command response datagrams
         cmd_response_buffer_array = ctypes.create_string_buffer(BCM_SIZEMAX_Enum.BCM_SIZEMAX_CMD)
@@ -693,18 +696,18 @@ class BCM_GEA_DLL_Wrapper:
         lp_cmd_response_datagram = ctypes.cast(cmd_response_buffer_array, POINTER(BYTE))
         cmd_response_size = DWORD()
 
-        gea_dll_wrapper_logger.debug(f"Command to be sent in hex format: {datagram.hex().upper()}")
+        gea_dll_wrapper_logger.debug(f"Command to be sent in hex format: {fragmented_t_apdu_datagram.hex().upper()}")
 
         result = bcm_send_cmd(
             self.reg_ptr,
             lp_cmd_datagram,
-            DWORD(len(datagram)),
+            DWORD(len(fragmented_t_apdu_datagram)),
             lp_cmd_response_datagram,
             ctypes.byref(cmd_response_size),
             dword_cmd_resonse_max_size,
             close_transaction_transaction
             )
-        self.last_cmd_req = bytes(datagram)
+        self.last_cmd_req = bytes(fragmented_t_apdu_datagram)
         bcm_error_wrapper(result)
 
         # Iterating cmd response pointer to get its value/contents
@@ -752,6 +755,7 @@ class BCM_GEA_DLL_Wrapper:
         if alarm_type == BCM_ALARMS_Enum.BCM_AlarmPeriph or alarm_type == BCM_ALARMS_Enum.BCM_AlarmBeacon:
             gea_dll_wrapper_logger.error(f"Error in Alarm! Description: {BCM_Alarm.get_description(alarm_type)}") 
         gea_dll_wrapper_logger.debug(f"Alarm description: {BCM_Alarm.get_description(alarm_type)}")
+        
         if alarm_type == BCM_ALARMS_Enum.BCM_EventPollingOK:
             self.beacon_state_ok_trigger.set()
         return
@@ -797,7 +801,7 @@ class BCM_GEA_DLL_Wrapper:
         return self.beacon_state
 
     def wait_until_ok(self):
-        gea_dll_wrapper_logger.debug("Polling the beacon state until it is in an OK state...")
+        gea_dll_wrapper_logger.debug("Waiting for the beacon to be in an OK state again...")
         self.beacon_state_ok_trigger.wait()
         gea_dll_wrapper_logger.debug("Beacon is OK!!!")
 
@@ -806,7 +810,26 @@ class BCM_GEA_DLL_Wrapper:
         with self.callback_received_notifier:
             self.callback_received_notifier.wait()
         gea_dll_wrapper_logger.debug("\tCB notification received!!! You can receive a VST now.")
+
+    def update_beacon_id(self) -> bytes:
+        """
+        This is a specific function for TGBV hardware since managing the BeaconId is not straightforward and maybe even buggy with it.
+        There seems to be a bug for GEA_CATL_TGB_V1_3#.
+        Not a bug in GEA_TGB_VOIE_V1.5# and TGB_VOIE#1.8.0#, though.
+        """
+        gea_dll_wrapper_logger.debug("Getting Beacon ID...")
         
+        beacon_id_buffer_array = ctypes.create_string_buffer(BCM_FIXED_SIZES_Enum.BCM_SIZE_BEACONID)
+
+        # Pointer where the BeaconID will be stored by BCM
+        lp_beacon_id = ctypes.cast(beacon_id_buffer_array, POINTER(BYTE))
+
+        result = bcm_get_beacon_id(self.reg_ptr, lp_beacon_id)
+        self.last_beacon_id = bytes(beacon_id_buffer_array[0:BCM_FIXED_SIZES_Enum.BCM_SIZE_BEACONID])
+
+        gea_dll_wrapper_logger.debug(f"Latest Beacon ID in hex: {self.last_beacon_id.hex().upper()}")
+        return result
+
     def update_state(self):
         gea_dll_wrapper_logger.debug(f"Udpating beacon state...")
         if self.beacon_state.trxInProgress:

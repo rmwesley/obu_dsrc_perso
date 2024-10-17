@@ -3,39 +3,26 @@ from ASN.compiled_DSRC_instances import EFCv10_1 as EFC
 from ASN.compiled_DSRC_instances import LACv2_1
 
 from datetime import datetime
+import json
 import logging
 
-from gea_bcm_dll_wrapper import BCM_GEA_DLL_Wrapper
+from gea_bcm_dll_wrapper import BCM_GEA_DLL_Wrapper, BCM_BST_TYPE_Enum
 
 bcm_logger = logging.getLogger(__name__)
+
+with open('settings/beacon_manager_config.json', 'r') as beacon_manager_settings_file:
+    beacon_manager_settings = json.load(beacon_manager_settings_file)
 
 # Defining the BeaconManager class
 class BeaconManager:
     def __init__(self):
-        chosen_beacon_name = beacon_manager_settings["chosen_beacon_name"]
-        self.switch_beacon(chosen_beacon_name)
-    def switch_beacon(self, chosen_beacon_name):
-        if chosen_beacon_name == "TGBV":
+        chosen_beacon_name = beacon_manager_settings["default_beacon_name"]
+        self.safe_switch_beacon(chosen_beacon_name)
+    def safe_switch_beacon(self, chosen_beacon_name):
+        if hasattr(self, 'beacon_l7_wrapper'):
             self.beacon_l7_wrapper.close()
+        if chosen_beacon_name == "TGBV":
             self.beacon_l7_wrapper = BCM_GEA_DLL_Wrapper()
-    def update_beacon_id(self) -> EFC.EfcDsrcGeneric.BeaconID:
-        """
-        This is a specific function for TGBV hardware since managing the BeaconId is not straightforward and maybe even buggy with it.
-        There seems to be a bug for GEA_CATL_TGB_V1_3#.
-        Not a bug in GEA_TGB_VOIE_V1.5# and TGB_VOIE#1.8.0#, though.
-        """
-        bcm_logger.debug("Getting Beacon ID...")
-        
-        beacon_id_buffer_array = ctypes.create_string_buffer(BCM_FIXED_SIZES_Enum.BCM_SIZE_BEACONID)
-
-        # Pointer where the BeaconID will be stored by BCM
-        lp_beacon_id = ctypes.cast(beacon_id_buffer_array, POINTER(BYTE))
-
-        bcm_get_beacon_id(self.reg_ptr, lp_beacon_id)
-        self.last_beacon_id = bytes(beacon_id_buffer_array[0:BCM_FIXED_SIZES_Enum.BCM_SIZE_BEACONID])
-
-        bcm_logger.debug(f"Latest Beacon ID in hex: {self.last_beacon_id.hex().upper()}")
-        return self.last_beacon_id
     # Start sending a BST
     def start_bst(self, manufacturer_id=0x31, individual_id=0x111, mandapplications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
         mandApplications = [{'aid': mandatory_aid} for mandatory_aid in mandapplications]
@@ -45,7 +32,7 @@ class BeaconManager:
                 'manufacturerid': manufacturer_id,
                 'individualid': individual_id
                 },
-            'time': datetime.utcnow().timestamp(),
+            'time': int(datetime.utcnow().timestamp()),
             'profile': profile,
             'mandApplications': mandApplications,
             'profileList': profile_list
@@ -57,16 +44,13 @@ class BeaconManager:
         EFC.EfcDsrcGeneric.T_APDUs.set_val(('initialisation-request', EFC.EfcDsrcGeneric.BST._val))
         bcm_logger.debug(f"T_APDU containing BST in JER: {EFC.EfcDsrcGeneric.T_APDUs.to_jer()}")
 
-        self.last_sent_fragmented_t_apdu_containing_bst = self.frag_header + EFC.EfcDsrcGeneric.T_APDUs.to_uper()
-        bcm_logger.debug(f"Fragmented T_APDU containing BST: {self.last_sent_fragmented_t_apdu_containing_bst.hex().upper()}")
+        self.last_sent_t_apdu_containing_bst = EFC.EfcDsrcGeneric.T_APDUs.to_uper()
 
-        if len(self.last_sent_bst) > BCM_SIZEMAX_Enum.BCM_SIZEMAX_BST:
-            bcm_logger.error(f"Datagram is too big! Will probably cause a BST error")
-        result = self.start_bst_wrapper(self.last_sent_fragmented_t_apdu_containing_bst, bst_type)
+        result = self.beacon_l7_wrapper.start_bst_wrapper(self.last_sent_t_apdu_containing_bst, bst_type)
 
         bcm_logger.debug("We now get the lastest BeaconID just after starting the BST")
-        self.update_beacon_id()
-        bcm_logger.debug(f"Last BeaconID: {self.last_beacon_id.hex().upper()}")
+        self.beacon_l7_wrapper.update_beacon_id()
+        bcm_logger.debug(f"Last BeaconID: {self.beacon_l7_wrapper.last_beacon_id.hex().upper()}")
 
         return result
     
@@ -79,7 +63,7 @@ class BeaconManager:
         The initialization phase locks the transaction thread when a VST is received!
         When the transaction is closed (no longer in progress) the transaction lock is released.
         """
-        if self.beacon_state.trxInProgress:
+        if self.beacon_l7_wrapper.beacon_state.trxInProgress:
             bcm_logger.error("Do not try to initilize a transaction! One is already in progress!")
             return
         bcm_logger.debug("We lock the thread until the opened transaction is closed!")
@@ -88,7 +72,7 @@ class BeaconManager:
         bcm_logger.debug("No errors occurred when starting BST!")
         
         bcm_logger.info("We now wait on the main thread until we a VST notification is received...")
-        self.wait_for_vst_notification()
+        self.beacon_l7_wrapper.wait_for_vst_notification()
         #self.no_transaction_in_progress.set()
 
         bcm_logger.info("A VST notification was received! We now get the VST")
@@ -112,21 +96,16 @@ class BeaconManager:
 
         bcm_logger.debug(f'Decoded VST: {self.last_received_vst}')
         return self.last_received_vst
-
-    def send_command(self):
-        self.last_cmd_response = self.beacon_l7_wrapper.send_command(datagram=)
-        bcm_logger.debug(f"Command response in hex format: {self.last_cmd_response.hex().upper()}")
-        return self.last_cmd_response
     
     def send_req_t_apdu_and_obtain_resp_t_apdu(self, asn1_request_t_apdu_value, close=False) -> dict:
         bcm_logger.debug(f"Preparing request T_APDU to be sent...")
         EFC.EfcDsrcGeneric.T_APDUs.set_val(asn1_request_t_apdu_value)
         bcm_logger.debug(f"Request T_APDU value: {EFC.EfcDsrcGeneric.T_APDUs._val}")
         bcm_logger.debug(f"T_APDU in JER: {EFC.EfcDsrcGeneric.T_APDUs.to_jer()}")
-        fragmented_t_apdu = self.frag_header + EFC.EfcDsrcGeneric.T_APDUs.to_uper()
 
-        bcm_logger.info(f"Sending fragmented T_APDU: {fragmented_t_apdu.hex().upper()}")
-        fragmented_t_apdu_with_get_response_bytes = self.send_command(fragmented_t_apdu, close)
+        # Sending command!!!
+        fragmented_t_apdu_with_get_response_bytes = self.beacon_l7_wrapper.send_command(EFC.EfcDsrcGeneric.T_APDUs.to_uper(), close)
+
         bcm_logger.debug(f"Decoding received response T_APDU...")
         bcm_logger.info(f"Fragmented T_APDU response obtained from beacon in hex (supposed to be UPER): {fragmented_t_apdu_with_get_response_bytes.hex().upper()}")
         t_apdu_with_get_response_bytes = bytes(fragmented_t_apdu_with_get_response_bytes[1:])
@@ -305,6 +284,7 @@ class BeaconManager:
         bcm_logger.debug(f"Preparing a SET_MMI.request")
         bcm_logger.debug(f"The function to send ACTION.requests is defined to send a SET_MMI by default if no arguments are provided!")
 
+        set_mmi_request_value = 0
         # SetMMI is a parameterized type, so it needs to be inside a container
         set_mmi_efc_container_value = ('setmmirq', set_mmi_request_value)
         EFC.EfcDsrcGeneric.EfcContainer.set_val(set_mmi_efc_container_value)

@@ -17,7 +17,7 @@ from ASN.compiled_DSRC_instances import LACv2_1
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
 from gea_bcm_dll_wrapper import *
-from beacon_manager import BeaconManger
+from beacon_manager import BeaconManager
 
 root_logger = logging.getLogger()
 root_logger.setLevel(logging.DEBUG)
@@ -72,18 +72,19 @@ def main():
     root_logger.debug("Initialized BCM!!")
 
     root_logger.debug("Getting beacon configuration...")
-    bcm_config = beacon_manager.get_config()
+    bcm_config = beacon_manager.beacon_l7_wrapper.get_config()
     root_logger.debug(f"Displaying config data...: {bcm_config}")
     
-    beacon_manager.change_mode(BCM_MODE_Enum.BCM_MOD_Transparent)
+    beacon_manager.beacon_l7_wrapper.change_mode(BCM_MODE_Enum.BCM_MOD_Transparent)
     root_logger.debug("Changed mode to transparent!")
     
     root_logger.debug("Getting beacon state...")
-    result = beacon_manager.update_state()
+    result = beacon_manager.beacon_l7_wrapper.update_state()
 
     root_logger.debug("We now update/get the BeaconID according to the beacon before sending the BST")
-    result = beacon_manager.update_beacon_id()
-    root_logger.debug(f"BeaconID according to beacon: {beacon_manager.last_beacon_id.hex().upper()}")
+    result = beacon_manager.beacon_l7_wrapper.update_beacon_id()
+    EFC.EfcDsrcGeneric.BeaconID.from_uper(beacon_manager.beacon_l7_wrapper.last_beacon_id)
+    root_logger.debug(f"Beacon (according to GEA Beacon) encoded in JER: {EFC.EfcDsrcGeneric.BeaconID.to_jer()}")
 
     root_logger.debug("Initialization: Starting BST and getting VST...")
 

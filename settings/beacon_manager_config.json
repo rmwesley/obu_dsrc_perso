@@ -1,10 +1,11 @@
 {
-  "chosen_beacon_name": "TGBV",
+  "default_beacon_name": "TGBV",
   "TGBV":{
-    "communication_mode": "serial",
+    "default_communication_mode": "serial",
+    "beacon_alarm_state_polling_ms": 2000,
+    "send_OK_state_as_well": true,
     "serial_config": {
-      "beacon_serial_port": 10,
-      "beacon_alarm_state_polling_ms": 2000
+      "beacon_serial_port": 10
     },
     "tcp_ip_config": {
       "ip_address": "133.38.40.152",
@@ -12,7 +13,7 @@
     }
   },
   "OPS1955":{
-    "communication_mode": "serial",
+    "default_communication_mode": "serial",
     "serial_config": {
       "beacon_serial_port": 7
     }
