@@ -532,12 +532,12 @@ def bcm_error_wrapper(bcm_error: BCMError):
     if not isinstance(bcm_error, int):
         raise TypeError(bcm_error)
     if bcm_error != BCM_ERR_Enum.BCM_NoError:
-        gea_dll_wrapper_logger.error(f"Beacon Manager Error {bcm_error}: {BCMError.get_error_description(bcm_error)}")
+        gea_dll_wrapper_logger.error(f"Beacon Manager Error {bcm_error}: {BCMError(bcm_error).get_error_description()}")
 
         # Handle error case if needed
         if bcm_error == BCM_ERR_Enum.BCM_TrxInProgress:
             gea_dll_wrapper_logger.error(f"Cannot execute function because a transaction is in progress!")
-        raise BeaconError(f"{bcm_error}: {BCMError.get_error_description(bcm_error)}")
+        raise BeaconError(f"{bcm_error}: {BCMError(bcm_error).get_error_description()}")
 
 def cb_error_handler(callback_code, error_code):
     if callback_code == BCM_CALLBACK_Enum.BCM_CB_ERR:

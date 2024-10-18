@@ -103,7 +103,7 @@ def main():
         get_response = beacon_manager.send_get_request(eid, attrIdList=[0x20])
         root_logger.info(f"GET.response decoded: {get_response}")
 
-    eid = 3
+    eid = 7
     vst_application_index = beacon_manager.get_eid_info_from_last_vst(eid)
 
     # The EID is present in the VST! The beacon operator can do a transaction
@@ -176,7 +176,7 @@ def main():
 
     root_logger.debug("We should send a SetMMI command on the main Thread to close the transaction")
     root_logger.debug("Otherwise, the transaction will remain unclosed and cause an error on the next execution")
-    beacon_manager.set_mmi(True)
+    beacon_manager.set_mmi(close=True)
     root_logger.info(f"VST: {json.dumps(vst_obj, indent=2)}")
 
 # Main execution

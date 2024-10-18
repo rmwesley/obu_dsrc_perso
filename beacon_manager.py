@@ -6,12 +6,15 @@ from datetime import datetime
 import json
 import logging
 
-from gea_bcm_dll_wrapper import BCM_GEA_DLL_Wrapper, BCM_BST_TYPE_Enum
+from gea_bcm_dll_wrapper import BCM_GEA_DLL_Wrapper, BCM_BST_TYPE_Enum, BCM_MODE_Enum
 
 bcm_logger = logging.getLogger(__name__)
 
 with open('settings/beacon_manager_config.json', 'r') as beacon_manager_settings_file:
     beacon_manager_settings = json.load(beacon_manager_settings_file)
+
+class BeaconManagerError(Exception):
+    pass
 
 # Defining the BeaconManager class
 class BeaconManager:
@@ -63,9 +66,13 @@ class BeaconManager:
         The initialization phase locks the transaction thread when a VST is received!
         When the transaction is closed (no longer in progress) the transaction lock is released.
         """
+        self.beacon_l7_wrapper.update_state()
+        if self.beacon_l7_wrapper.beacon_state.mode == BCM_MODE_Enum.BCM_MOD_Stopped:
+            raise BeaconManagerError("Beacon is in Stopped mode, not Transparent!!") 
         if self.beacon_l7_wrapper.beacon_state.trxInProgress:
             bcm_logger.error("Do not try to initilize a transaction! One is already in progress!")
-            return
+            raise BeaconManagerError("Transaction already in progress!!")
+        
         bcm_logger.debug("We lock the thread until the opened transaction is closed!")
 
         self.start_bst(manufacturer_id, individual_id, mandapplications, profile, profile_list, non_mand_applications, bst_type)
@@ -304,3 +311,5 @@ class BeaconManager:
 
         t_apdu_with_action_response = self.send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_set_mmi_action_req_value, close)
         return t_apdu_with_action_response
+    def send_close_transaction_setmmi(self, eid=0):
+        return self.set_mmi(eid, True)

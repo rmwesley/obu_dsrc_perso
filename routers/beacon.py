@@ -3,7 +3,10 @@ from fastapi.responses import FileResponse
 from fastapi.templating import Jinja2Templates
 
 from pydantic import BaseModel, Field
-from beacon_manager import BeaconManager
+from beacon_manager import BeaconManager, BeaconManagerError
+
+from typing import Literal, List
+from enum import IntEnum
 
 router = APIRouter(
     prefix="/beacon",
@@ -50,45 +53,60 @@ async def update_beacon_state(request: Request):
     request.app.state.beacon_manager.update_state()
     return {"beacon_state": request.app.state.beacon_manager.get_last_beacon_state()}
 
-class ChangeModeRequest(Request):
-    mode: int
+operating_modes_enum_values = {
+    "Stopped": 0,
+    "Transparent": 1,
+    "Maintenance": 3
+}
+class ChangeModeRequest(BaseModel):
+    mode_name: Literal[tuple(operating_modes_enum_values.keys())]
 
     model_config = {
         "json_schema_extra": {
             "examples": [
                 {
-                    "mode": 1
+                    "mode_name": 'Transparent'
+                },
+                {
+                    "mode_name": 'Stopped'
+                },
+                {
+                    "mode_name": 'Maintenance'
                 }
             ]
         }
     }
 # Endpoint to change the beacon mode
 @router.post("/change-mode")
-async def change_mode(request: ChangeModeRequest):
-    mode = (await request.json())["mode"]
-    request.app.state.beacon_manager.change_mode(mode)
-    return {"message": f"Changed mode to {mode}!"}
+async def change_mode(request: Request, request_body: ChangeModeRequest):
+    mode_name = (await request.json())["mode_name"]
+    mode_code = operating_modes_enum_values[mode_name]
+    request.app.state.beacon_manager.beacon_l7_wrapper.change_mode(mode_code)
+    return {"message": f"Changed mode to {mode_name} ({mode_code})!"}
 
 # Endpoint to initialize the beacon to access EFC functions
 @router.post("/initialize-transaction")
-async def initialize(request: Request):
-    last_decoded_vst_obj = request.app.state.beacon_manager.initialization()
+async def initialize_transaction(request: Request):
+    try:
+        last_decoded_vst_obj = request.app.state.beacon_manager.initialize_transaction()
+    except BeaconManagerError as beacon_error:
+        raise HTTPException(status_code=400, detail=f"{type(beacon_error).__name__}: {beacon_error}")
     return {"last_vst": last_decoded_vst_obj}
 
 # Endpoint to close transaction
-@router.post("/send-close-transaction-to-obu")
-async def send_close_transaction_to_obu(request: Request):
-    command_response = request.app.state.beacon_manager.send_close_transaction_to_obu()
+@router.post("/send-close-set-mmi-to-obu")
+async def send_close_set_mmi_to_obu(request: Request):
+    response_t_apdu = request.app.state.beacon_manager.send_close_transaction_setmmi()
     return {
-        "message": "Transaction closed",
-        "command_response": command_response
+        "message": "Transaction closed!",
+        "response_t_apdu": response_t_apdu.to_jer()
         }
 
 # Endpoint to initialize the beacon and close transaction
-@router.post("/initialize-close-transaction")
-async def initialize_close(request: Request):
-    last_decoded_vst_obj = request.app.state.beacon_manager.initialization()
-    request.app.state.beacon_manager.send_close_transaction_to_obu()
+@router.post("/initialize-and-close-transaction")
+async def initialize_and_close_transaction(request: Request):
+    last_decoded_vst_obj = request.app.state.beacon_manager.initialize_transaction()
+    request.app.state.beacon_manager.send_close_transaction_setmmi()
     return {"VST": last_decoded_vst_obj}
 
 @router.get("/last-vst")
