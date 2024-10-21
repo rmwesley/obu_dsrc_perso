@@ -5,8 +5,10 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 from beacon_manager import BeaconManager, BeaconManagerError
 
-from typing import Literal, List
+from typing import Literal, Optional
 from enum import IntEnum
+
+import dsrc_security
 
 router = APIRouter(
     prefix="/beacon",
@@ -93,6 +95,28 @@ async def initialize_transaction(request: Request):
         raise HTTPException(status_code=400, detail=f"{type(beacon_error).__name__}: {beacon_error}")
     return {"last_vst": last_decoded_vst_obj}
 
+class GetRequest(BaseModel):
+    attribute_id_list: list
+    access_credentials_present: bool
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "attribute_id_list": [32],
+                    "access_credentials_present": False
+                }
+            ]
+        }
+    }
+@router.post("/send_get_request")
+async def send_get_request(request: Request, request_body: GetRequest):
+    response_t_apdu = request.app.state.beacon_manager.send_close_transaction_setmmi()
+    return {
+        "message": "Transaction closed!",
+        "response_t_apdu": response_t_apdu.to_jer()
+        }
+
 # Endpoint to close transaction
 @router.post("/send-close-set-mmi-to-obu")
 async def send_close_set_mmi_to_obu(request: Request):
@@ -105,23 +129,29 @@ async def send_close_set_mmi_to_obu(request: Request):
 # Endpoint to initialize the beacon and close transaction
 @router.post("/initialize-and-close-transaction")
 async def initialize_and_close_transaction(request: Request):
-    last_decoded_vst_obj = request.app.state.beacon_manager.initialize_transaction()
+    t_apdu_response_list = []
+    request.app.state.beacon_manager.initialize_transaction()
+    t_apdu_response_list.append(request.app.state.beacon_manager.last_response_t_apdu_json)
+
     request.app.state.beacon_manager.send_close_transaction_setmmi()
-    return {"VST": last_decoded_vst_obj}
+    t_apdu_response_list.append(request.app.state.beacon_manager.last_response_t_apdu_json)
+    return t_apdu_response_list
 
-@router.get("/last-vst")
+@router.get("/last_response_t_apdu_with_vst_json")
 async def get_last_vst(request: Request):
-    last_decoded_vst = request.app.state.beacon_manager.last_vst_obj
-    return {"last_vst": last_decoded_vst}
+    return request.app.state.beacon_manager.last_response_t_apdu_with_vst_json
 
+@router.get("/last_response_t_apdu_json")
+async def get_last_vst(request: Request):
+    return request.app.state.beacon_manager.last_response_t_apdu_json
 
 class GET_rq(BaseModel):
     attribute_id_list: list = Field(default=0x20, description='List of attribute ids to get')
 
 @router.post("/get-stamped")
 async def get_rq(request: Request):
-    command_respose = request.app.state.beacon_manager.send_get_stamped_request()
-    return {"command_respose" : command_respose}
+    request.app.state.beacon_manager.send_get_stamped_request()
+    return request.app.state.beacon_manager.last_response_t_apdu_json
 
 class EFCFunctionRequest(Request):
     function_type: str

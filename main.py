@@ -88,96 +88,88 @@ def main():
 
     root_logger.debug("Initialization: Starting BST and getting VST...")
 
-    vst_obj = beacon_manager.initialize_transaction()
-
     # Requesting EFC, CCC and UNI
     required_applications = [1, 20, 29]
     #Requesting only CCC
     #required_applications = [20]
     root_logger.info(f"Preparing a BST requesting AIDs {required_applications}")
 
-    READ_TIS = True
+    t_apdu_with_vst = beacon_manager.initialize_transaction(mandapplications = required_applications)
+    
+    READ_TIS = False
     if READ_TIS:
         eid = 4
         root_logger.debug(f"Getting the attribute 32=0x20, PaymentMeans, for the instance with EID {eid}...")
         get_response = beacon_manager.send_get_request(eid, attrIdList=[0x20])
         root_logger.info(f"GET.response decoded: {get_response}")
 
-    eid = 7
-    vst_application_index = beacon_manager.get_eid_info_from_last_vst(eid)
+    eid = 3
+    # Operator auth key is optional, it is set to 111 by default
+    root_logger.info(f"Sending a presentation request to EID {eid}")
+    response = beacon_manager.presentation_request(eid, True, [0], 111)
+    
+    attribute_list_start_index = 10
+    #attribute_list = custom_der_decoders.decode_attributes_list(response, attribute_list_start_index)
+    #root_logger.debug(f"AttributeList in hex: {attribute_list}")
 
-    # The EID is present in the VST! The beacon operator can do a transaction
-    if vst_application_index >= 0:
-        root_logger.debug(f"Operator application index: {vst_application_index}")
-        operator_application = vst_obj['applications'][vst_application_index]
+    root_logger.info(f"Sending a GET request on EID {eid} for attribute 16, the LPN")
+    get_response = beacon_manager.send_get_request(eid, True, [16])
+    root_logger.info(f"T-APDU containing a GET.response: {get_response}")
 
-        efc_cm = operator_application['EFC-CM']
-        root_logger.debug(f"EFC-CM decoding: {custom_ITS_per_decoders.DSRC_Data_Container(bytes.fromhex("20" + efc_cm)).__repr__()}")
+    lpn_value = beacon_manager.last_response_t_apdu_value[1]['attributelist'][0]['attributeValue'][1]
+    EFC.EfcDataDictionary.Lpn.set_val(lpn_value)
+    root_logger.debug(f"LPN value: {EFC.EfcDataDictionary.Lpn._val}")
+    root_logger.debug(f"LPN in JER: {EFC.EfcDataDictionary.Lpn.to_jer()}")
+    root_logger.debug(f"LPN in JSON: {EFC.EfcDataDictionary.Lpn._to_jval()}")
+    root_logger.debug(f"LPN in ASN1 representation: {EFC.EfcDataDictionary.Lpn.to_asn1()}")
+    
+    # CARDME transaction required attributes
+    #root_logger.debug(f"Sending a GET request on EID {eid} for multiple attributes at once")
+    cardme_attribute_list = [0, 16, 17, 20, 26, 33, 34]
+    viapass_attribute_list = [0, 16, 17, 20]
+    attribute_list = viapass_attribute_list
+    root_logger.info(f"Sending a GET request on EID {eid} for attributes {attribute_list}")
+    get_response = beacon_manager.send_get_request(eid, True, attribute_list)
+    root_logger.info(f"GET.response decoded: {get_response}")
+    
+    root_logger.debug(f"Sending a GET_STAMPED request on EID {eid} for attribute 32, the PaymenMeans")
+    get_stamped_response_json = beacon_manager.presentation_request(eid, True, [32])
+    root_logger.info(f"GET_STAMPED.response in JSON: {get_stamped_response_json}")
 
-        root_logger.debug(f"AC_CR-KeyRef in hex: {operator_application["AC_CR-KeyRef"]:04X}")
-        ac_cr_key_ref = operator_application["AC_CR-KeyRef"]
+    action_response_parameter = beacon_manager.last_response_t_apdu_value[1]['responseParameter']
+    if action_response_parameter is not None:
+        action_response_parameter_type = action_response_parameter[0]
+        if action_response_parameter_type is not 'gstrs':
+            raise Exception("Response does not contain a GetStampedRs parameter!!")
+        get_stamped_response_value = action_response_parameter[1]
 
-        rnd_obe = operator_application["RndOBE"]
-        access_credentials = dsrc_security.compute_access_credentials(efc_cm, rnd_obe, ac_cr_key_ref)
-        root_logger.debug(f"Generated Access Credentials in hex format: {access_credentials:08X}")
+        attribute_list_bytes = b''
+        provided_authenticator = get_stamped_response_value['authenticator']
+        rnd_rse_bytes = beacon_manager.rnd_rse_bytes_value
+        root_logger.debug(f"RndRSE value in hex: {rnd_rse_bytes.hex().upper()}")
+        rnd_rse_int = int.from_bytes(rnd_rse_bytes, 'big')
 
-        # Operator auth key is optional, it is set to 111 by default
-        #response = beacon_manager.presentation_request(eid, access_credentials, 111, [0])
-        
-        attribute_list_start_index = 10
-        #attribute_list = custom_der_decoders.decode_attributes_list(response, attribute_list_start_index)
-        #root_logger.debug(f"AttributeList in hex: {attribute_list}")
+        pan_bytes = get_stamped_response_value['attributeList'][0]['attributeValue'][1]['personalAccountNumber']
+        pan_id = pan_bytes.hex().upper()
+        root_logger.info(f"PAN bytes in hex (PAN ID): {pan_id}")
 
+        decoded_vst_param = beacon_manager.decode_vst_parameter_from_eid(eid)
+        efc_cm = decoded_vst_param['EFC-ContextMark']
+        authenticator = dsrc_security.compute_authenticator_with_auk_ref(pan_id, efc_cm, attribute_list_bytes, rnd_rse_int, 115)
 
-        root_logger.info(f"Sending a GET request on EID {eid} for attribute 16, the LPN")
-        response = beacon_manager.send_get_request(eid, access_credentials, [16])
-        decoded_get_response = custom_ITS_per_decoders.decode_response(response)
-        root_logger.info(f"GET.response decoded: {json.dumps(decoded_get_response, indent=2)}")
-        #root_logger.debug(f"Latest sent command decoded AttributesList: {beacon_manager.decode_last_get_response()}")
+        root_logger.debug(f"Authenticator provided by OBE in hex: {provided_authenticator.hex().upper()}")
+        root_logger.debug(f"Authenticator computed by RSE in hex: {authenticator:08X}")
 
-        decoded_lpn = custom_ITS_per_decoders.DSRC_Data_Container(bytes.fromhex("20" + efc_cm)).__repr__()
-        root_logger.debug(f"LPN decoding: {json.dumps(decoded_lpn, indent=2)}")
-        
-        # CARDME transaction required attributes
-        #root_logger.debug(f"Sending a GET request on EID {eid} for multiple attributes at once")
-        cardme_attribute_list = [0, 16, 17, 20, 26, 33, 34]
-        belgium_attribute_list = [0, 16, 17, 20]
-        attribute_list = belgium_attribute_list
-        root_logger.info(f"Sending a GET request on EID {eid} for attributes {attribute_list}")
-        response = beacon_manager.send_get_request(eid, access_credentials, attribute_list)
-        decoded_get_response = custom_ITS_per_decoders.decode_response(response)
-        root_logger.info(f"GET.response decoded: {json.dumps(decoded_get_response, indent=2)}")
-        
-        root_logger.debug(f"Sending a GET_STAMPED request on EID {eid} for attribute 32, the PaymenMeans")
-        response = beacon_manager.presentation_request(eid, access_credentials, [32])
-        decoded_get_stamped_response = custom_ITS_per_decoders.decode_response(response)
-        root_logger.info(f"GET_STAMPED.response decoded: {json.dumps(decoded_get_stamped_response, indent=2)}")
-
-        if decoded_get_stamped_response is not None:
-            size = decoded_get_stamped_response['ResponseParameter']['AttributeList_size']
-            provided_authenticator = decoded_get_stamped_response['ResponseParameter']['Authenticator']
-            attribute_list_bytes = bytes(response[4 : 4 + size])
-            root_logger.debug(f"AttibuteList in hex: {attribute_list_bytes.hex().upper()}")
-            rnd_rse = beacon_manager.rnd_rse
-            root_logger.debug(f"RndRSE value: {rnd_rse:04X}")
-
-            pan_id = decoded_get_stamped_response['ResponseParameter']['AttributeList'][0]['representation']['PAN']
-            print("PAN ID:", pan_id)
-
-            authenticator = dsrc_security.compute_authenticator_with_auk_ref(pan_id, efc_cm, attribute_list_bytes, rnd_rse, 115)
-            root_logger.debug(f"Authenticator provided by OBE: {provided_authenticator:08X}")
-            root_logger.debug(f"Authenticator computed by RSE: {authenticator:08X}")
-
-            if provided_authenticator != authenticator:
-                root_logger.error(f"The OBE is fraudulent!!")
-            else:
-                root_logger.info(f"OBE is authentic!!!")
+        if provided_authenticator != authenticator:
+            root_logger.error(f"The OBE is fraudulent!!")
+        else:
+            root_logger.info(f"OBE is authentic!!!")
 
 
     root_logger.debug("We should send a SetMMI command on the main Thread to close the transaction")
     root_logger.debug("Otherwise, the transaction will remain unclosed and cause an error on the next execution")
     beacon_manager.set_mmi(close=True)
-    root_logger.info(f"VST: {json.dumps(vst_obj, indent=2)}")
+    root_logger.info(f"VST: {json.dumps(t_apdu_with_vst, indent=2)}")
 
 # Main execution
 if __name__ == "__main__":

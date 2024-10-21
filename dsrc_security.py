@@ -7,6 +7,8 @@ import logging
 
 key_derivation_logger = logging.getLogger(__name__)
 
+from ASN.compiled_DSRC_instances import EFCv10_1 as EFC
+
 # Loading the Master Keys from a JSON into a Python dict
 # This dict maps an EFC-CM in hex format to a MasterKeySet also in hex format
 try:
@@ -36,6 +38,7 @@ def compute_kcvs_for_efc_cm_keyset(efc_cm: str):
 def prepare_3DES_cipher(efc_cm:str, key_ref:str):
     # In case key_ref is passed as an int instead of string...
     key_ref = str(key_ref)
+    efc_cm = efc_cm.upper()
     key_derivation_logger.debug(f"Getting the Master Key with ref {key_ref} for EFC-CM {efc_cm}")
     try :
         master_access_key = bytes.fromhex(master_keys[efc_cm][key_ref])
@@ -56,7 +59,7 @@ def compute_access_key(efc_cm:str, ac_cr_key_ref:int):
     except:
         return bytes(0)
     
-    # We concatenate the AC_CR-KeyRef 4 times to get 8 bytes
+    # We concatenate the AC_CR-KeyReference 4 times to get 8 bytes
     ciphertext = ac_cr_key_ref.to_bytes(2, 'big') * 4
     key_derivation_logger.debug(f"Ciphertext: {ciphertext.hex().upper()}")
 
@@ -73,11 +76,15 @@ def decrypt_access_key(efc_cm, access_key:bytes):
     key_derivation_logger.info(f"Ciphertext (decrypted access key) in hex: {decrypted_access_key.hex().upper()}")
     return decrypted_access_key
 
-def compute_access_credentials(contract_provider, rnd_obe, ac_cr_key_ref):
+def compute_access_credentials(contract_provider, rnd_obe:int, ac_cr_key_ref:int):
     # Compute the Access Key
     access_key = compute_access_key(contract_provider, ac_cr_key_ref)
     # Compute the Access Credentials and return it
     return compute_access_credentials_with_access_key(rnd_obe, access_key)
+
+def compute_access_credentials_from_t_apdu_with_vst_json(t_apdu_with_vst_json):
+    parameter_hex = t_apdu_with_vst_json['initialisation-response']['applications']['parameter']['octetstring']
+
 
 def compute_access_credentials_with_access_key(rnd_obe:int, access_key):
     # Prepare the DES cipher with the MAcK
