@@ -111,10 +111,39 @@ class GetRequest(BaseModel):
     }
 @router.post("/send_get_request")
 async def send_get_request(request: Request, request_body: GetRequest):
+    dsrc_security.compute_access_credentials_from_vst
     response_t_apdu = request.app.state.beacon_manager.send_close_transaction_setmmi()
     return {
         "message": "Transaction closed!",
         "response_t_apdu": response_t_apdu.to_jer()
+        }
+
+class PresentationReq(BaseModel):
+    eid:int
+    accessCredentialsPresent: Optional[bool] = True
+    attrIdList:list = [32]
+    operator_auk_ref:int = 111
+    close_transaction: Optional[bool] = False
+
+    model_config = {
+    "json_schema_extra": {
+        "examples": [
+            {
+                "eid": 4,
+                "accessCredentialsPresent": True,
+                "attrIdList": [32],
+                "operator_auk_ref": 111,
+                "close_transaction": False
+            }
+        ]
+    }
+    }
+@router.post("/send_presentation_request")
+async def send_presentation_request(request: Request, request_body: PresentationReq):
+    get_stamped_response_json = request.app.state.beacon_manager.presentation_request(**request_body.dict())
+    return {
+        "message": "Transaction closed!",
+        "response_t_apdu": get_stamped_response_json
         }
 
 # Endpoint to close transaction

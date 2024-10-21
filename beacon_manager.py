@@ -266,16 +266,14 @@ class BeaconManager:
             accessCredentialsPresent:bool = False,
             attrIdList=[],
             operator_auk_ref=111,
-            response_expected=True,
-            close=False):
-        return self.send_get_stamped_request(eid, accessCredentialsPresent, attrIdList, operator_auk_ref, response_expected, close)
+            close_transaction=False):
+        return self.send_get_stamped_request(eid, accessCredentialsPresent, attrIdList, operator_auk_ref, close_transaction)
     
     def send_get_stamped_request(self,
             eid:int,
             accessCredentialsPresent:int = False,
             attrIdList=[],
             operator_auk_ref=111,
-            response_expected=True,
             close=False):
         bcm_logger.debug("Preparing an ActionParameter for an Action-Request of type GET_STAMPED.request (Presentation request)...")
         get_stamped_rq_value = self.get_stamped_request_action_parameter_preparation(eid, accessCredentialsPresent, attrIdList, operator_auk_ref)
