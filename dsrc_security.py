@@ -98,7 +98,7 @@ def compute_access_credentials_with_access_key(rnd_obe:int, access_key):
     key_derivation_logger.info(f"Access Credentials in hex: {ac_cr:08X}")
     return ac_cr
 
-def compute_authenticator_with_auk_ref(pan_id, efc_cm, attribute_list_bytes, rnd_rse, auk_ref=115):
+def compute_authenticator_with_auk_ref(pan_id, efc_cm, attribute_list_bytes, rnd_rse, auk_ref=115) -> bytes:
     authenticator_key = compute_auth_key_with_mauk_ref(pan_id, efc_cm, auk_ref)
 
     # Prepare the DES cipher with the MAuK
@@ -107,16 +107,16 @@ def compute_authenticator_with_auk_ref(pan_id, efc_cm, attribute_list_bytes, rnd
     right_padding_size = (8 - (len(attribute_list_bytes) + 5)%8)%8
     des_input_bytes = attribute_list_bytes + b'\x04' + rnd_rse.to_bytes(4) + bytearray(right_padding_size)
     
-    print(f"{des_input_bytes.hex().upper()}")
+    key_derivation_logger.debug(f"DES input: {des_input_bytes.hex().upper()}")
     for index in range(0, len(des_input_bytes)//8):
         # XOR the 8 output bytes of the last iteration with the next 8 input bytes
         block_of_8_bytes = int.from_bytes(des_input_bytes[index*8 : index*8 + 8])
 
-        print(f"{index}, {block_of_8_bytes:16X}")
+        key_derivation_logger.debug(f"Index: {index}, Current 8-bytes DES block: {block_of_8_bytes:16X}")
         des_input = int.from_bytes(des_output, 'big') ^ block_of_8_bytes
         des_output = cipher.encrypt(des_input.to_bytes(8))
 
-    authenticator = int.from_bytes(des_output[0:4])
+    authenticator = des_output[0:4]
     return authenticator
 
 def decrypt_auth_key(efc_cm, auth_key:bytes, auk_ref=115):

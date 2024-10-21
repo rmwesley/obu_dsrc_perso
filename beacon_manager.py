@@ -129,7 +129,7 @@ class BeaconManager:
         EFC.EfcDsrcGeneric.T_APDUs.from_uper(t_apdu_with_response_bytes)
 
         self.last_response_t_apdu_value = EFC.EfcDsrcGeneric.T_APDUs._val
-        bcm_logger.debug(f"Response T-APDU value: {self.last_response_t_apdu_value}")
+        bcm_logger.info(f"Response T-APDU value: {self.last_response_t_apdu_value}")
         bcm_logger.info(f"Response T-APDU decoded with JER: {EFC.EfcDsrcGeneric.T_APDUs.to_jer()}")
         self.last_response_t_apdu_json = EFC.EfcDsrcGeneric.T_APDUs._to_jval()
         bcm_logger.debug(f"Response T-APDU in JSON: {self.last_response_t_apdu_json}")
