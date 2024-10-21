@@ -269,6 +269,7 @@ class BeaconManager:
             response_expected=True,
             close=False):
         return self.send_get_stamped_request(eid, accessCredentialsPresent, attrIdList, operator_auk_ref, response_expected, close)
+    
     def send_get_stamped_request(self,
             eid:int,
             accessCredentialsPresent:int = False,
@@ -289,14 +290,62 @@ class BeaconManager:
         bcm_logger.debug("We now obtain the GET_STAMPED.response object from the T_APDU response!")
         bcm_logger.debug("GET_STAMPED.response is a parameterized type, so we cannot encode/decode it, only the T_APDU!")
 
-        bcm_logger.debug("We now obtain the GET_STAMPED.request object from the T_APDU response!")
+        bcm_logger.debug("We now obtain the GetStampedRs object in the ACTION.Response's parameter!")
         bcm_logger.debug("GET_STAMPED.request is a parameterized type, so we cannot encode/decode it, only the T_APDU!")
+
         try:
+            action_response_parameter = self.last_response_t_apdu_value[1]['responseParameter']
+            self.get_stamped_response_value = action_response_parameter[1]
+            bcm_logger.info(f'GetStampedRq value: {self.get_stamped_response_value}')
+
             bcm_logger.debug(f"GET_STAMPED.response (Presentation response): {json_encoded_response_t_apdu['action-response']['responseParameter']}")
         except KeyError:
             bcm_logger.error(f"Reponse Parameter not present in GET_STAMPED.reponse!")
         return json_encoded_response_t_apdu
     
+    def verify_obe_authenticity(self, get_stamped_action_response_value=None, efc_cm=None):
+        if get_stamped_action_response_value is None:
+            get_stamped_action_response_value = self.last_response_t_apdu_value[1]
+        try:
+            get_stamped_rs = get_stamped_action_response_value['responseParameter'][1]
+        except:
+            bcm_logger.error('No responseParameter in GET_STAMPED.response!!!')
+
+        if get_stamped_rs is None:
+            get_stamped_rs = self.get_stamped_response_value
+        if self.get_stamped_response_value is None:
+            bcm_logger.error("No GET_STAMPED.response to verify!!")
+        if efc_cm is None:
+            eid = get_stamped_action_response_value['eid']
+            decoded_vst_param = self.decode_vst_parameter_from_eid(eid)
+            efc_cm = decoded_vst_param['EFC-ContextMark']
+        attributeList = get_stamped_rs['attributeList']
+        bcm_logger.info(f'attributeList value: {attributeList}')
+
+        container_with_attribute_list = ('attrList', get_stamped_rs['attributeList'])
+        EFC.EfcDsrcGeneric.EfcContainer.set_val(container_with_attribute_list)
+        bcm_logger.info(f"EFC Container of Type/CHOICE 'attrList' value: {EFC.EfcDsrcGeneric.EfcContainer._val}")
+
+        attribute_list_bytes = EFC.EfcDsrcGeneric.EfcContainer.to_uper()[1:]
+
+        provided_authenticator = get_stamped_rs['authenticator']
+        rnd_rse_bytes = self.rnd_rse_bytes_value
+        bcm_logger.debug(f"RndRSE value in hex: {rnd_rse_bytes.hex().upper()}")
+        rnd_rse_int = int.from_bytes(rnd_rse_bytes, 'big')
+
+        pan_bytes = get_stamped_rs['attributeList'][0]['attributeValue'][1]['personalAccountNumber']
+        pan_id = pan_bytes.hex().upper()
+        bcm_logger.info(f"PAN bytes in hex (PAN ID): {pan_id}")
+
+        authenticator = dsrc_security.compute_authenticator_with_auk_ref(pan_id, efc_cm, attribute_list_bytes, rnd_rse_int, 115)
+
+        bcm_logger.debug(f"Authenticator provided by OBE in hex: {provided_authenticator.hex().upper()}")
+        bcm_logger.debug(f"Authenticator computed by RSE in hex: {authenticator.hex().upper()}")
+
+        if provided_authenticator != authenticator:
+            bcm_logger.error(f"The device/OBE is fraudulent!!")
+        else:
+            bcm_logger.info(f"The device/OBE is authentic!!!")
     def update_rnd_rse(self):
         bcm_logger.debug(f"Updating DateAndTime/SessionTime value (to be used as RndRSE value)...")
 

@@ -136,43 +136,7 @@ def main():
     get_stamped_response_json = beacon_manager.presentation_request(eid, True, [32])
     root_logger.info(f"GET_STAMPED.response in JSON: {get_stamped_response_json}")
 
-    action_response_parameter = beacon_manager.last_response_t_apdu_value[1]['responseParameter']
-    if action_response_parameter is not None:
-        action_response_parameter_type = action_response_parameter[0]
-        if action_response_parameter_type is not 'gstrs':
-            raise Exception("Response does not contain a GetStampedRs parameter!!")
-        get_stamped_response_value = action_response_parameter[1]
-        root_logger.info(f'GetStampedRq value: {get_stamped_response_value}')
-
-        attributeList = get_stamped_response_value['attributeList']
-        root_logger.info(f'attributeList value: {attributeList}')
-
-        container_with_attribute_list = ('attrList', get_stamped_response_value['attributeList'])
-        EFC.EfcDsrcGeneric.EfcContainer.set_val(container_with_attribute_list)
-        root_logger.info(f"EFC Container of Type/CHOICE 'attrList' value: {EFC.EfcDsrcGeneric.EfcContainer._val}")
-
-        attribute_list_bytes = EFC.EfcDsrcGeneric.EfcContainer.to_uper()[1:]
-
-        provided_authenticator = get_stamped_response_value['authenticator']
-        rnd_rse_bytes = beacon_manager.rnd_rse_bytes_value
-        root_logger.debug(f"RndRSE value in hex: {rnd_rse_bytes.hex().upper()}")
-        rnd_rse_int = int.from_bytes(rnd_rse_bytes, 'big')
-
-        pan_bytes = get_stamped_response_value['attributeList'][0]['attributeValue'][1]['personalAccountNumber']
-        pan_id = pan_bytes.hex().upper()
-        root_logger.info(f"PAN bytes in hex (PAN ID): {pan_id}")
-
-        decoded_vst_param = beacon_manager.decode_vst_parameter_from_eid(eid)
-        efc_cm = decoded_vst_param['EFC-ContextMark']
-        authenticator = dsrc_security.compute_authenticator_with_auk_ref(pan_id, efc_cm, attribute_list_bytes, rnd_rse_int, 115)
-
-        root_logger.debug(f"Authenticator provided by OBE in hex: {provided_authenticator.hex().upper()}")
-        root_logger.debug(f"Authenticator computed by RSE in hex: {authenticator.hex().upper()}")
-
-        if provided_authenticator != authenticator:
-            root_logger.error(f"The device/OBE is fraudulent!!")
-        else:
-            root_logger.info(f"The device/OBE is authentic!!!")
+    beacon_manager.verify_obe_authenticity()
 
     root_logger.debug("We should send a SetMMI command on the main Thread to close the transaction")
     root_logger.debug("Otherwise, the transaction will remain unclosed and cause an error on the next execution")
