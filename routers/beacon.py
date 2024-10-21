@@ -149,10 +149,10 @@ async def send_presentation_request(request: Request, request_body: Presentation
 # Endpoint to close transaction
 @router.post("/send-close-set-mmi-to-obu")
 async def send_close_set_mmi_to_obu(request: Request):
-    response_t_apdu = request.app.state.beacon_manager.send_close_transaction_setmmi()
+    response_t_apdu_json = request.app.state.beacon_manager.send_close_transaction_setmmi()
     return {
         "message": "Transaction closed!",
-        "response_t_apdu": response_t_apdu.to_jer()
+        "response_t_apdu": response_t_apdu_json
         }
 
 # Endpoint to initialize the beacon and close transaction
