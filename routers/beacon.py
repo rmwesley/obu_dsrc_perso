@@ -96,26 +96,29 @@ async def initialize_transaction(request: Request):
     return {"last_vst": last_decoded_vst_obj}
 
 class GetRequest(BaseModel):
-    attribute_id_list: list
-    access_credentials_present: bool
+    eid:int
+    accessCredentialsPresent: Optional[bool] = True
+    attrIdList:list = [32]
+    close_transaction: Optional[bool] = False
 
     model_config = {
         "json_schema_extra": {
             "examples": [
                 {
-                    "attribute_id_list": [32],
-                    "access_credentials_present": False
+                    "eid": 4,
+                    "accessCredentialsPresent": True,
+                    "attrIdList": [32],
+                    "close_transaction": False
                 }
             ]
         }
     }
 @router.post("/send_get_request")
 async def send_get_request(request: Request, request_body: GetRequest):
-    dsrc_security.compute_access_credentials_from_vst
-    response_t_apdu = request.app.state.beacon_manager.send_close_transaction_setmmi()
+    get_response_json = request.app.state.beacon_manager.send_get_request(**request_body.dict())
     return {
         "message": "Transaction closed!",
-        "response_t_apdu": response_t_apdu.to_jer()
+        "response_t_apdu": get_response_json
         }
 
 class PresentationReq(BaseModel):
@@ -126,17 +129,17 @@ class PresentationReq(BaseModel):
     close_transaction: Optional[bool] = False
 
     model_config = {
-    "json_schema_extra": {
-        "examples": [
-            {
-                "eid": 4,
-                "accessCredentialsPresent": True,
-                "attrIdList": [32],
-                "operator_auk_ref": 111,
-                "close_transaction": False
-            }
-        ]
-    }
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "eid": 4,
+                    "accessCredentialsPresent": True,
+                    "attrIdList": [32],
+                    "operator_auk_ref": 111,
+                    "close_transaction": False
+                }
+            ]
+        }
     }
 @router.post("/send_presentation_request")
 async def send_presentation_request(request: Request, request_body: PresentationReq):

@@ -187,9 +187,11 @@ class BeaconManager:
         access_credentials_bytes = access_credentials_int.to_bytes(4, 'big')
         return access_credentials_bytes
     
-    def send_get_request(self, eid, accessCredentialsPresent:bool = False, attrIdList=None, close = False) -> EFC.EfcDsrcGeneric.Get_Response:
+    def send_get_request(self, eid, accessCredentialsPresent:bool = False, attrIdList=None, close_transaction = False) -> EFC.EfcDsrcGeneric.Get_Response:
         if accessCredentialsPresent:
             accessCredentials = self.compute_access_credentials(eid)
+        else:
+            accessCredentials = None
         # Get.Request is filled with 1 bit valued at 0
         get_req_value = {
             'eid': eid,
@@ -207,7 +209,7 @@ class BeaconManager:
         bcm_logger.info(f"Get.Request in JER: {EFC.EfcDsrcGeneric.Get_Request.to_jer()}")
 
         t_apdu_with_get_request_value = ('get-request', get_req_value)
-        json_encoded_response_t_apdu = self.send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_get_request_value)
+        json_encoded_response_t_apdu = self.send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_get_request_value, close=close_transaction)
 
         bcm_logger.debug("We now obtain the GET.response object from the T_APDU response!")
         bcm_logger.debug("GET.response is a parameterized type, so we cannot encode/decode it, only the T_APDU!")

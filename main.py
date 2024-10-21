@@ -96,7 +96,7 @@ def main():
 
     t_apdu_with_vst = beacon_manager.initialize_transaction(mandapplications = required_applications)
     
-    READ_TIS = False
+    READ_TIS = True
     if READ_TIS:
         eid = 4
         root_logger.debug(f"Getting the attribute 32=0x20, PaymentMeans, for the instance with EID {eid}...")
