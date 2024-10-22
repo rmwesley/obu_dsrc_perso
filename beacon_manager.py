@@ -152,6 +152,9 @@ class BeaconManager:
     def decode_vst_parameter_from_eid(self, eid):
         bcm_logger.debug(f"Decoding VST parameter with EID {eid}...")
         parameter_bytes = self.get_parameter_bytes_from_eid_on_vst_value(eid)
+        
+        if parameter_bytes is None:
+            return None
         decoded_parameter = custom_its_per_decoders.decode_vst_parameter_oct_str_bytes(parameter_bytes)
         return decoded_parameter
 
