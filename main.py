@@ -10,9 +10,9 @@ import threading
 import logging
 import dsrc_security
 
-from ASN.compiled_DSRC_instances import CCCv4_1 as CCC2019
-from ASN.compiled_DSRC_instances import EFCv10_1 as EFC
-from ASN.compiled_DSRC_instances import LACv2_1
+# from ASN.compiled_DSRC_instances import CCCv4_1 as CCC2019
+# from ASN.compiled_DSRC_instances import EFCv10_1 as EFC
+from ASN.compiled_DSRC_instances import LACv2_1 as EFC_CCC_LAC_asn1_objs
 
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
@@ -83,8 +83,8 @@ def main():
 
     root_logger.debug("We now update/get the BeaconID according to the beacon before sending the BST")
     result = beacon_manager.beacon_l7_wrapper.update_beacon_id()
-    EFC.EfcDsrcGeneric.BeaconID.from_uper(beacon_manager.beacon_l7_wrapper.last_beacon_id)
-    root_logger.debug(f"Beacon (according to GEA Beacon) encoded in JER: {EFC.EfcDsrcGeneric.BeaconID.to_jer()}")
+    EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.from_uper(beacon_manager.beacon_l7_wrapper.last_beacon_id)
+    root_logger.debug(f"Beacon (according to GEA Beacon) encoded in JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.to_jer()}")
 
     root_logger.debug("Initialization: Starting BST and getting VST...")
 
@@ -93,53 +93,64 @@ def main():
     #Requesting only CCC
     #required_applications = [20]
     root_logger.info(f"Preparing a BST requesting AIDs {required_applications}")
-
-    t_apdu_with_vst = beacon_manager.initialize_transaction(mandapplications = required_applications)
     
-    READ_TIS = True
+
+    beacon_manager.initialize_transaction(mandapplications = required_applications)
+    
+    READ_TIS = False
     if READ_TIS:
         eid = 4
         root_logger.debug(f"Getting the attribute 32=0x20, PaymentMeans, for the instance with EID {eid}...")
         get_response = beacon_manager.send_get_request(eid, attrIdList=[0x20])
         root_logger.info(f"GET.response decoded: {get_response}")
 
-    eid = 3
-    # Operator auth key is optional, it is set to 111 by default
-    root_logger.info(f"Sending a presentation request to EID {eid}")
-    response = beacon_manager.presentation_request(eid, True, [0], 111)
-    
-    attribute_list_start_index = 10
-    #attribute_list = custom_der_decoders.decode_attributes_list(response, attribute_list_start_index)
-    #root_logger.debug(f"AttributeList in hex: {attribute_list}")
+    READ_CCC = True
+    if READ_CCC:
+        eid = 3
+        # Operator auth key is optional, it is set to 111 by default
+        root_logger.info(f"Sending a presentation request to EID {eid}")
+        response = beacon_manager.presentation_request(eid, True, [0], 111)
+        
+        attribute_list_start_index = 10
+        #attribute_list = custom_der_decoders.decode_attributes_list(response, attribute_list_start_index)
+        #root_logger.debug(f"AttributeList in hex: {attribute_list}")
 
-    root_logger.info(f"Sending a GET request on EID {eid} for attribute 16, the LPN")
-    get_response = beacon_manager.send_get_request(eid, True, [16])
-    root_logger.info(f"T-APDU containing a GET.response: {get_response}")
+        root_logger.info(f"Sending a GET request on EID {eid} for attribute 16, the LPN")
+        get_response = beacon_manager.send_get_request(eid, True, [16])
+        root_logger.info(f"T-APDU containing a GET.response: {get_response}")
 
-    if get_response['get-response']['ret'] == 0:
-        lpn_value = beacon_manager.last_response_t_apdu_value[1]['attributelist'][0]['attributeValue'][1]
-        EFC.EfcDataDictionary.Lpn.set_val(lpn_value)
-        root_logger.debug(f"LPN value: {EFC.EfcDataDictionary.Lpn._val}")
-        root_logger.debug(f"LPN in JER: {EFC.EfcDataDictionary.Lpn.to_jer()}")
-        root_logger.debug(f"LPN in JSON: {EFC.EfcDataDictionary.Lpn._to_jval()}")
-        root_logger.debug(f"LPN in ASN1 representation: {EFC.EfcDataDictionary.Lpn.to_asn1()}")
-    else:
-        root_logger.error("ReturnStatus is different from 0!!!")
-    
-    # CARDME transaction required attributes
-    #root_logger.debug(f"Sending a GET request on EID {eid} for multiple attributes at once")
-    cardme_attribute_list = [0, 16, 17, 20, 26, 33, 34]
-    viapass_attribute_list = [0, 16, 17, 20]
-    attribute_list = viapass_attribute_list
-    root_logger.info(f"Sending a GET request on EID {eid} for attributes {attribute_list}")
-    get_response = beacon_manager.send_get_request(eid, True, attribute_list)
-    root_logger.info(f"GET.response decoded: {get_response}")
-    
-    root_logger.debug(f"Sending a GET_STAMPED request on EID {eid} for attribute 32, the PaymenMeans")
-    get_stamped_response_json = beacon_manager.presentation_request(eid, True, [32])
-    root_logger.info(f"GET_STAMPED.response in JSON: {get_stamped_response_json}")
+        try:
+            if get_response['get-response']['ret'] == 0:
+                lpn_value = beacon_manager.last_response_t_apdu_value[1]['attributelist'][0]['attributeValue'][1]
+                EFC_CCC_LAC_asn1_objs.EfcDataDictionary.Lpn.set_val(lpn_value)
+                root_logger.debug(f"LPN value: {EFC_CCC_LAC_asn1_objs.EfcDataDictionary.Lpn._val}")
+                root_logger.debug(f"LPN in JER: {EFC_CCC_LAC_asn1_objs.EfcDataDictionary.Lpn.to_jer()}")
+                root_logger.debug(f"LPN in JSON: {EFC_CCC_LAC_asn1_objs.EfcDataDictionary.Lpn._to_jval()}")
+                root_logger.debug(f"LPN in ASN1 representation: {EFC_CCC_LAC_asn1_objs.EfcDataDictionary.Lpn.to_asn1()}")
+            else:
+                root_logger.error("ReturnStatus is different from 0!!!")
+        except:
+            lpn_value = beacon_manager.last_response_t_apdu_value[1]['attributelist'][0]['attributeValue'][1]
+            EFC_CCC_LAC_asn1_objs.EfcDataDictionary.Lpn.set_val(lpn_value)
+            root_logger.debug(f"LPN value: {EFC_CCC_LAC_asn1_objs.EfcDataDictionary.Lpn._val}")
+            root_logger.debug(f"LPN in JER: {EFC_CCC_LAC_asn1_objs.EfcDataDictionary.Lpn.to_jer()}")
+            root_logger.debug(f"LPN in JSON: {EFC_CCC_LAC_asn1_objs.EfcDataDictionary.Lpn._to_jval()}")
+            root_logger.debug(f"LPN in ASN1 representation: {EFC_CCC_LAC_asn1_objs.EfcDataDictionary.Lpn.to_asn1()}")
+        
+        # CARDME transaction required attributes
+        #root_logger.debug(f"Sending a GET request on EID {eid} for multiple attributes at once")
+        cardme_attribute_list = [0, 16, 17, 20, 26, 33, 34]
+        viapass_attribute_list = [0, 16, 17, 20]
+        attribute_list = viapass_attribute_list
+        root_logger.info(f"Sending a GET request on EID {eid} for attributes {attribute_list}")
+        get_response = beacon_manager.send_get_request(eid, True, attribute_list)
+        root_logger.info(f"GET.response decoded: {get_response}")
+        
+        root_logger.debug(f"Sending a GET_STAMPED request on EID {eid} for attribute 32, the PaymenMeans")
+        get_stamped_response_json = beacon_manager.presentation_request(eid, True, [32])
+        root_logger.info(f"GET_STAMPED.response in JSON: {get_stamped_response_json}")
 
-    beacon_manager.verify_obe_authenticity()
+        beacon_manager.verify_obe_authenticity()
 
     root_logger.debug("We should send a SetMMI command on the main Thread to close the transaction")
     root_logger.debug("Otherwise, the transaction will remain unclosed and cause an error on the next execution")

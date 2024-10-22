@@ -5,6 +5,7 @@ from ASN.compiled_DSRC_instances import LACv2_1 as EFC_CCC_LAC_asn1_objs
 from datetime import datetime
 import json
 import logging
+import threading
 
 from gea_bcm_dll_wrapper import BCM_GEA_DLL_Wrapper, BCM_BST_TYPE_Enum, BCM_MODE_Enum
 import custom_its_per_decoders
@@ -21,13 +22,16 @@ class BeaconManagerError(Exception):
 # Defining the BeaconManager class
 class BeaconManager:
     def __init__(self):
-        chosen_beacon_name = beacon_manager_settings["default_beacon_name"]
-        self.safe_switch_beacon(chosen_beacon_name)
+        default_beacon_name = beacon_manager_settings["default_beacon_name"]
+        self.l7_initialization_phase_lock = threading.Lock()
+        self.l7_transfer_kernel_lock = threading.Lock()
+        self.safe_switch_beacon(chosen_beacon_name = default_beacon_name)
     def safe_switch_beacon(self, chosen_beacon_name):
         if hasattr(self, 'beacon_l7_wrapper'):
             self.beacon_l7_wrapper.close()
         if chosen_beacon_name == "TGBV":
             self.beacon_l7_wrapper = BCM_GEA_DLL_Wrapper()
+            self.chosen_beacon_name = "TGBV"
     # Start sending a BST
     def start_bst(self, manufacturer_id=0x31, individual_id=0x111, mandapplications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
         mandApplications = [{'aid': mandatory_aid} for mandatory_aid in mandapplications]
@@ -51,6 +55,8 @@ class BeaconManager:
 
         self.last_sent_t_apdu_containing_bst = EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs.to_uper()
 
+        self.l7_transfer_kernel_lock.acquire()
+        self.l7_initialization_phase_lock.acquire()
         result = self.beacon_l7_wrapper.start_bst_wrapper(self.last_sent_t_apdu_containing_bst, bst_type)
 
         bcm_logger.debug("We now get the lastest BeaconID just after starting the BST")
@@ -81,6 +87,8 @@ class BeaconManager:
         
         bcm_logger.info("We now wait on the main thread until we a VST notification is received...")
         self.beacon_l7_wrapper.wait_for_vst_notification()
+        self.l7_initialization_phase_lock.release()
+        self.l7_transfer_kernel_lock.release()
         #self.no_transaction_in_progress.set()
 
         bcm_logger.info("A VST notification was received! We now get the VST")
@@ -120,7 +128,9 @@ class BeaconManager:
         bcm_logger.debug(f"T_APDU in JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs.to_jer()}")
 
         # Sending command!!!
+        self.l7_transfer_kernel_lock.acquire()
         fragmented_t_apdu_with_get_response_bytes = self.beacon_l7_wrapper.send_command(EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs.to_uper(), close)
+        self.l7_transfer_kernel_lock.release()
 
         bcm_logger.debug(f"Decoding received response T_APDU...")
         bcm_logger.info(f"Fragmented T_APDU response obtained from beacon in hex (supposed to be UPER): {fragmented_t_apdu_with_get_response_bytes.hex().upper()}")
@@ -186,13 +196,16 @@ class BeaconManager:
         bcm_logger.debug(f"Computing Access Credentials for EID {eid}...")
         decoded_vst_param = self.decode_vst_parameter_from_eid(eid)
 
-        efc_cm = decoded_vst_param['EFC-ContextMark']
-        ac_cr_key_ref = decoded_vst_param['AC_CR-KeyReference']
-        rnd_obe = decoded_vst_param['RndOBE']
+        try:
+            efc_cm = decoded_vst_param['EFC-ContextMark']
+            ac_cr_key_ref = decoded_vst_param['AC_CR-KeyReference']
+            rnd_obe = decoded_vst_param['RndOBE']
 
-        access_credentials_int = dsrc_security.compute_access_credentials(efc_cm, rnd_obe, ac_cr_key_ref)
-        access_credentials_bytes = access_credentials_int.to_bytes(4, 'big')
-        return access_credentials_bytes
+            access_credentials_int = dsrc_security.compute_access_credentials(efc_cm, rnd_obe, ac_cr_key_ref)
+            access_credentials_bytes = access_credentials_int.to_bytes(4, 'big')
+            return access_credentials_bytes
+        except:
+            return None
     
     def send_get_request(self, eid, accessCredentialsPresent:bool = False, attrIdList=None, close_transaction = False) -> EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.Get_Response:
         if accessCredentialsPresent:
@@ -230,7 +243,7 @@ class BeaconManager:
             accessCredentialsPresent:bool = False,
             actionParameter = None,
             iid = None,
-            close = False):
+            close_transaction = False):
         if accessCredentialsPresent:
             accessCredentials = self.compute_access_credentials(eid)
         else:
@@ -269,7 +282,7 @@ class BeaconManager:
         bcm_logger.info(f"T-APDU with ACTION.request in JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs.to_jer()}")
         bcm_logger.info(f"ACTION.request with ActionType {actionType} and actionParameter of type {actionParameter[0]} being now sent...")
 
-        json_encoded_response_t_apdu = self.send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_action_req_value, close)
+        json_encoded_response_t_apdu = self.send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_action_req_value, close_transaction)
         return json_encoded_response_t_apdu
     
     def presentation_request(self,
@@ -294,7 +307,7 @@ class BeaconManager:
         bcm_logger.debug(f"Container with GetStampedRq value: {container_with_get_stamped_rq_value}")
 
         # ActionType is 0 for GET_STAMPED.request and Mode is True (Always expects a response)
-        json_encoded_response_t_apdu = self.send_action_request(True, eid, 0, accessCredentialsPresent, container_with_get_stamped_rq_value, close)
+        json_encoded_response_t_apdu = self.send_action_request(True, eid, 0, accessCredentialsPresent, container_with_get_stamped_rq_value, close_transaction=close)
 
         bcm_logger.debug("We now obtain the GET_STAMPED.response object from the T_APDU response!")
         bcm_logger.debug("GET_STAMPED.response is a parameterized type, so we cannot encode/decode it, only the T_APDU!")

@@ -552,7 +552,6 @@ class BCM_GEA_DLL_Wrapper:
     def __init__(self, external_callback:callable = None, external_alarm:callable = None, serial_port=None):
         self.beacon_state_ok_trigger = threading.Event()
         self.callback_received_notifier = threading.Condition()
-        self.transaction_lock = threading.Lock()
         self.beacon_name = "TGBV"
 
         self.external_callback = external_callback
