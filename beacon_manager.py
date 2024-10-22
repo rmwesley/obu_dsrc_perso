@@ -465,3 +465,25 @@ class BeaconManager:
         self.send_get_request(eid, False, attrIdList=[16])
 
         self.send_close_transaction_setmmi(eid)
+
+    def get_all_attributes(self, eid, mand_applications = [1, 20, 29]):
+        # Initialize transaction
+        self.initialize_transaction(mand_applications=mand_applications)
+
+        # Send GET.requests
+        permitted_attrs = []
+        for attr in range(0, 128):
+            self.send_get_request(eid, True, attrIdList=[attr])
+            try:
+                if self.last_response_t_apdu_json['getResponse']['ret'] == 0:
+                    bcm_logger.info(self.last_response_t_apdu_json['getResponse'])
+                    permitted_attrs.append(attr)
+            except:
+                bcm_logger.info(self.last_response_t_apdu_json['getResponse'])
+                permitted_attrs.append(attr)
+        bcm_logger.info(permitted_attrs)
+
+        # Close transaction with a SET_MMI
+        self.send_close_transaction_setmmi(eid)
+
+        return permitted_attrs

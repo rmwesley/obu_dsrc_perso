@@ -190,6 +190,10 @@ class TransactionReq(BaseModel):
 async def cardme(request: Request, request_body: TransactionReq):
     return request.app.state.beacon_manager.cardme_transaction(request_body.eid)
 
+@router.post("/Get_all_128_attrs")
+async def get_all_attributes(request: Request, request_body: TransactionReq):
+    return request.app.state.beacon_manager.get_all_attributes(request_body.eid)
+
 # Endpoint to handle EFC functions
 @router.post("/efc-function")
 async def efc_function(request: EFCFunctionRequest):
