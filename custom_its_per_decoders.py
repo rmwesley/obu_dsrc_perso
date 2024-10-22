@@ -1,4 +1,4 @@
-from ASN.compiled_DSRC_instances import EFCv10_1 as EFC
+from ASN.compiled_DSRC_instances import LACv2_1 as EFC_CCC_LAC_asn1_objs
 
 import logging
 
@@ -8,8 +8,8 @@ def decode_vst_parameter_oct_str_bytes(parameter_bytes):
     parameter_size = len(parameter_bytes)
     if parameter_size == 16:
         efc_cm_uper_bytes = parameter_bytes[0:6]
-        EFC.EfcDataDictionary.EfcContextMark.from_uper(efc_cm_uper_bytes)
-        custom_per_decoders_logger.debug(f"EFC-CM value: {EFC.EfcDataDictionary.EfcContextMark._val}")
+        EFC_CCC_LAC_asn1_objs.EfcDataDictionary.EfcContextMark.from_uper(efc_cm_uper_bytes)
+        custom_per_decoders_logger.debug(f"EFC-CM value: {EFC_CCC_LAC_asn1_objs.EfcDataDictionary.EfcContextMark._val}")
 
         if parameter_bytes[6:8] != b"\x02\x02":
             raise Exception("Incorrect container choice and size for AC_CR-Reference!!")
@@ -24,8 +24,8 @@ def decode_vst_parameter_oct_str_bytes(parameter_bytes):
             }
     elif parameter_size == 6:
         efc_cm_uper_bytes = parameter_bytes[0:6]
-        EFC.EfcDataDictionary.EfcContextMark.from_uper(efc_cm_uper_bytes)
-        custom_per_decoders_logger.debug(f"EFC-CM value: {EFC.EfcDataDictionary.EfcContextMark._val}")
+        EFC_CCC_LAC_asn1_objs.EfcDataDictionary.EfcContextMark.from_uper(efc_cm_uper_bytes)
+        custom_per_decoders_logger.debug(f"EFC-CM value: {EFC_CCC_LAC_asn1_objs.EfcDataDictionary.EfcContextMark._val}")
         decoded_vst_parameter = {
             "EFC-ContextMark": efc_cm_uper_bytes.hex(),
             }

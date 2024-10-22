@@ -10,8 +10,9 @@ import threading
 import logging
 import dsrc_security
 
-# from ASN.compiled_DSRC_instances import CCCv4_1 as CCC2019
-# from ASN.compiled_DSRC_instances import EFCv10_1 as EFC
+# from ASN.compiled_DSRC_instances import CCCv1 as EFC_CCC_LAC_asn1_objs
+# from ASN.compiled_DSRC_instances import CCCv4_1 as EFC_CCC_LAC_asn1_objs
+# from ASN.compiled_DSRC_instances import EFCv10_1 as EFC_CCC_LAC_asn1_objs
 from ASN.compiled_DSRC_instances import LACv2_1 as EFC_CCC_LAC_asn1_objs
 
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
@@ -94,6 +95,9 @@ def main():
     #required_applications = [20]
     root_logger.info(f"Preparing a BST requesting AIDs {required_applications}")
     
+    beacon_manager.cardme_transaction(eid=3, mand_applications=[1])
+    beacon_manager.get_all_attributes(eid=3)
+    return
 
     beacon_manager.initialize_transaction(mandapplications = required_applications)
     

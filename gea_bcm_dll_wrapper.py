@@ -773,10 +773,8 @@ class BCM_GEA_DLL_Wrapper:
             etc."""
 
         gea_dll_wrapper_logger.debug("Trying get the updated beacon's state...")
-        gea_dll_wrapper_logger.debug("Trying get the updated beacon's state...")
         result = self.update_state()
 
-        gea_dll_wrapper_logger.debug(f"Beacon State iterator keys: {list(iter(self.beacon_state))}")
         gea_dll_wrapper_logger.debug(f"Beacon State iterator keys: {list(iter(self.beacon_state))}")
         gea_dll_wrapper_logger.debug(self.beacon_state)
 

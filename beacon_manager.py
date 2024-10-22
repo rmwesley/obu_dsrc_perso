@@ -21,11 +21,15 @@ class BeaconManagerError(Exception):
 
 # Defining the BeaconManager class
 class BeaconManager:
-    def __init__(self):
+    def __init__(self, aid=1):
         default_beacon_name = beacon_manager_settings["default_beacon_name"]
         self.l7_initialization_phase_lock = threading.Lock()
         self.l7_transfer_kernel_lock = threading.Lock()
         self.safe_switch_beacon(chosen_beacon_name = default_beacon_name)
+
+        # if aid == 1:
+        #     self.TApdu_container = EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs
+        self.TApdu_container = EFC_CCC_LAC_asn1_objs.EfcCcc.CccTApdus
     def safe_switch_beacon(self, chosen_beacon_name):
         if hasattr(self, 'beacon_l7_wrapper'):
             self.beacon_l7_wrapper.close()
@@ -33,8 +37,8 @@ class BeaconManager:
             self.beacon_l7_wrapper = BCM_GEA_DLL_Wrapper()
             self.chosen_beacon_name = "TGBV"
     # Start sending a BST
-    def start_bst(self, manufacturer_id=0x31, individual_id=0x111, mandapplications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
-        mandApplications = [{'aid': mandatory_aid} for mandatory_aid in mandapplications]
+    def start_bst(self, manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
+        mand_applications = [{'aid': mandatory_aid} for mandatory_aid in mand_applications]
 
         bst_value = {
             'rsu': {
@@ -43,17 +47,17 @@ class BeaconManager:
                 },
             'time': int(datetime.utcnow().timestamp()),
             'profile': profile,
-            'mandApplications': mandApplications,
+            'mandApplications': mand_applications,
             'profileList': profile_list
             }
         EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BST.set_val(bst_value)
         self.last_sent_bst = EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BST.to_uper()
         bcm_logger.debug(f"BST in UPER encoding in hex: {self.last_sent_bst.hex().upper()}")
 
-        EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs.set_val(('initialisation-request', EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BST._val))
-        bcm_logger.debug(f"T_APDU containing BST in JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs.to_jer()}")
+        self.TApdu_container.set_val(('initialisationRequest', EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BST._val))
+        bcm_logger.debug(f"T_APDU containing BST in JER: {self.TApdu_container.to_jer()}")
 
-        self.last_sent_t_apdu_containing_bst = EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs.to_uper()
+        self.last_sent_t_apdu_containing_bst = self.TApdu_container.to_uper()
 
         self.l7_transfer_kernel_lock.acquire()
         self.l7_initialization_phase_lock.acquire()
@@ -65,7 +69,7 @@ class BeaconManager:
 
         return result
     
-    def initialize_transaction(self, manufacturer_id=0x31, individual_id=0x111, mandapplications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
+    def initialize_transaction(self, manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
         """
         The initialization phase comprises 2 steps for the beacon:
         Start of a BST, and
@@ -82,7 +86,7 @@ class BeaconManager:
             # bcm_logger.debug("We lock the thread until the opened transaction is closed!")
             raise BeaconManagerError("Transaction already in progress!!")
 
-        self.start_bst(manufacturer_id, individual_id, mandapplications, profile, profile_list, non_mand_applications, bst_type)
+        self.start_bst(manufacturer_id=manufacturer_id, individual_id=individual_id, mand_applications=mand_applications, profile=profile, profile_list=profile_list, non_mand_applications=non_mand_applications, bst_type=bst_type)
         bcm_logger.debug("No errors occurred when starting BST!")
         
         bcm_logger.info("We now wait on the main thread until we a VST notification is received...")
@@ -97,25 +101,25 @@ class BeaconManager:
         
         bcm_logger.debug("We now remove the fragmentation header and instantiate an T_APDU object from the response!")
         t_apdu_init_resp_datagram = bytes(fragmented_t_apdu_init_resp_datagram[1:])
-        EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs.from_uper(t_apdu_init_resp_datagram)
+        self.TApdu_container.from_uper(t_apdu_init_resp_datagram)
         bcm_logger.debug(f"T-APDU without fragmentation header: {t_apdu_init_resp_datagram}")
         
         bcm_logger.debug("We now instantiate a T_APDU object from the response!")
-        bcm_logger.debug(f"Instantiated T_APDU object ASN1 decoding/representation: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs.to_asn1()}")
-        bcm_logger.info(f"T_APDU containing VST in JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs.to_jer()}")
-        bcm_logger.debug(f"Instantiated T_APDU object value: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs._val}")
-        bcm_logger.info(f"Instantiated T_APDU in JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs.to_jer()}")
-        self.last_response_t_apdu_json = EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs._to_jval()
-        self.last_response_t_apdu_value = EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs._val
+        bcm_logger.debug(f"Instantiated T_APDU object ASN1 decoding/representation: {self.TApdu_container.to_asn1()}")
+        bcm_logger.info(f"T_APDU containing VST in JER: {self.TApdu_container.to_jer()}")
+        bcm_logger.debug(f"Instantiated T_APDU object value: {self.TApdu_container._val}")
+        bcm_logger.info(f"Instantiated T_APDU in JER: {self.TApdu_container.to_jer()}")
+        self.last_response_t_apdu_json = self.TApdu_container._to_jval()
+        self.last_response_t_apdu_value = self.TApdu_container._val
 
         # Storing VST in field
-        self.last_vst_json = self.last_response_t_apdu_json['initialisation-response']
+        self.last_vst_json = self.last_response_t_apdu_json['initialisationResponse']
         self.last_vst_value = self.last_response_t_apdu_value[1]
 
         # # Decoding VST
         # bcm_logger.debug("We now obtain the VST object from the T_APDU response!")
         # bcm_logger.debug("VST is a parameterized type, so we cannot decode/encode it, only the APDU!")
-        # self.last_initialisation_response_json = self.last_response_t_apdu_json['initialisation-response']
+        # self.last_initialisation_response_json = self.last_response_t_apdu_json['initialisationResponse']
 
         # bcm_logger.debug(f'Decoded VST: {self.last_initialisation_response_json}')
         # return self.last_initialisation_response_json
@@ -123,26 +127,26 @@ class BeaconManager:
 
     def send_req_t_apdu_and_obtain_resp_t_apdu(self, asn1_request_t_apdu_value, close=False) -> dict:
         bcm_logger.debug(f"Preparing request T_APDU to be sent...")
-        EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs.set_val(asn1_request_t_apdu_value)
-        bcm_logger.debug(f"Request T_APDU value: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs._val}")
-        bcm_logger.debug(f"T_APDU in JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs.to_jer()}")
+        self.TApdu_container.set_val(asn1_request_t_apdu_value)
+        bcm_logger.debug(f"Request T_APDU value: {self.TApdu_container._val}")
+        bcm_logger.debug(f"T_APDU in JER: {self.TApdu_container.to_jer()}")
 
         # Sending command!!!
         self.l7_transfer_kernel_lock.acquire()
-        fragmented_t_apdu_with_get_response_bytes = self.beacon_l7_wrapper.send_command(EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs.to_uper(), close)
+        fragmented_t_apdu_with_get_response_bytes = self.beacon_l7_wrapper.send_command(self.TApdu_container.to_uper(), close)
         self.l7_transfer_kernel_lock.release()
 
         bcm_logger.debug(f"Decoding received response T_APDU...")
         bcm_logger.info(f"Fragmented T_APDU response obtained from beacon in hex (supposed to be UPER): {fragmented_t_apdu_with_get_response_bytes.hex().upper()}")
         t_apdu_with_response_bytes = bytes(fragmented_t_apdu_with_get_response_bytes[1:])
 
-        EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs.from_uper(t_apdu_with_response_bytes)
+        self.TApdu_container.from_uper(t_apdu_with_response_bytes)
 
-        self.last_response_t_apdu_value = EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs._val
+        self.last_response_t_apdu_value = self.TApdu_container._val
         bcm_logger.info(f"Response T-APDU value: {self.last_response_t_apdu_value}")
-        bcm_logger.info(f"Response T-APDU ASN1 decoding/representation: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs.to_asn1()}")
-        bcm_logger.info(f"Response T-APDU decoded with JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs.to_jer()}")
-        self.last_response_t_apdu_json = EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs._to_jval()
+        bcm_logger.info(f"Response T-APDU ASN1 decoding/representation: {self.TApdu_container.to_asn1()}")
+        bcm_logger.info(f"Response T-APDU decoded with JER: {self.TApdu_container.to_jer()}")
+        self.last_response_t_apdu_json = self.TApdu_container._to_jval()
         bcm_logger.debug(f"Response T-APDU in JSON: {self.last_response_t_apdu_json}")
         
         bcm_logger.info(f"Checking if T-APDU contains a return (ret) value (error code)...")
@@ -228,7 +232,7 @@ class BeaconManager:
         bcm_logger.debug(f"Get.Request value: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.Get_Request._val}")
         bcm_logger.info(f"Get.Request in JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.Get_Request.to_jer()}")
 
-        t_apdu_with_get_request_value = ('get-request', get_req_value)
+        t_apdu_with_get_request_value = ('getRequest', get_req_value)
         json_encoded_response_t_apdu = self.send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_get_request_value, close=close_transaction)
 
         bcm_logger.debug("We now obtain the GET.response object from the T_APDU response!")
@@ -275,11 +279,11 @@ class BeaconManager:
         # This is specially the case for the OPTIONAL accessCredentials and iid
         action_request_value = {key: value for key, value in action_request_value.items() if value is not None}
 
-        t_apdu_with_action_req_value = ('action-request', action_request_value)
+        t_apdu_with_action_req_value = ('actionRequest', action_request_value)
         bcm_logger.debug(f"T-APDU with ACTION.request value: {t_apdu_with_action_req_value}")
 
-        EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs.set_val(t_apdu_with_action_req_value)
-        bcm_logger.info(f"T-APDU with ACTION.request in JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs.to_jer()}")
+        self.TApdu_container.set_val(t_apdu_with_action_req_value)
+        bcm_logger.info(f"T-APDU with ACTION.request in JER: {self.TApdu_container.to_jer()}")
         bcm_logger.info(f"ACTION.request with ActionType {actionType} and actionParameter of type {actionParameter[0]} being now sent...")
 
         json_encoded_response_t_apdu = self.send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_action_req_value, close_transaction)
@@ -320,7 +324,7 @@ class BeaconManager:
             self.get_stamped_response_value = action_response_parameter[1]
             bcm_logger.info(f'GetStampedRq value: {self.get_stamped_response_value}')
 
-            bcm_logger.debug(f"GET_STAMPED.response (Presentation response): {json_encoded_response_t_apdu['action-response']['responseParameter']}")
+            bcm_logger.debug(f"GET_STAMPED.response (Presentation response): {json_encoded_response_t_apdu['actionResponse']['responseParameter']}")
         except KeyError:
             bcm_logger.error(f"Reponse Parameter not present in GET_STAMPED.reponse!")
         return json_encoded_response_t_apdu
@@ -433,7 +437,7 @@ class BeaconManager:
             'actionParameter': set_mmi_efc_container_value
             }
         
-        t_apdu_with_set_mmi_action_req_value = ('action-request', set_mmi_action_request_val)
+        t_apdu_with_set_mmi_action_req_value = ('actionRequest', set_mmi_action_request_val)
         bcm_logger.info(f"ACTION.request of Type 10 (SET_MMI) being now sent...")
 
         t_apdu_with_action_response = self.send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_set_mmi_action_req_value, close)
