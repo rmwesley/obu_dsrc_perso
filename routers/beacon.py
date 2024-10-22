@@ -132,7 +132,7 @@ class PresentationReq(BaseModel):
         "json_schema_extra": {
             "examples": [
                 {
-                    "eid": 4,
+                    "eid": 3,
                     "accessCredentialsPresent": True,
                     "attrIdList": [32],
                     "operator_auk_ref": 111,
@@ -177,19 +177,18 @@ async def get_last_vst(request: Request):
 async def get_last_vst(request: Request):
     return request.app.state.beacon_manager.last_response_t_apdu_json
 
-class GET_rq(BaseModel):
-    attribute_id_list: list = Field(default=0x20, description='List of attribute ids to get')
-
-@router.post("/get-stamped")
-async def get_rq(request: Request):
-    request.app.state.beacon_manager.send_get_stamped_request()
-    return request.app.state.beacon_manager.last_response_t_apdu_json
-
 class EFCFunctionRequest(Request):
     function_type: str
     eid: int
     attribute_id_list: list = Field(default_factory=list)
     action_type: str = None
+
+class TransactionReq(BaseModel):
+    eid: int = 3
+
+@router.post("/CARDME")
+async def cardme(request: Request, request_body: TransactionReq):
+    return request.app.state.beacon_manager.cardme_transaction(request_body.eid)
 
 # Endpoint to handle EFC functions
 @router.post("/efc-function")
