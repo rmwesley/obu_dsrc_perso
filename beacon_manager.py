@@ -230,6 +230,8 @@ class BeaconManager:
             close = False):
         if accessCredentialsPresent:
             accessCredentials = self.compute_access_credentials(eid)
+        else:
+            accessCredentials = None
         if not actionParameter:
             actionParameter = ('setmmirq', 0)
         bcm_logger.debug(f"Preparing an ACTION.request...")
