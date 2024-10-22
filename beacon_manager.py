@@ -1,5 +1,5 @@
-# from ASN.compiled_DSRC_instances import CCCv4_1 as CCC2019
-# from ASN.compiled_DSRC_instances import EFCv10_1 as EFC
+# from ASN.compiled_DSRC_instances import CCCv4_1 as EFC_CCC_LAC_asn1_objs
+# from ASN.compiled_DSRC_instances import EFCv10_1 as EFC_CCC_LAC_asn1_objs
 from ASN.compiled_DSRC_instances import LACv2_1 as EFC_CCC_LAC_asn1_objs
 
 from datetime import datetime
@@ -130,17 +130,21 @@ class BeaconManager:
 
         self.last_response_t_apdu_value = EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs._val
         bcm_logger.info(f"Response T-APDU value: {self.last_response_t_apdu_value}")
+        bcm_logger.info(f"Response T-APDU ASN1 decoding/representation: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs.to_asn1()}")
         bcm_logger.info(f"Response T-APDU decoded with JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs.to_jer()}")
         self.last_response_t_apdu_json = EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs._to_jval()
         bcm_logger.debug(f"Response T-APDU in JSON: {self.last_response_t_apdu_json}")
         
         bcm_logger.info(f"Checking if T-APDU contains a return (ret) value (error code)...")
         try:
-            return_code = self.last_response_t_apdu_json["ret"]
+            return_code = self.last_response_t_apdu_value[1]["ret"]
             if return_code == 0:
                 bcm_logger.info(f"Return code is present and is 0! (No errors)")
+                bcm_logger.info(f"ReturnStatus ASN1 decoding: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.ReturnStatus.to_asn1()}")
             else:
-                bcm_logger.error(f"Error code present! Return Code: {return_code}") 
+                bcm_logger.error(f"Error code present! Return Code: {return_code}")
+                EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.ReturnStatus.set_val(return_code)
+                bcm_logger.error(f"ReturnStatus ASN1 decoding: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.ReturnStatus.to_asn1()}")
         except KeyError:
             bcm_logger.info(f"No return code in T-APDU! (No errors)")
         return self.last_response_t_apdu_json
@@ -278,7 +282,7 @@ class BeaconManager:
             operator_auk_ref=111,
             close=False):
         bcm_logger.debug("Preparing an ActionParameter for an Action-Request of type GET_STAMPED.request (Presentation request)...")
-        get_stamped_rq_value = self.get_stamped_request_action_parameter_preparation(eid, accessCredentialsPresent, attrIdList, operator_auk_ref)
+        get_stamped_rq_value = self.get_stamped_request_action_parameter_preparation(eid, attrIdList, operator_auk_ref)
 
         bcm_logger.debug("Putting the GetStampedRq inside a 'gstrq' EFC Container...")
         container_with_get_stamped_rq_value = ('gstrq', get_stamped_rq_value)
@@ -310,6 +314,7 @@ class BeaconManager:
             get_stamped_rs = get_stamped_action_response_value['responseParameter'][1]
         except:
             bcm_logger.error('No responseParameter in GET_STAMPED.response!!!')
+            return
 
         if get_stamped_rs is None:
             get_stamped_rs = self.get_stamped_response_value
@@ -367,11 +372,7 @@ class BeaconManager:
 
         bcm_logger.debug(f"RndRSE value in UPER in hex: {self.rnd_rse_bytes_value.hex().upper()}")
         return self.rnd_rse_bytes_value
-    def get_stamped_request_action_parameter_preparation(self,
-            eid:int,
-            accessCredentialsPresent:int = False,
-            attrIdList:list = [],
-            operator_auk_ref=111):
+    def get_stamped_request_action_parameter_preparation(self, eid:int, attrIdList:list = [], operator_auk_ref=111):
         """
         ACTION.request of type GET_STAMPED.request (ActionType=0).
 

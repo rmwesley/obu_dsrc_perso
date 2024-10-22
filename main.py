@@ -116,12 +116,15 @@ def main():
     get_response = beacon_manager.send_get_request(eid, True, [16])
     root_logger.info(f"T-APDU containing a GET.response: {get_response}")
 
-    lpn_value = beacon_manager.last_response_t_apdu_value[1]['attributelist'][0]['attributeValue'][1]
-    EFC.EfcDataDictionary.Lpn.set_val(lpn_value)
-    root_logger.debug(f"LPN value: {EFC.EfcDataDictionary.Lpn._val}")
-    root_logger.debug(f"LPN in JER: {EFC.EfcDataDictionary.Lpn.to_jer()}")
-    root_logger.debug(f"LPN in JSON: {EFC.EfcDataDictionary.Lpn._to_jval()}")
-    root_logger.debug(f"LPN in ASN1 representation: {EFC.EfcDataDictionary.Lpn.to_asn1()}")
+    if get_response['get-response']['ret'] == 0:
+        lpn_value = beacon_manager.last_response_t_apdu_value[1]['attributelist'][0]['attributeValue'][1]
+        EFC.EfcDataDictionary.Lpn.set_val(lpn_value)
+        root_logger.debug(f"LPN value: {EFC.EfcDataDictionary.Lpn._val}")
+        root_logger.debug(f"LPN in JER: {EFC.EfcDataDictionary.Lpn.to_jer()}")
+        root_logger.debug(f"LPN in JSON: {EFC.EfcDataDictionary.Lpn._to_jval()}")
+        root_logger.debug(f"LPN in ASN1 representation: {EFC.EfcDataDictionary.Lpn.to_asn1()}")
+    else:
+        root_logger.error("ReturnStatus is different from 0!!!")
     
     # CARDME transaction required attributes
     #root_logger.debug(f"Sending a GET request on EID {eid} for multiple attributes at once")
@@ -140,8 +143,9 @@ def main():
 
     root_logger.debug("We should send a SetMMI command on the main Thread to close the transaction")
     root_logger.debug("Otherwise, the transaction will remain unclosed and cause an error on the next execution")
-    beacon_manager.set_mmi(close=True)
-    root_logger.info(f"VST: {json.dumps(t_apdu_with_vst, indent=2)}")
+    set_mmi_reponse = beacon_manager.set_mmi(close=True)
+    root_logger.debug(f"SetMMI response: {set_mmi_reponse}")
+    # root_logger.info(f"VST: {json.dumps(t_apdu_with_vst, indent=2)}")
 
 # Main execution
 if __name__ == "__main__":
