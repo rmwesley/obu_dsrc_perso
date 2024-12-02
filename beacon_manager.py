@@ -16,7 +16,9 @@ bcm_logger = logging.getLogger(__name__)
 with open('settings/beacon_manager_config.json', 'r') as beacon_manager_settings_file:
     beacon_manager_settings = json.load(beacon_manager_settings_file)
 
-class BeaconManagerError(Exception):
+class BeaconManagerException(Exception):
+    pass
+class TransactionException(Exception):
     pass
 
 # Defining the BeaconManager class
@@ -28,7 +30,7 @@ class BeaconManager:
         self.safe_switch_beacon(chosen_beacon_name = default_beacon_name)
 
         # if aid == 1:
-        #     self.TApdu_container = EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs
+        #     self.TApdu_container = self.TApdu_container
         self.TApdu_container = EFC_CCC_LAC_asn1_objs.EfcCcc.CccTApdus
     def safe_switch_beacon(self, chosen_beacon_name):
         if hasattr(self, 'beacon_l7_wrapper'):
@@ -80,11 +82,11 @@ class BeaconManager:
         """
         self.beacon_l7_wrapper.update_state()
         if self.beacon_l7_wrapper.beacon_state.mode == BCM_MODE_Enum.BCM_MOD_Stopped:
-            raise BeaconManagerError("Beacon is in Stopped mode, not Transparent!!") 
+            raise BeaconManagerException("Beacon is in Stopped mode, not Transparent!!") 
         if self.beacon_l7_wrapper.beacon_state.trxInProgress:
             bcm_logger.error("Do not try to initilize a transaction! One is already in progress!")
             # bcm_logger.debug("We lock the thread until the opened transaction is closed!")
-            raise BeaconManagerError("Transaction already in progress!!")
+            raise BeaconManagerException("Transaction already in progress!!")
 
         self.start_bst(manufacturer_id=manufacturer_id, individual_id=individual_id, mand_applications=mand_applications, profile=profile, profile_list=profile_list, non_mand_applications=non_mand_applications, bst_type=bst_type)
         bcm_logger.debug("No errors occurred when starting BST!")
@@ -125,6 +127,12 @@ class BeaconManager:
         # return self.last_initialisation_response_json
         return self.last_response_t_apdu_json
 
+    def find_eid_with_accepted_contract(self):
+        eid = None
+        return eid
+    def get_efc_cm_for_eid(self, eid):
+        return self.get_parameter_bytes_from_eid_on_vst_value(eid=eid)
+
     def send_req_t_apdu_and_obtain_resp_t_apdu(self, asn1_request_t_apdu_value, close=False) -> dict:
         bcm_logger.debug(f"Preparing request T-APDU to be sent...")
         self.TApdu_container.set_val(asn1_request_t_apdu_value)
@@ -140,12 +148,10 @@ class BeaconManager:
         bcm_logger.debug(f"Decoding received response T-APDU...")
         t_apdu_with_response_bytes = bytes(fragmented_t_apdu_with_get_response_bytes[1:])
 
-        EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs.from_uper(t_apdu_with_response_bytes)
-        bcm_logger.info(f"Response T-APDU value: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs._val}")
         self.TApdu_container.from_uper(t_apdu_with_response_bytes)
-
         self.last_response_t_apdu_value = self.TApdu_container._val
         bcm_logger.info(f"Response T-APDU value: {self.last_response_t_apdu_value}")
+
         bcm_logger.info(f"Response T-APDU ASN1 decoding/representation: {self.TApdu_container.to_asn1()}")
         bcm_logger.info(f"Response T-APDU decoded with JER: {self.TApdu_container.to_jer()}")
         self.last_response_t_apdu_json = self.TApdu_container._to_jval()
@@ -182,8 +188,8 @@ class BeaconManager:
             bcm_logger.debug(f"Application details: {application}")
             if application['eid'] == eid:
                 return application['parameter']['octetstring']
-        bcm_logger.info(f"EID {eid} is not present!")
-        return None
+        bcm_logger.error(f"EID {eid} is not present!")
+        raise TransactionException('L7: EID not present!')
     
     def get_parameter_bytes_from_eid_on_vst_value(self, eid:int, vst_value=None) -> bytes:
         if vst_value is None:
@@ -195,8 +201,8 @@ class BeaconManager:
                 parameter_value = application['parameter'][1]
                 bcm_logger.info(f"Found EID {eid} in VST!!! Parameter value in hex: {parameter_value.hex().upper()}")
                 return parameter_value
-        bcm_logger.info(f"EID {eid} is not present!")
-        return None
+        bcm_logger.error(f"EID {eid} is not present!")
+        raise TransactionException('L7: EID not present!')
     
     def compute_access_credentials(self, eid:int) -> bytes:
         bcm_logger.debug(f"Computing Access Credentials for EID {eid}...")
@@ -246,7 +252,7 @@ class BeaconManager:
             mode=True,
             eid=0,
             actionType=0xA,
-            accessCredentialsPresent:bool = False,
+            accessCredentialsPresent:bool = True,
             actionParameter = None,
             iid = None,
             close_transaction = False):
@@ -285,6 +291,7 @@ class BeaconManager:
         bcm_logger.debug(f"T-APDU with ACTION.request value: {t_apdu_with_action_req_value}")
 
         self.TApdu_container.set_val(t_apdu_with_action_req_value)
+        bcm_logger.info(f"T-APDU with ACTION.request in ASN: {self.TApdu_container.to_asn1()}")
         bcm_logger.info(f"T-APDU with ACTION.request in JER: {self.TApdu_container.to_jer()}")
         bcm_logger.info(f"ACTION.request with ActionType {actionType} and actionParameter of type {actionParameter[0]} being now sent...")
 
@@ -293,7 +300,7 @@ class BeaconManager:
     
     def presentation_request(self,
             eid:int,
-            accessCredentialsPresent:bool = False,
+            accessCredentialsPresent:bool = True,
             attrIdList=[],
             operator_auk_ref=111,
             close_transaction=False):
@@ -301,7 +308,7 @@ class BeaconManager:
     
     def send_get_stamped_request(self,
             eid:int,
-            accessCredentialsPresent:int = False,
+            accessCredentialsPresent:int = True,
             attrIdList=[],
             operator_auk_ref=111,
             close=False):

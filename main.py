@@ -94,7 +94,7 @@ def main():
     root_logger.info(f"Preparing a BST requesting AIDs {required_applications}")
     #Requesting only CCC
     #required_applications = [20]
-    read_tis(beacon_manager)
+    # read_tis(beacon_manager)
     read_ccc(beacon_manager)
     # Requesting EFC, CCC and UNI
     
@@ -121,6 +121,7 @@ def read_ccc(beacon_manager, eid=3, required_applications = [1, 20, 29]):
     eid = 3
 
     beacon_manager.initialize_transaction(mand_applications = required_applications)
+    beacon_manager.get_efc_cm_for_eid(eid=eid)
     
     # Operator auth key is optional, it is set to 111 by default
     root_logger.info(f"Sending a presentation request to EID {eid}")
@@ -134,7 +135,7 @@ def read_ccc(beacon_manager, eid=3, required_applications = [1, 20, 29]):
     get_response = beacon_manager.send_get_request(eid, True, [16])
     root_logger.info(f"T-APDU containing a GET.response: {get_response}")
 
-    dash_case_field_name = 'get-response'
+    dash_case_field_name = 'getResponse'
     get_response_json_value = get_response[dash_case_field_name]
     try:
         if get_response_json_value['ret'] == 0:
