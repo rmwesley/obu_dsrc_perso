@@ -52,7 +52,7 @@ class BeaconManager:
             }
         EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BST.set_val(bst_value)
         self.last_sent_bst = EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BST.to_uper()
-        bcm_logger.debug(f"BST in UPER encoding in hex: {self.last_sent_bst.hex().upper()}")
+        bcm_logger.debug(f"BST value (UPER hex): {self.last_sent_bst.hex().upper()}")
 
         self.TApdu_container.set_val(('initialisationRequest', EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BST._val))
         bcm_logger.debug(f"T_APDU containing BST in JER: {self.TApdu_container.to_jer()}")
@@ -97,12 +97,12 @@ class BeaconManager:
 
         bcm_logger.info("A VST notification was received! We now get the VST")
         fragmented_t_apdu_init_resp_datagram = self.beacon_l7_wrapper.get_vst()
-        bcm_logger.info(f"Fragmented T_APDU containing VST: {fragmented_t_apdu_init_resp_datagram.hex().upper()}")
+        bcm_logger.info(f"Fragmented T_APDU containing VST (UPER hex): {fragmented_t_apdu_init_resp_datagram.hex().upper()}")
         
         bcm_logger.debug("We now remove the fragmentation header and instantiate an T_APDU object from the response!")
         t_apdu_init_resp_datagram = bytes(fragmented_t_apdu_init_resp_datagram[1:])
         self.TApdu_container.from_uper(t_apdu_init_resp_datagram)
-        bcm_logger.debug(f"T-APDU without fragmentation header: {t_apdu_init_resp_datagram}")
+        bcm_logger.debug(f"T-APDU without fragmentation header (UPER hex): {t_apdu_init_resp_datagram}")
         
         bcm_logger.debug("We now instantiate a T_APDU object from the response!")
         bcm_logger.debug(f"Instantiated T_APDU object ASN1 decoding/representation: {self.TApdu_container.to_asn1()}")
@@ -126,20 +126,22 @@ class BeaconManager:
         return self.last_response_t_apdu_json
 
     def send_req_t_apdu_and_obtain_resp_t_apdu(self, asn1_request_t_apdu_value, close=False) -> dict:
-        bcm_logger.debug(f"Preparing request T_APDU to be sent...")
+        bcm_logger.debug(f"Preparing request T-APDU to be sent...")
         self.TApdu_container.set_val(asn1_request_t_apdu_value)
-        bcm_logger.debug(f"Request T_APDU value: {self.TApdu_container._val}")
-        bcm_logger.debug(f"T_APDU in JER: {self.TApdu_container.to_jer()}")
+        bcm_logger.debug(f"Request T-APDU value: {self.TApdu_container._val}")
+        bcm_logger.debug(f"T-APDU in JER: {self.TApdu_container.to_jer()}")
 
         # Sending command!!!
         self.l7_transfer_kernel_lock.acquire()
         fragmented_t_apdu_with_get_response_bytes = self.beacon_l7_wrapper.send_command(self.TApdu_container.to_uper(), close)
         self.l7_transfer_kernel_lock.release()
+        bcm_logger.info(f"Fragmented T-APDU response obtained from beacon in hex (UPER hex): {fragmented_t_apdu_with_get_response_bytes.hex().upper()}")
 
-        bcm_logger.debug(f"Decoding received response T_APDU...")
-        bcm_logger.info(f"Fragmented T_APDU response obtained from beacon in hex (supposed to be UPER): {fragmented_t_apdu_with_get_response_bytes.hex().upper()}")
+        bcm_logger.debug(f"Decoding received response T-APDU...")
         t_apdu_with_response_bytes = bytes(fragmented_t_apdu_with_get_response_bytes[1:])
 
+        EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs.from_uper(t_apdu_with_response_bytes)
+        bcm_logger.info(f"Response T-APDU value: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.T_APDUs._val}")
         self.TApdu_container.from_uper(t_apdu_with_response_bytes)
 
         self.last_response_t_apdu_value = self.TApdu_container._val
@@ -171,7 +173,7 @@ class BeaconManager:
             return None
         decoded_parameter = custom_its_per_decoders.decode_vst_parameter_oct_str_bytes(parameter_bytes)
         return decoded_parameter
-
+        
     def get_parameter_hex_str_from_eid_on_json_vst(self, eid:int, vst_json=None) -> str:
         if vst_json is None:
             vst_json = self.last_vst_json
@@ -262,7 +264,7 @@ class BeaconManager:
         parameter_tag = EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer._tag
 
         bcm_logger.debug(f"ActionParameter is an EfcContainer of Type {actionParameter[0]} (tag {parameter_tag}) value decoded with JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_jer()}")
-        bcm_logger.debug(f"Same value decoded with APER in hex: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_aper().hex().upper()}")
+        bcm_logger.debug(f"Same value but APER-encoded in hex: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_aper().hex().upper()}")
         
         action_request_value = {
             'mode': mode,
@@ -316,8 +318,8 @@ class BeaconManager:
         bcm_logger.debug("We now obtain the GET_STAMPED.response object from the T_APDU response!")
         bcm_logger.debug("GET_STAMPED.response is a parameterized type, so we cannot encode/decode it, only the T_APDU!")
 
-        bcm_logger.debug("We now obtain the GetStampedRs object in the ACTION.Response's parameter!")
-        bcm_logger.debug("GET_STAMPED.request is a parameterized type, so we cannot encode/decode it, only the T_APDU!")
+        bcm_logger.debug("We now obtain the GetStampedRq object in the ACTION.Response's parameter!")
+        bcm_logger.debug("GET_STAMPED.response is a parameterized type, so we cannot encode/decode it, only the T_APDU!")
 
         try:
             action_response_parameter = self.last_response_t_apdu_value[1]['responseParameter']
@@ -366,8 +368,8 @@ class BeaconManager:
 
         authenticator = dsrc_security.compute_authenticator_with_auk_ref(pan_id, efc_cm, attribute_list_bytes, rnd_rse_int, 115)
 
-        bcm_logger.debug(f"Authenticator provided by OBE in hex: {provided_authenticator.hex().upper()}")
-        bcm_logger.debug(f"Authenticator computed by RSE in hex: {authenticator.hex().upper()}")
+        bcm_logger.debug(f"Authenticator provided by OBE (UPER hex): {provided_authenticator.hex().upper()}")
+        bcm_logger.debug(f"Authenticator computed by RSE (UPER hex): {authenticator.hex().upper()}")
 
         if provided_authenticator != authenticator:
             bcm_logger.error(f"The device/OBE is fraudulent!!")
@@ -392,7 +394,7 @@ class BeaconManager:
         bcm_logger.debug(f"RndRSE or SessionTime value (of type DateAndTime) in JER: {EFC_CCC_LAC_asn1_objs.EfcDataDictionary.DateAndTime.to_jer()}")
         self.rnd_rse_bytes_value = EFC_CCC_LAC_asn1_objs.EfcDataDictionary.DateAndTime.to_uper()
 
-        bcm_logger.debug(f"RndRSE value in UPER in hex: {self.rnd_rse_bytes_value.hex().upper()}")
+        bcm_logger.debug(f"RndRSE value (UPER hex): {self.rnd_rse_bytes_value.hex().upper()}")
         return self.rnd_rse_bytes_value
     def get_stamped_request_action_parameter_preparation(self, eid:int, attrIdList:list = [], operator_auk_ref=111):
         """
@@ -469,25 +471,34 @@ class BeaconManager:
         self.send_get_request(eid, False, attrIdList=[16])
 
         self.send_close_transaction_setmmi(eid)
+    def get_all_attributes(self, eid, mand_applications=[1, 20, 29]):
+        attrIdList = list(range(0, 128))
+        return self.get_attributes_in_list(eid, attrIdList, mand_applications=mand_applications)
 
-    def get_all_attributes(self, eid, mand_applications = [1, 20, 29]):
+    def get_attributes_in_list(self, eid, attrIdList=[32], mand_applications=[1, 20, 29]):
         # Initialize transaction
         self.initialize_transaction(mand_applications=mand_applications)
 
         # Send GET.requests
-        permitted_attrs = []
-        for attr in range(0, 128):
+        obtained_attrs = set()
+        get_responses = []
+        for attr in attrIdList:
             self.send_get_request(eid, True, attrIdList=[attr])
             try:
                 if self.last_response_t_apdu_json['getResponse']['ret'] == 0:
                     bcm_logger.info(self.last_response_t_apdu_json['getResponse'])
-                    permitted_attrs.append(attr)
+                    obtained_attrs.add(attr)
+                    get_responses.append(self.last_response_t_apdu_json['getResponse']['attributelist'])
             except:
                 bcm_logger.info(self.last_response_t_apdu_json['getResponse'])
-                permitted_attrs.append(attr)
-        bcm_logger.info(permitted_attrs)
+                obtained_attrs.add(attr)
+                get_responses.append(self.last_response_t_apdu_json['getResponse']['attributelist'])
+        bcm_logger.info(f"Obtained attributes: {obtained_attrs}")
+        bcm_logger.info(f"Rejected attributes: {set(attrIdList).difference(obtained_attrs)}")
+
+        bcm_logger.info(json.dumps(get_responses, indent=2))
 
         # Close transaction with a SET_MMI
         self.send_close_transaction_setmmi(eid)
 
-        return permitted_attrs
+        return obtained_attrs, get_responses
