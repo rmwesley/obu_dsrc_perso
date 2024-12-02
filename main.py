@@ -1,4 +1,5 @@
 import os
+import re
 import json
 
 try:
@@ -89,72 +90,84 @@ def main():
 
     root_logger.debug("Initialization: Starting BST and getting VST...")
 
-    # Requesting EFC, CCC and UNI
     required_applications = [1, 20, 29]
+    root_logger.info(f"Preparing a BST requesting AIDs {required_applications}")
     #Requesting only CCC
     #required_applications = [20]
-    root_logger.info(f"Preparing a BST requesting AIDs {required_applications}")
+    read_tis(beacon_manager)
+    read_ccc(beacon_manager)
+    # Requesting EFC, CCC and UNI
     
-    beacon_manager.cardme_transaction(eid=3, mand_applications=[1])
-    beacon_manager.get_all_attributes(eid=3)
-    return
+    # beacon_manager.get_all_attributes(eid=3, mand_applications=[1, 20, 29])
+    # beacon_manager.cardme_transaction(eid=4, mand_applications=[1, 20, 29])
+    # beacon_manager.cardme_transaction(eid=3, mand_applications=[20])
+    # beacon_manager.cardme_transaction(eid=4, mand_applications=[1])
+    # beacon_manager.get_attributes_in_list(eid=3, attrIdList=[0, 16, 17, 18, 19, 20, 22, 24, 32, 46, 48, 49, 50, 51, 52, 53, 55, 60, 61, 62, 63, 64, 99, 100, 101])
+    # beacon_manager.get_attributes_in_list(eid=3, attrIdList=[48, 50, 53, 60, 61, 62, 99, 100, 101])
+    # permitted_attrs, get_responses = beacon_manager.get_attributes_in_list(eid=3, attrIdList=[50, 52, 61, 62, 99, 100, 101])
 
-    beacon_manager.initialize_transaction(mandapplications = required_applications)
+def read_tis(beacon_manager, eid=4, required_applications = [1, 20, 29]):
+    beacon_manager.initialize_transaction(mand_applications = required_applications)
+
+    root_logger.debug(f"Getting the attribute 32=0x20, PaymentMeans, for the instance with EID {eid}...")
+    get_response = beacon_manager.send_get_request(eid, attrIdList=[0x20])
+    root_logger.info(f"GET.response decoded: {get_response}")
+    root_logger.debug("We should send a SetMMI command on the main Thread to close the transaction")
+    root_logger.debug("Otherwise, the transaction will remain unclosed and cause an error on the next execution")
+    set_mmi_reponse = beacon_manager.set_mmi(close=True)
+    root_logger.debug(f"SetMMI response: {set_mmi_reponse}")
+
+def read_ccc(beacon_manager, eid=3, required_applications = [1, 20, 29]):
+    eid = 3
+
+    beacon_manager.initialize_transaction(mand_applications = required_applications)
     
-    READ_TIS = False
-    if READ_TIS:
-        eid = 4
-        root_logger.debug(f"Getting the attribute 32=0x20, PaymentMeans, for the instance with EID {eid}...")
-        get_response = beacon_manager.send_get_request(eid, attrIdList=[0x20])
-        root_logger.info(f"GET.response decoded: {get_response}")
+    # Operator auth key is optional, it is set to 111 by default
+    root_logger.info(f"Sending a presentation request to EID {eid}")
+    response = beacon_manager.presentation_request(eid, True, [0], 111)
+    
+    attribute_list_start_index = 10
+    #attribute_list = custom_der_decoders.decode_attributes_list(response, attribute_list_start_index)
+    #root_logger.debug(f"AttributeList in hex: {attribute_list}")
 
-    READ_CCC = True
-    if READ_CCC:
-        eid = 3
-        # Operator auth key is optional, it is set to 111 by default
-        root_logger.info(f"Sending a presentation request to EID {eid}")
-        response = beacon_manager.presentation_request(eid, True, [0], 111)
-        
-        attribute_list_start_index = 10
-        #attribute_list = custom_der_decoders.decode_attributes_list(response, attribute_list_start_index)
-        #root_logger.debug(f"AttributeList in hex: {attribute_list}")
+    root_logger.info(f"Sending a GET request on EID {eid} for attribute 16, the LPN")
+    get_response = beacon_manager.send_get_request(eid, True, [16])
+    root_logger.info(f"T-APDU containing a GET.response: {get_response}")
 
-        root_logger.info(f"Sending a GET request on EID {eid} for attribute 16, the LPN")
-        get_response = beacon_manager.send_get_request(eid, True, [16])
-        root_logger.info(f"T-APDU containing a GET.response: {get_response}")
-
-        try:
-            if get_response['get-response']['ret'] == 0:
-                lpn_value = beacon_manager.last_response_t_apdu_value[1]['attributelist'][0]['attributeValue'][1]
-                EFC_CCC_LAC_asn1_objs.EfcDataDictionary.Lpn.set_val(lpn_value)
-                root_logger.debug(f"LPN value: {EFC_CCC_LAC_asn1_objs.EfcDataDictionary.Lpn._val}")
-                root_logger.debug(f"LPN in JER: {EFC_CCC_LAC_asn1_objs.EfcDataDictionary.Lpn.to_jer()}")
-                root_logger.debug(f"LPN in JSON: {EFC_CCC_LAC_asn1_objs.EfcDataDictionary.Lpn._to_jval()}")
-                root_logger.debug(f"LPN in ASN1 representation: {EFC_CCC_LAC_asn1_objs.EfcDataDictionary.Lpn.to_asn1()}")
-            else:
-                root_logger.error("ReturnStatus is different from 0!!!")
-        except:
+    dash_case_field_name = 'get-response'
+    get_response_json_value = get_response[dash_case_field_name]
+    try:
+        if get_response_json_value['ret'] == 0:
             lpn_value = beacon_manager.last_response_t_apdu_value[1]['attributelist'][0]['attributeValue'][1]
             EFC_CCC_LAC_asn1_objs.EfcDataDictionary.Lpn.set_val(lpn_value)
             root_logger.debug(f"LPN value: {EFC_CCC_LAC_asn1_objs.EfcDataDictionary.Lpn._val}")
             root_logger.debug(f"LPN in JER: {EFC_CCC_LAC_asn1_objs.EfcDataDictionary.Lpn.to_jer()}")
             root_logger.debug(f"LPN in JSON: {EFC_CCC_LAC_asn1_objs.EfcDataDictionary.Lpn._to_jval()}")
             root_logger.debug(f"LPN in ASN1 representation: {EFC_CCC_LAC_asn1_objs.EfcDataDictionary.Lpn.to_asn1()}")
-        
-        # CARDME transaction required attributes
-        #root_logger.debug(f"Sending a GET request on EID {eid} for multiple attributes at once")
-        cardme_attribute_list = [0, 16, 17, 20, 26, 33, 34]
-        viapass_attribute_list = [0, 16, 17, 20]
-        attribute_list = viapass_attribute_list
-        root_logger.info(f"Sending a GET request on EID {eid} for attributes {attribute_list}")
-        get_response = beacon_manager.send_get_request(eid, True, attribute_list)
-        root_logger.info(f"GET.response decoded: {get_response}")
-        
-        root_logger.debug(f"Sending a GET_STAMPED request on EID {eid} for attribute 32, the PaymenMeans")
-        get_stamped_response_json = beacon_manager.presentation_request(eid, True, [32])
-        root_logger.info(f"GET_STAMPED.response in JSON: {get_stamped_response_json}")
+        else:
+            root_logger.error("ReturnStatus is different from 0!!!")
+    except:
+        lpn_value = beacon_manager.last_response_t_apdu_value[1]['attributelist'][0]['attributeValue'][1]
+        EFC_CCC_LAC_asn1_objs.EfcDataDictionary.Lpn.set_val(lpn_value)
+        root_logger.debug(f"LPN value: {EFC_CCC_LAC_asn1_objs.EfcDataDictionary.Lpn._val}")
+        root_logger.debug(f"LPN in JER: {EFC_CCC_LAC_asn1_objs.EfcDataDictionary.Lpn.to_jer()}")
+        root_logger.debug(f"LPN in JSON: {EFC_CCC_LAC_asn1_objs.EfcDataDictionary.Lpn._to_jval()}")
+        root_logger.debug(f"LPN in ASN1 representation: {EFC_CCC_LAC_asn1_objs.EfcDataDictionary.Lpn.to_asn1()}")
+    
+    # CARDME transaction required attributes
+    #root_logger.debug(f"Sending a GET request on EID {eid} for multiple attributes at once")
+    cardme_attribute_list = [0, 16, 17, 20, 26, 33, 34]
+    viapass_attribute_list = [0, 16, 17, 20]
+    attribute_list = viapass_attribute_list
+    root_logger.info(f"Sending a GET request on EID {eid} for attributes {attribute_list}")
+    get_response = beacon_manager.send_get_request(eid, True, attribute_list)
+    root_logger.info(f"GET.response decoded: {get_response}")
+    
+    root_logger.debug(f"Sending a GET_STAMPED request on EID {eid} for attribute 32, the PaymenMeans")
+    get_stamped_response_json = beacon_manager.presentation_request(eid, True, [32])
+    root_logger.info(f"GET_STAMPED.response in JSON: {get_stamped_response_json}")
 
-        beacon_manager.verify_obe_authenticity()
+    beacon_manager.verify_obe_authenticity()
 
     root_logger.debug("We should send a SetMMI command on the main Thread to close the transaction")
     root_logger.debug("Otherwise, the transaction will remain unclosed and cause an error on the next execution")

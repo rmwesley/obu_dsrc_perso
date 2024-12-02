@@ -635,7 +635,7 @@ class BCM_GEA_DLL_Wrapper:
         # Pointer to the buffered BST datagram
         lp_bst_datagram = ctypes.cast(bst_datagram_buffer, POINTER(BYTE))
         byte_bst_type = BYTE(bst_type)
-        gea_dll_wrapper_logger.info(f"Fragmented T-APDU with BST to be sent in hex format: {fragmented_t_apdu_bst_datagram.hex().upper()}")
+        gea_dll_wrapper_logger.info(f"Fragmented T-APDU with BST to be sent (UPER hex): {fragmented_t_apdu_bst_datagram.hex().upper()}")
 
         result = bcm_start_bst(self.reg_ptr,
                                lp_bst_datagram,
@@ -678,7 +678,7 @@ class BCM_GEA_DLL_Wrapper:
                              dword_max_size
                              )
         
-        gea_dll_wrapper_logger.debug("Handling errors...")
+        gea_dll_wrapper_logger.debug("Handling errors (if any)...")
         bcm_error_wrapper(result)
         gea_dll_wrapper_logger.debug("VST received!")
 
@@ -690,7 +690,7 @@ class BCM_GEA_DLL_Wrapper:
         t_apdu_containing_vst = bytes(received_vst_list)
 
         # Log the VST
-        gea_dll_wrapper_logger.info(f"Received VST in hex format: {t_apdu_containing_vst.hex().upper()}")
+        gea_dll_wrapper_logger.info(f"Received VST value (UPER hex): {t_apdu_containing_vst.hex().upper()}")
         return t_apdu_containing_vst
 
     def send_command(self, t_apdu_datagram: bytes, close_transaction_transaction=False):
@@ -703,7 +703,7 @@ class BCM_GEA_DLL_Wrapper:
         lp_cmd_response_datagram = ctypes.cast(cmd_response_buffer_array, POINTER(BYTE))
         cmd_response_size = DWORD()
 
-        gea_dll_wrapper_logger.debug(f"Command to be sent in hex format: {fragmented_t_apdu_datagram.hex().upper()}")
+        gea_dll_wrapper_logger.debug(f"Command to be sent value (UPER hex): {fragmented_t_apdu_datagram.hex().upper()}")
 
         result = bcm_send_cmd(
             self.reg_ptr,
