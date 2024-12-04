@@ -92,10 +92,11 @@ def main():
 
     required_applications = [1, 20, 29]
     root_logger.info(f"Preparing a BST requesting AIDs {required_applications}")
-    #Requesting only CCC
+    #Requesting only F
     #required_applications = [20]
     # read_tis(beacon_manager)
-    read_ccc(beacon_manager)
+    read_ccc(beacon_manager, eid=3)
+    # read_ccc(beacon_manager, eid=5)
     # Requesting EFC, CCC and UNI
     
     # beacon_manager.get_all_attributes(eid=3, mand_applications=[1, 20, 29])
@@ -110,7 +111,7 @@ def read_tis(beacon_manager, eid=4, required_applications = [1, 20, 29]):
     beacon_manager.initialize_transaction(mand_applications = required_applications)
 
     root_logger.debug(f"Getting the attribute 32=0x20, PaymentMeans, for the instance with EID {eid}...")
-    get_response = beacon_manager.send_get_request(eid, attrIdList=[0x20])
+    get_response = beacon_manager.send_get_request(eid, attrIdList=[0x10, 0x20])
     root_logger.info(f"GET.response decoded: {get_response}")
     root_logger.debug("We should send a SetMMI command on the main Thread to close the transaction")
     root_logger.debug("Otherwise, the transaction will remain unclosed and cause an error on the next execution")
@@ -118,14 +119,12 @@ def read_tis(beacon_manager, eid=4, required_applications = [1, 20, 29]):
     root_logger.debug(f"SetMMI response: {set_mmi_reponse}")
 
 def read_ccc(beacon_manager, eid=3, required_applications = [1, 20, 29]):
-    eid = 3
-
     beacon_manager.initialize_transaction(mand_applications = required_applications)
     beacon_manager.get_efc_cm_for_eid(eid=eid)
     
     # Operator auth key is optional, it is set to 111 by default
     root_logger.info(f"Sending a presentation request to EID {eid}")
-    response = beacon_manager.presentation_request(eid, True, [0], 111)
+    response = beacon_manager.presentation_request(eid, True, [20, 21, 32], 111)
     
     attribute_list_start_index = 10
     #attribute_list = custom_der_decoders.decode_attributes_list(response, attribute_list_start_index)
