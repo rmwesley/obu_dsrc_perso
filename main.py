@@ -11,6 +11,8 @@ import threading
 import logging
 import dsrc_security
 
+from datetime import datetime
+
 # from ASN.compiled_DSRC_instances import CCCv1 as EFC_CCC_LAC_asn1_objs
 # from ASN.compiled_DSRC_instances import CCCv4_1 as EFC_CCC_LAC_asn1_objs
 # from ASN.compiled_DSRC_instances import EFCv10_1 as EFC_CCC_LAC_asn1_objs
@@ -56,7 +58,8 @@ console_handler.setFormatter(console_formatter)
 root_logger.addHandler(console_handler)
 
 # SETTING UP LOGGER FILE HANDLER
-file_handler = logging.FileHandler('gea_bcm_dll_python_wrapper.log')
+date_prefix = datetime.now().strftime('%y%m%d')
+file_handler = logging.FileHandler(f'main_logs/{date_prefix}_gea_bcm_dll_python_wrapper.log')
 file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
 file_handler.setFormatter(file_formatter)
 root_logger.addHandler(file_handler)
@@ -90,19 +93,14 @@ def main():
 
     root_logger.debug("Initialization: Starting BST and getting VST...")
 
+    # Requesting EFC, CCC and UNI
     required_applications = [1, 20, 29]
     root_logger.info(f"Preparing a BST requesting AIDs {required_applications}")
-    #Requesting only F
-    #required_applications = [20]
-    # read_tis(beacon_manager)
+    read_tis(beacon_manager)
     read_ccc(beacon_manager, eid=3)
-    # read_ccc(beacon_manager, eid=5)
-    # Requesting EFC, CCC and UNI
     
     # beacon_manager.get_all_attributes(eid=3, mand_applications=[1, 20, 29])
     # beacon_manager.cardme_transaction(eid=4, mand_applications=[1, 20, 29])
-    # beacon_manager.cardme_transaction(eid=3, mand_applications=[20])
-    # beacon_manager.cardme_transaction(eid=4, mand_applications=[1])
     # beacon_manager.get_attributes_in_list(eid=3, attrIdList=[0, 16, 17, 18, 19, 20, 22, 24, 32, 46, 48, 49, 50, 51, 52, 53, 55, 60, 61, 62, 63, 64, 99, 100, 101])
     # beacon_manager.get_attributes_in_list(eid=3, attrIdList=[48, 50, 53, 60, 61, 62, 99, 100, 101])
     # permitted_attrs, get_responses = beacon_manager.get_attributes_in_list(eid=3, attrIdList=[50, 52, 61, 62, 99, 100, 101])
