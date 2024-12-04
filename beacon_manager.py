@@ -454,28 +454,28 @@ class BeaconManager:
     def send_close_transaction_setmmi(self, eid=0):
         return self.set_mmi(eid, True)
     
-    def cardme_transaction(self, eid, mand_applications=[1, 20, 29]):
+    def cardme_transaction(self, eid, mand_applications=[1, 20, 29], accessCredentialsPresent=False):
         self.initialize_transaction(mand_applications=mand_applications)
         # Getting payment info!! (Core part)
-        self.presentation_request(eid, False, attrIdList=[32])
-        # self.presentation_request(eid, False, attrIdList=[29, 30, 31])
+        self.presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
         # Getting Receipt data...
-        # self.send_get_request(eid, False, attrIdList=[5, 6, 7, 36, 9, 10, 11, 12, 13, 14, 33, 34])
-        self.send_get_request(eid, False, attrIdList=[33, 34])
+        # self.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[33, 34])
+
         # Getting contract information...
-        # self.send_get_request(eid, False, attrIdList=[0, 1, 2, 35, 3, 4])
-        self.send_get_request(eid, False, attrIdList=[0, 4])
+        # self.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[4])
+
         # Getting Vehicle attributes...
-        # self.send_get_request(eid, False, attrIdList=[15, 16, 17, 18, 19, 20, 21, 22, 23, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46])
-        self.send_get_request(eid, False, attrIdList=[15, 16, 17, 18, 19, 20, 21, 22, 23])
+        ## Getting LPN only first case errors occurs in the 'big' GET.request
+        self.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16])
+        self.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[17, 18, 19, 20, 22])
+
         # Getting OBE info...
         # self.send_get_request(eid, False, attrIdList=[24, 25, 26])
+
         # Getting driver info...
         # self.send_get_request(eid, False, attrIdList=[27, 47])
 
-        # Getting LPN
-        self.send_get_request(eid, False, attrIdList=[16])
 
         self.send_close_transaction_setmmi(eid)
     def get_all_attributes(self, eid, mand_applications=[1, 20, 29]):
