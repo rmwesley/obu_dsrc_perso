@@ -67,7 +67,7 @@ def update_rnd_rse():
         }
     })
 
-    bcm_logger.debug(f"RndRSE or SessionTime value (of type DateAndTime) in JER: {EFC_CCC_LAC_asn1_objs.EfcDataDictionary.DateAndTime.to_jer()}")
+    bcm_logger.debug(f"RndRSE or SessionTime value (of type DateAndTime) in JER:\n{EFC_CCC_LAC_asn1_objs.EfcDataDictionary.DateAndTime.to_jer()}")
     rnd_rse_bytes_value = EFC_CCC_LAC_asn1_objs.EfcDataDictionary.DateAndTime.to_uper()
     setattr(sys.modules[__name__], "rnd_rse_bytes_value", rnd_rse_bytes_value)
 
@@ -111,7 +111,7 @@ def start_bst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 2
     bcm_logger.debug(f"BST value (UPER hex): {last_sent_bst.hex().upper()}")
 
     TApdu_container.set_val(('initialisationRequest', EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BST._val))
-    bcm_logger.debug(f"T_APDU containing BST in JER: {TApdu_container.to_jer()}")
+    bcm_logger.debug(f"T_APDU containing BST in JER:\n{TApdu_container.to_jer()}")
 
     last_sent_t_apdu_containing_bst = TApdu_container.to_uper()
 
@@ -165,10 +165,9 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     bcm_logger.debug(f"T-APDU without fragmentation header (UPER hex): {t_apdu_init_resp_datagram}")
     
     bcm_logger.debug("We now instantiate a T_APDU object from the response!")
-    bcm_logger.debug(f"Instantiated T_APDU object ASN1 decoding/representation: {TApdu_container.to_asn1()}")
-    bcm_logger.info(f"T_APDU containing VST in JER: {TApdu_container.to_jer()}")
+    bcm_logger.debug(f"Instantiated T_APDU object ASN1 decoding/representation:\n{TApdu_container.to_asn1()}")
+    bcm_logger.info(f"T_APDU containing VST in JER:\n{TApdu_container.to_jer()}")
     bcm_logger.debug(f"Instantiated T_APDU object value: {TApdu_container._val}")
-    bcm_logger.info(f"Instantiated T_APDU in JER: {TApdu_container.to_jer()}")
     last_response_t_apdu_json = TApdu_container._to_jval()
     last_response_t_apdu_value = TApdu_container._val
 
@@ -198,7 +197,7 @@ def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close=Fals
     bcm_logger.debug(f"Preparing request T-APDU to be sent...")
     TApdu_container.set_val(asn1_request_t_apdu_value)
     bcm_logger.debug(f"Request T-APDU value: {TApdu_container._val}")
-    bcm_logger.debug(f"T-APDU in JER: {TApdu_container.to_jer()}")
+    bcm_logger.debug(f"T-APDU in JER:\n{TApdu_container.to_jer()}")
 
     # Sending command!!!
     l7_transfer_kernel_lock.acquire()
@@ -213,8 +212,8 @@ def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close=Fals
     last_response_t_apdu_value = TApdu_container._val
     bcm_logger.info(f"Response T-APDU value: {last_response_t_apdu_value}")
 
-    bcm_logger.info(f"Response T-APDU ASN1 decoding/representation: {TApdu_container.to_asn1()}")
-    bcm_logger.info(f"Response T-APDU decoded with JER: {TApdu_container.to_jer()}")
+    bcm_logger.info(f"Response T-APDU ASN1 decoding/representation:\n{TApdu_container.to_asn1()}")
+    bcm_logger.info(f"Response T-APDU decoded with JER:\n{TApdu_container.to_jer()}")
     last_response_t_apdu_json = TApdu_container._to_jval()
     bcm_logger.debug(f"Response T-APDU in JSON: {last_response_t_apdu_json}")
     
@@ -223,11 +222,11 @@ def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close=Fals
         return_code = last_response_t_apdu_value[1]["ret"]
         if return_code == 0:
             bcm_logger.info(f"Return code is present and is 0! (No errors)")
-            bcm_logger.info(f"ReturnStatus ASN1 decoding: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.ReturnStatus.to_asn1()}")
+            bcm_logger.info(f"ReturnStatus ASN1 decoding:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.ReturnStatus.to_asn1()}")
         else:
             bcm_logger.error(f"Error code present! Return Code: {return_code}")
             EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.ReturnStatus.set_val(return_code)
-            bcm_logger.error(f"ReturnStatus ASN1 decoding: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.ReturnStatus.to_asn1()}")
+            bcm_logger.error(f"ReturnStatus ASN1 decoding:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.ReturnStatus.to_asn1()}")
     except KeyError:
         bcm_logger.info(f"No return code in T-APDU! (No errors)")
     return last_response_t_apdu_json
@@ -303,7 +302,7 @@ def send_get_request(eid, accessCredentialsPresent:bool = False, attrIdList=None
 
     EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.Get_Request.set_val(get_req_value)
     bcm_logger.debug(f"Get.Request value: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.Get_Request._val}")
-    bcm_logger.info(f"Get.Request in JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.Get_Request.to_jer()}")
+    bcm_logger.info(f"Get.Request in JER:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.Get_Request.to_jer()}")
 
     t_apdu_with_get_request_value = ('getRequest', get_req_value)
     json_encoded_response_t_apdu = send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_get_request_value, close=close_transaction)
@@ -334,7 +333,7 @@ def send_action_request(
     EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.set_val(actionParameter)
     parameter_tag = EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer._tag
 
-    bcm_logger.debug(f"ActionParameter is an EfcContainer of Type {actionParameter[0]} (tag {parameter_tag}) value decoded with JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_jer()}")
+    bcm_logger.debug(f"ActionParameter is an EfcContainer of Type {actionParameter[0]} (tag {parameter_tag}) value decoded with JER:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_jer()}")
     bcm_logger.debug(f"Same value but APER-encoded in hex: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_aper().hex().upper()}")
     
     action_request_value = {
@@ -356,8 +355,8 @@ def send_action_request(
     bcm_logger.debug(f"T-APDU with ACTION.request value: {t_apdu_with_action_req_value}")
 
     TApdu_container.set_val(t_apdu_with_action_req_value)
-    bcm_logger.info(f"T-APDU with ACTION.request in ASN: {TApdu_container.to_asn1()}")
-    bcm_logger.info(f"T-APDU with ACTION.request in JER: {TApdu_container.to_jer()}")
+    bcm_logger.info(f"T-APDU with ACTION.request in ASN:\n{TApdu_container.to_asn1()}")
+    bcm_logger.info(f"T-APDU with ACTION.request in JER:\n{TApdu_container.to_jer()}")
     bcm_logger.info(f"ACTION.request with ActionType {actionType} and actionParameter of type {actionParameter[0]} being now sent...")
 
     json_encoded_response_t_apdu = send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_action_req_value, close_transaction)
@@ -473,7 +472,7 @@ def get_stamped_request_action_parameter_preparation(eid:int, attrIdList:list = 
     EFC_CCC_LAC_asn1_objs.EfcDsrcApplication.GetStampedRq.set_val(get_stamped_rq_value)
     
     bcm_logger.debug(f"GetStampedRq value: {EFC_CCC_LAC_asn1_objs.EfcDsrcApplication.GetStampedRq._val}")
-    bcm_logger.info(f"GetStampedRs in JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcApplication.GetStampedRq.to_jer()}")
+    bcm_logger.info(f"GetStampedRs in JER:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcApplication.GetStampedRq.to_jer()}")
     return get_stamped_rq_value
 
 def send_echo_action_request(eid=0, text='Hello, World!', close_transaction_bool=False):
@@ -482,7 +481,7 @@ def send_echo_action_request(eid=0, text='Hello, World!', close_transaction_bool
     echo_rq_value = ('octetstring', text.encode('utf-8'))
 
     EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.set_val(echo_rq_value)
-    bcm_logger.debug(f"EfcContainer of Type 02 (OCTET STRING) value decoded with JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_jer()}")
+    bcm_logger.debug(f"EfcContainer of Type 02 (OCTET STRING) value decoded with JER:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_jer()}")
     bcm_logger.debug(f"EfcContainer of Type 69 (OCTET STRING) value decoded with PER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_uper()}")
 
     # ActionType is 15 or 0xF for ECHO.request and Mode is True (Always expects a response)
@@ -497,7 +496,7 @@ def set_mmi(eid=0, close=False):
     # SetMMI is a parameterized type, so it needs to be inside a container
     set_mmi_efc_container_value = ('setmmirq', set_mmi_request_value)
     EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.set_val(set_mmi_efc_container_value)
-    bcm_logger.debug(f"EfcContainer of Type 69 (SET_MMI) value decoded with JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_jer()}")
+    bcm_logger.debug(f"EfcContainer of Type 69 (SET_MMI) value decoded with JER:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_jer()}")
     bcm_logger.debug(f"EfcContainer of Type 69 (SET_MMI) value decoded with PER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_uper()}")
 
     # SetMMI ActionType is 0xA, or 10 in decimal
