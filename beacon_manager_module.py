@@ -470,6 +470,19 @@ def get_stamped_request_action_parameter_preparation(eid:int, attrIdList:list = 
     bcm_logger.info(f"GetStampedRs in JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcApplication.GetStampedRq.to_jer()}")
     return get_stamped_rq_value
 
+def send_echo_action_request(eid=0, text='Hello, World!', close_transaction_bool=False):
+    bcm_logger.debug(f"Preparing an ECHO.request")
+
+    echo_rq_value = ('octetstring', text.encode('utf-8'))
+
+    EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.set_val(echo_rq_value)
+    bcm_logger.debug(f"EfcContainer of Type 02 (OCTET STRING) value decoded with JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_jer()}")
+    bcm_logger.debug(f"EfcContainer of Type 69 (OCTET STRING) value decoded with PER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_uper()}")
+
+    # ActionType is 15 or 0xF for ECHO.request and Mode is True (Always expects a response)
+    json_encoded_response_t_apdu = send_action_request(True, eid, 15, accessCredentialsPresent=False, actionParameter=echo_rq_value, close_transaction=close_transaction_bool)
+    return json_encoded_response_t_apdu
+
 def set_mmi(eid=0, close=False):
     bcm_logger.debug(f"Preparing a SET_MMI.request")
     bcm_logger.debug(f"The function to send ACTION.requests is defined to send a SET_MMI by default if no arguments are provided!")
@@ -480,7 +493,7 @@ def set_mmi(eid=0, close=False):
     EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.set_val(set_mmi_efc_container_value)
     bcm_logger.debug(f"EfcContainer of Type 69 (SET_MMI) value decoded with JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_jer()}")
     bcm_logger.debug(f"EfcContainer of Type 69 (SET_MMI) value decoded with PER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_uper()}")
-    
+
     # SetMMI ActionType is 0xA, or 10 in decimal
     set_mmi_action_request_val = {
         'mode': True,
@@ -488,16 +501,20 @@ def set_mmi(eid=0, close=False):
         'actionType': 0xA,
         'actionParameter': set_mmi_efc_container_value
         }
-    
+
     t_apdu_with_set_mmi_action_req_value = ('actionRequest', set_mmi_action_request_val)
     bcm_logger.info(f"ACTION.request of Type 10 (SET_MMI) being now sent...")
 
     t_apdu_with_action_response = send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_set_mmi_action_req_value, close)
     return t_apdu_with_action_response
+
+def send_close_transaction_echo(eid=0, text="Hello, World!"):
+    return send_echo_action_request(eid=eid, close_transaction_bool=True)
+
 def send_close_transaction_setmmi(eid=0):
     return set_mmi(eid, True)
 
-def cardme_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=False):
+def cardme_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
     initialize_transaction(mand_applications=mand_applications)
     # Getting payment info!! (Core part)
     presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
@@ -519,13 +536,17 @@ def cardme_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPres
     # Getting driver info...
     # send_get_request(eid, False, attrIdList=[27, 47])
 
+    # Close the transaction
+    if set_mmi == True:
+        send_close_transaction_setmmi(eid=eid)
+    else:
+        send_echo_action_request(eid=eid, close_transaction_bool=True)
 
-    send_close_transaction_setmmi(eid)
 def get_all_attributes(eid, mand_applications=[1, 20, 29]):
     attrIdList = list(range(0, 128))
     return get_attributes_in_list(eid, attrIdList, mand_applications=mand_applications)
 
-def get_attributes_in_list(eid, accessCredentialsPresent=True, attrIdList=[32], mand_applications=[1, 20, 29]):
+def get_attributes_in_list(eid, accessCredentialsPresent=True, attrIdList=[32], mand_applications=[1, 20, 29], set_mmi=False):
     global last_response_t_apdu_json
     
     # Initialize transaction
@@ -550,7 +571,10 @@ def get_attributes_in_list(eid, accessCredentialsPresent=True, attrIdList=[32], 
 
     bcm_logger.info(json.dumps(get_responses, indent=2))
 
-    # Close transaction with a SET_MMI
-    send_close_transaction_setmmi(eid)
+    # Close the transaction
+    if set_mmi == True:
+        send_close_transaction_setmmi(eid=eid)
+    else:
+        send_echo_action_request(eid=eid, close_transaction_bool=True)
 
     return obtained_attrs, get_responses
