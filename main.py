@@ -113,12 +113,14 @@ def main():
 
         beacon_manager_module.get_attributes_in_list(eid=2, attrIdList=[16, 17, 18, 19, 20, 22, 32], mand_applications=[1, 20], set_mmi=False)
         time.sleep(0.01)
-        beacon_manager_module.get_attributes_in_list(eid=2, attrIdList=[50, 53], mand_applications=[1, 20], set_mmi=False)
+        beacon_manager_module.get_attributes_in_list(eid=2, attrIdList=[50, 51, 52], mand_applications=[1, 20], set_mmi=False)
+        beacon_manager_module.get_attributes_in_list(eid=2, attrIdList=[53, 99, 100, 101], mand_applications=[1, 20], set_mmi=False)
         time.sleep(0.1)
 
         beacon_manager_module.get_attributes_in_list(eid=3, attrIdList=[16, 17, 18, 19, 20, 22, 32], mand_applications=[1, 20])
         time.sleep(0.01)
-        beacon_manager_module.get_attributes_in_list(eid=3, attrIdList=[50, 53], mand_applications=[1, 20], set_mmi=False)
+        beacon_manager_module.get_attributes_in_list(eid=3, attrIdList=[50, 51, 52], mand_applications=[1, 20], set_mmi=False)
+        beacon_manager_module.get_attributes_in_list(eid=3, attrIdList=[53, 99, 100, 101], mand_applications=[1, 20], set_mmi=False)
         time.sleep(0.1)
 
         time.sleep(1)
