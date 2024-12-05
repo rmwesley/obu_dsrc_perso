@@ -268,6 +268,10 @@ def get_parameter_bytes_from_eid_on_vst_value(eid:int, vst_value=None) -> bytes:
 def compute_access_credentials(eid:int) -> bytes:
     bcm_logger.debug(f"Computing Access Credentials for EID {eid}...")
     decoded_vst_param = decode_vst_parameter_from_eid(eid)
+    # try:
+    #     decoded_vst_param = decode_vst_parameter_from_eid(eid)
+    # except:
+    #     bcm_logger.error("Transaction Exception!", stack_info=True)
 
     try:
         efc_cm = decoded_vst_param['EFC-ContextMark']
@@ -557,17 +561,20 @@ def get_attributes_in_list(eid, accessCredentialsPresent=True, attrIdList=[32], 
     # Send GET.requests
     obtained_attrs = set()
     get_responses = []
-    for attr in attrIdList:
-        send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[attr])
-        try:
-            if last_response_t_apdu_json['getResponse']['ret'] == 0:
+    try:
+        for attr in attrIdList:
+            send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[attr])
+            try:
+                if last_response_t_apdu_json['getResponse']['ret'] == 0:
+                    bcm_logger.info(last_response_t_apdu_json['getResponse'])
+                    obtained_attrs.add(attr)
+                    get_responses.append(last_response_t_apdu_json['getResponse']['attributelist'])
+            except:
                 bcm_logger.info(last_response_t_apdu_json['getResponse'])
                 obtained_attrs.add(attr)
                 get_responses.append(last_response_t_apdu_json['getResponse']['attributelist'])
-        except:
-            bcm_logger.info(last_response_t_apdu_json['getResponse'])
-            obtained_attrs.add(attr)
-            get_responses.append(last_response_t_apdu_json['getResponse']['attributelist'])
+    except EIDNotFoundException:
+        bcm_logger.error("EID not present!", stack_info=True)
     bcm_logger.info(f"Obtained attributes: {obtained_attrs}")
     bcm_logger.info(f"Rejected attributes: {set(attrIdList).difference(obtained_attrs)}")
 
