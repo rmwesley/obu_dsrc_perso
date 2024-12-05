@@ -1,5 +1,6 @@
 import os
 import re
+import time
 import json
 
 try:
@@ -25,7 +26,7 @@ from gea_bcm_dll_wrapper import *
 import beacon_manager_module
 
 root_logger = logging.getLogger()
-root_logger.setLevel(logging.DEBUG)
+root_logger.setLevel(logging.INFO)
 
 # SETTING UP COLORED CONSOLE LOGGING
 console_handler = logging.StreamHandler()
@@ -97,7 +98,30 @@ def main():
     required_applications = [1, 20, 29]
     root_logger.info(f"Preparing a BST requesting AIDs {required_applications}")
     # beacon_manager_module.cardme_transaction(eid=4, mand_applications=[1, 20, 29])
-    beacon_manager_module.get_attributes_in_list(eid=3, attrIdList=[53], mand_applications=[1, 20])
+
+    try:
+        beacon_manager_module.cardme_transaction(eid=0, mand_applications=[1], set_mmi=True)
+        time.sleep(0.2)
+    except beacon_manager_module.EIDNotFoundException:
+        root_logger.error("EID not present!", stack_info=True)
+
+    while True:
+        # beacon_manager_module.cardme_transaction(eid=4, mand_applications=[1, 20], set_mmi=False)
+        beacon_manager_module.get_attributes_in_list(eid=4, attrIdList=[32], mand_applications=[1, 20], set_mmi=False)
+        time.sleep(0.1)
+
+
+        beacon_manager_module.get_attributes_in_list(eid=2, attrIdList=[16, 17, 18, 19, 20, 22, 32], mand_applications=[1, 20], set_mmi=False)
+        time.sleep(0.01)
+        beacon_manager_module.get_attributes_in_list(eid=2, attrIdList=[50, 53], mand_applications=[1, 20], set_mmi=False)
+        time.sleep(0.1)
+
+        beacon_manager_module.get_attributes_in_list(eid=3, attrIdList=[16, 17, 18, 19, 20, 22, 32], mand_applications=[1, 20])
+        time.sleep(0.01)
+        beacon_manager_module.get_attributes_in_list(eid=3, attrIdList=[50, 53], mand_applications=[1, 20], set_mmi=False)
+        time.sleep(0.1)
+
+        time.sleep(1)
     # beacon_manager_module.cardme_transaction(eid=3, mand_applications=[1, 20, 29], accessCredentialsPresent=True)
 
 # Main execution
