@@ -28,6 +28,7 @@ rnd_rse_bytes_value = None
 # rnd_rse_bytes_value = bytes()
 last_response_t_apdu_value = None
 last_vst_value = None
+last_response_t_apdu_json = None
 
 def initialize_bcm():
     """Initialize the beacon manager wrapper"""
@@ -132,6 +133,7 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     When the transaction is closed (no longer in progress) the transaction lock is released.
     """
     global last_response_t_apdu_value
+    global last_response_t_apdu_json
     global last_vst_value
 
     beacon_l7_wrapper.update_state()
@@ -189,6 +191,7 @@ def get_efc_cm_for_eid(eid):
 
 def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close=False) -> dict:
     global last_response_t_apdu_value
+    global last_response_t_apdu_json
 
     bcm_logger.debug(f"Preparing request T-APDU to be sent...")
     TApdu_container.set_val(asn1_request_t_apdu_value)
@@ -522,7 +525,9 @@ def get_all_attributes(eid, mand_applications=[1, 20, 29]):
     attrIdList = list(range(0, 128))
     return get_attributes_in_list(eid, attrIdList, mand_applications=mand_applications)
 
-def get_attributes_in_list(eid, attrIdList=[32], mand_applications=[1, 20, 29]):
+def get_attributes_in_list(eid, accessCredentialsPresent=True, attrIdList=[32], mand_applications=[1, 20, 29]):
+    global last_response_t_apdu_json
+    
     # Initialize transaction
     initialize_transaction(mand_applications=mand_applications)
 
@@ -530,7 +535,7 @@ def get_attributes_in_list(eid, attrIdList=[32], mand_applications=[1, 20, 29]):
     obtained_attrs = set()
     get_responses = []
     for attr in attrIdList:
-        send_get_request(eid, True, attrIdList=[attr])
+        send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[attr])
         try:
             if last_response_t_apdu_json['getResponse']['ret'] == 0:
                 bcm_logger.info(last_response_t_apdu_json['getResponse'])

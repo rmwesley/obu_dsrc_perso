@@ -96,8 +96,9 @@ def main():
     # Requesting EFC, CCC and UNI
     required_applications = [1, 20, 29]
     root_logger.info(f"Preparing a BST requesting AIDs {required_applications}")
-    beacon_manager_module.cardme_transaction(eid=4, mand_applications=[1, 20, 29])
-    beacon_manager_module.cardme_transaction(eid=3, mand_applications=[1, 20, 29], accessCredentialsPresent=True)
+    # beacon_manager_module.cardme_transaction(eid=4, mand_applications=[1, 20, 29])
+    beacon_manager_module.get_attributes_in_list(eid=3, attrIdList=[53], mand_applications=[1, 20])
+    # beacon_manager_module.cardme_transaction(eid=3, mand_applications=[1, 20, 29], accessCredentialsPresent=True)
 
 # Main execution
 if __name__ == "__main__":
