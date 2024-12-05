@@ -100,7 +100,7 @@ def main():
     # beacon_manager_module.cardme_transaction(eid=4, mand_applications=[1, 20, 29])
 
     try:
-        beacon_manager_module.cardme_transaction(eid=0, mand_applications=[1], set_mmi=True)
+        beacon_manager_module.cardme_transaction(eid=4, mand_applications=[1], set_mmi=True)
         time.sleep(0.2)
     except beacon_manager_module.EIDNotFoundException:
         root_logger.error("EID not present!", stack_info=True)

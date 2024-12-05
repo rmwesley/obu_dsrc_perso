@@ -65,7 +65,7 @@ def compute_access_key(efc_cm:str, ac_cr_key_ref:int):
 
     # Compute the Access Key
     access_key = cipher.encrypt(ciphertext)
-    key_derivation_logger.info(f"Access Key in hex: {access_key.hex().upper()}")
+    key_derivation_logger.debug(f"Access Key in hex: {access_key.hex().upper()}")
     return access_key
 
 def decrypt_access_key(efc_cm, access_key:bytes):
@@ -95,7 +95,7 @@ def compute_access_credentials_with_access_key(rnd_obe:int, access_key):
 
     # We now truncate this output to the 4 left-most bytes
     ac_cr = int.from_bytes(output[:4])
-    key_derivation_logger.info(f"Access Credentials in hex: {ac_cr:08X}")
+    key_derivation_logger.debug(f"Access Credentials in hex: {ac_cr:08X}")
     return ac_cr
 
 def compute_authenticator_with_auk_ref(pan_id, efc_cm, attribute_list_bytes, rnd_rse, auk_ref=115) -> bytes:
@@ -187,7 +187,7 @@ def compute_auth_key_with_mauk_ref(pan_id: str, efc_cm: str, key_ref: int):
     return compute_auth_key_with_mauk_value_and_ciphertext(ciphertext, mauk)
 
 def compute_all_auth_keys(pan_id: str, efc_cm: str):
-    key_derivation_logger.info(f'Computing all 8 Authentication Keys for PAN {pan_id}')
+    key_derivation_logger.debug(f'Computing all 8 Authentication Keys for PAN {pan_id}')
     key_derivation_logger.debug(f'Getting the Contract Provider. It is encodeed in the first 3 bytes of the EFC-CM...')
     contract_provider = efc_cm[0:6]
     ciphertext = compute_ciphertext(pan_id, contract_provider)
