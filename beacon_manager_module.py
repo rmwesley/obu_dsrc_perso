@@ -87,6 +87,8 @@ class BeaconManagerException(Exception):
     pass
 class TransactionException(Exception):
     pass
+class EIDNotFoundException(Exception):
+    pass
 
 # Start sending a BST
 def start_bst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
@@ -248,7 +250,7 @@ def get_parameter_hex_str_from_eid_on_json_vst(eid:int, vst_json=None) -> str:
         if application['eid'] == eid:
             return application['parameter']['octetstring']
     bcm_logger.error(f"EID {eid} is not present!")
-    raise TransactionException('L7: EID not present!')
+    raise EIDNotFoundException('L7: EID not present!')
 
 def get_parameter_bytes_from_eid_on_vst_value(eid:int, vst_value=None) -> bytes:
     if vst_value is None:
@@ -261,7 +263,7 @@ def get_parameter_bytes_from_eid_on_vst_value(eid:int, vst_value=None) -> bytes:
             bcm_logger.info(f"Found EID {eid} in VST!!! Parameter value in hex: {parameter_value.hex().upper()}")
             return parameter_value
     bcm_logger.error(f"EID {eid} is not present!")
-    raise TransactionException('L7: EID not present!')
+    raise EIDNotFoundException('L7: EID not present!')
 
 def compute_access_credentials(eid:int) -> bytes:
     bcm_logger.debug(f"Computing Access Credentials for EID {eid}...")
