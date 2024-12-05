@@ -32,6 +32,7 @@ class BeaconManager:
         # if aid == 1:
         #     self.TApdu_container = self.TApdu_container
         self.TApdu_container = EFC_CCC_LAC_asn1_objs.EfcCcc.CccTApdus
+
     def safe_switch_beacon(self, chosen_beacon_name):
         if hasattr(self, 'beacon_l7_wrapper'):
             self.beacon_l7_wrapper.close()

@@ -21,7 +21,8 @@ from ASN.compiled_DSRC_instances import LACv2_1 as EFC_CCC_LAC_asn1_objs
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
 from gea_bcm_dll_wrapper import *
-from beacon_manager import BeaconManager
+# from beacon_manager_class import BeaconManager
+import beacon_manager_module as BeaconManager
 
 root_logger = logging.getLogger()
 root_logger.setLevel(logging.DEBUG)
@@ -73,7 +74,7 @@ def callback_logger(cb_code, error_code):
 
 def main():
     root_logger.debug("Instantiating BeaconManager class...")
-    beacon_manager = BeaconManager()
+    beacon_manager = BeaconManager
     root_logger.debug("Initialized BCM!!")
 
     root_logger.debug("Getting beacon configuration...")

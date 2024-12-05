@@ -3,7 +3,7 @@ from fastapi.responses import FileResponse
 from fastapi.templating import Jinja2Templates
 
 from pydantic import BaseModel, Field
-from beacon_manager import BeaconManager, BeaconManagerError
+from beacon_manager_class import BeaconManager, BeaconManagerException
 
 from typing import Literal, Optional
 from enum import IntEnum
@@ -91,7 +91,7 @@ async def change_mode(request: Request, request_body: ChangeModeRequest):
 async def initialize_transaction(request: Request):
     try:
         last_decoded_vst_obj = request.app.state.beacon_manager.initialize_transaction()
-    except BeaconManagerError as beacon_error:
+    except BeaconManagerException as beacon_error:
         raise HTTPException(status_code=400, detail=f"{type(beacon_error).__name__}: {beacon_error}")
     return {"last_vst": last_decoded_vst_obj}
 
