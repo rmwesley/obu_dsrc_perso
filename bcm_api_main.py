@@ -9,7 +9,6 @@ logging.basicConfig(
     level=logging.DEBUG
     )
 
-
 root_app = FastAPI(title="TSP Testing API")
 
 @root_app.get('/', include_in_schema=False)

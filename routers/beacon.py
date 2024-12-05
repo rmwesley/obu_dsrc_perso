@@ -1,9 +1,9 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.templating import Jinja2Templates
 
 from pydantic import BaseModel, Field
-from beacon_manager_class import BeaconManager, BeaconManagerException
+import beacon_manager_module
 
 from typing import Literal, Optional
 from enum import IntEnum
@@ -16,7 +16,7 @@ router = APIRouter(
 
 templates = Jinja2Templates(directory="templates")
 @router.get('/', include_in_schema=False)
-def get_beacon_interface(request: Request):
+def get_beacon_interface():
     return templates.TemplateResponse(
         request,
         name="beacon_interface.html")
@@ -28,32 +28,30 @@ async def favicon():
 # It instantiates a BeaconManager object and keeps it as a global attribute
 # of the FastAPI application
 @router.post("/initialize-manager")
-async def initialize_beacon_manager(request: Request):
-    ''' Initialise the BeaconManager and add it to app.state
+async def initialize_beacon_manager():
+    ''' Initialize the BeaconManager
     '''
-    root_app = request.app
-    root_app.state.beacon_manager = BeaconManager()
+    beacon_manager_module.initialize_bcm()
     return "Beacon Manager was intialized!"
 
 @router.post("/shutdown-manager")
-async def shutdown(request: Request):
+async def shutdown():
     ''' Run on shutdown
         Close the connection
         Clear variables and release the resources
     '''
-    root_app = request.app
-    root_app.state.beacon_manager.shutdown()
+    beacon_manager_module.shutdown_beacon()
     return "Beacon Manager was shut down!"
 
 # Endpoint to get the current beacon state
 @router.get("/beacon-state")
-async def get_beacon_state(request: Request):
-    return {"beacon_state": request.app.state.beacon_manager.get_last_beacon_state()}
+async def get_beacon_state():
+    return {"beacon_state": beacon_manager_module.get_last_beacon_state()}
 # Endpoint to update the current beacon state
 @router.post("/update-beacon-state")
-async def update_beacon_state(request: Request):
-    request.app.state.beacon_manager.update_state()
-    return {"beacon_state": request.app.state.beacon_manager.get_last_beacon_state()}
+async def update_beacon_state():
+    beacon_manager_module.update_state()
+    return {"beacon_state": beacon_manager_module.get_last_beacon_state()}
 
 operating_modes_enum_values = {
     "Stopped": 0,
@@ -80,17 +78,17 @@ class ChangeModeRequest(BaseModel):
     }
 # Endpoint to change the beacon mode
 @router.post("/change-mode")
-async def change_mode(request: Request, request_body: ChangeModeRequest):
+async def change_mode(request_body: ChangeModeRequest):
     mode_name = (await request.json())["mode_name"]
     mode_code = operating_modes_enum_values[mode_name]
-    request.app.state.beacon_manager.beacon_l7_wrapper.change_mode(mode_code)
+    beacon_manager_module.beacon_l7_wrapper.change_mode(mode_code)
     return {"message": f"Changed mode to {mode_name} ({mode_code})!"}
 
 # Endpoint to initialize the beacon to access EFC functions
 @router.post("/initialize-transaction")
-async def initialize_transaction(request: Request):
+async def initialize_transaction():
     try:
-        last_decoded_vst_obj = request.app.state.beacon_manager.initialize_transaction()
+        last_decoded_vst_obj = beacon_manager_module.initialize_transaction()
     except BeaconManagerException as beacon_error:
         raise HTTPException(status_code=400, detail=f"{type(beacon_error).__name__}: {beacon_error}")
     return {"last_vst": last_decoded_vst_obj}
@@ -114,8 +112,8 @@ class GetRequest(BaseModel):
         }
     }
 @router.post("/send_get_request")
-async def send_get_request(request: Request, request_body: GetRequest):
-    get_response_json = request.app.state.beacon_manager.send_get_request(**request_body.dict())
+async def send_get_request(request_body: GetRequest):
+    get_response_json = beacon_manager_module.send_get_request(**request_body.dict())
     return {
         "message": "Transaction closed!",
         "response_t_apdu": get_response_json
@@ -142,8 +140,8 @@ class PresentationReq(BaseModel):
         }
     }
 @router.post("/send_presentation_request")
-async def send_presentation_request(request: Request, request_body: PresentationReq):
-    get_stamped_response_json = request.app.state.beacon_manager.presentation_request(**request_body.dict())
+async def send_presentation_request(request_body: PresentationReq):
+    get_stamped_response_json = beacon_manager_module.presentation_request(**request_body.dict())
     return {
         "message": "Transaction closed!",
         "response_t_apdu": get_stamped_response_json
@@ -151,8 +149,8 @@ async def send_presentation_request(request: Request, request_body: Presentation
 
 # Endpoint to close transaction
 @router.post("/send-close-set-mmi-to-obu")
-async def send_close_set_mmi_to_obu(request: Request):
-    response_t_apdu_json = request.app.state.beacon_manager.send_close_transaction_setmmi()
+async def send_close_set_mmi_to_obu():
+    response_t_apdu_json = beacon_manager_module.send_close_transaction_setmmi()
     return {
         "message": "Transaction closed!",
         "response_t_apdu": response_t_apdu_json
@@ -160,24 +158,24 @@ async def send_close_set_mmi_to_obu(request: Request):
 
 # Endpoint to initialize the beacon and close transaction
 @router.post("/initialize-and-close-transaction")
-async def initialize_and_close_transaction(request: Request):
+async def initialize_and_close_transaction():
     t_apdu_response_list = []
-    request.app.state.beacon_manager.initialize_transaction()
-    t_apdu_response_list.append(request.app.state.beacon_manager.last_response_t_apdu_json)
+    beacon_manager_module.initialize_transaction()
+    t_apdu_response_list.append(beacon_manager_module.last_response_t_apdu_json)
 
-    request.app.state.beacon_manager.send_close_transaction_setmmi()
-    t_apdu_response_list.append(request.app.state.beacon_manager.last_response_t_apdu_json)
+    beacon_manager_module.send_close_transaction_setmmi()
+    t_apdu_response_list.append(beacon_manager_module.last_response_t_apdu_json)
     return t_apdu_response_list
 
 @router.get("/last_response_t_apdu_with_vst_json")
-async def get_last_vst(request: Request):
-    return request.app.state.beacon_manager.last_response_t_apdu_with_vst_json
+async def get_last_vst():
+    return beacon_manager_module.last_response_t_apdu_with_vst_json
 
 @router.get("/last_response_t_apdu_json")
-async def get_last_vst(request: Request):
-    return request.app.state.beacon_manager.last_response_t_apdu_json
+async def get_last_vst():
+    return beacon_manager_module.last_response_t_apdu_json
 
-class EFCFunctionRequest(Request):
+class EFCFunctionRequest(BaseModel):
     function_type: str
     eid: int
     attribute_id_list: list = Field(default_factory=list)
@@ -187,12 +185,12 @@ class TransactionReq(BaseModel):
     eid: int = 3
 
 @router.post("/CARDME")
-async def cardme(request: Request, request_body: TransactionReq):
-    return request.app.state.beacon_manager.cardme_transaction(request_body.eid)
+async def cardme(request_body: TransactionReq):
+    return beacon_manager_module.cardme_transaction(request_body.eid)
 
 @router.post("/Get_all_128_attrs")
-async def get_all_attributes(request: Request, request_body: TransactionReq):
-    return request.app.state.beacon_manager.get_all_attributes(request_body.eid)
+async def get_all_attributes(request_body: TransactionReq):
+    return beacon_manager_module.get_all_attributes(request_body.eid)
 
 # Endpoint to handle EFC functions
 @router.post("/efc-function")
@@ -203,12 +201,12 @@ async def efc_function(request: EFCFunctionRequest):
     attribute_id_list = request_body.attribute_id_list
 
     if function_type == "GET":
-        response = request.app.state.beacon_manager.send_get_request(eid, attribute_id_list)
+        response = beacon_manager_module.send_get_request(eid, attribute_id_list)
     elif function_type == "SET":
-        response = request.app.state.beacon_manager.send_set_request(eid, attribute_id_list)
+        response = beacon_manager_module.send_set_request(eid, attribute_id_list)
     elif function_type == "ACTION":
         action_type = request_body.action_type
-        response = request.app.state.beacon_manager.send_action_request(eid, action_type, attribute_id_list)
+        response = beacon_manager_module.send_action_request(eid, action_type, attribute_id_list)
     else:
         raise HTTPException(status_code=400, detail="Invalid function type")
     

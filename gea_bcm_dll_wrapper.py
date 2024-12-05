@@ -848,7 +848,6 @@ class BCM_GEA_DLL_Wrapper:
         return result
     def get_last_beacon_state(self):
         gea_dll_wrapper_logger.debug(f"Beacon state dict: {dict(self.beacon_state)}")
-        # return vars(self.beacon_state)
         return dict(self.beacon_state)
     
     def get_config(self):

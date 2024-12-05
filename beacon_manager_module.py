@@ -42,6 +42,12 @@ def initialize_bcm():
     safe_set_beacon(chosen_beacon_name = default_beacon_name)
     bcm_logger.info("Initialized BCM!!")
 
+def shutdown_beacon():
+    beacon_l7_wrapper.shutdown()
+
+def get_last_beacon_state():
+    beacon_l7_wrapper.get_last_beacon_state()
+
 def update_rnd_rse():
     global rnd_rse_bytes_value
 
