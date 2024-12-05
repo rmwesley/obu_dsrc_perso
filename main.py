@@ -22,7 +22,7 @@ from ASN.compiled_DSRC_instances import LACv2_1 as EFC_CCC_LAC_asn1_objs
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
 from gea_bcm_dll_wrapper import *
 # from beacon_manager_class import BeaconManager
-import beacon_manager_module as BeaconManager
+import beacon_manager_module
 
 root_logger = logging.getLogger()
 root_logger.setLevel(logging.DEBUG)
@@ -74,22 +74,21 @@ def callback_logger(cb_code, error_code):
 
 def main():
     root_logger.debug("Instantiating BeaconManager class...")
-    beacon_manager = BeaconManager
-    root_logger.debug("Initialized BCM!!")
+    beacon_manager_module.initialize_bcm()
 
     root_logger.debug("Getting beacon configuration...")
-    bcm_config = beacon_manager.beacon_l7_wrapper.get_config()
+    bcm_config = beacon_manager_module.beacon_l7_wrapper.get_config()
     root_logger.debug(f"Displaying config data...: {bcm_config}")
     
-    beacon_manager.beacon_l7_wrapper.change_mode(BCM_MODE_Enum.BCM_MOD_Transparent)
+    beacon_manager_module.beacon_l7_wrapper.change_mode(BCM_MODE_Enum.BCM_MOD_Transparent)
     root_logger.debug("Changed mode to transparent!")
     
     root_logger.debug("Getting beacon state...")
-    result = beacon_manager.beacon_l7_wrapper.update_state()
+    result = beacon_manager_module.beacon_l7_wrapper.update_state()
 
     root_logger.debug("We now update/get the BeaconID according to the beacon before sending the BST")
-    result = beacon_manager.beacon_l7_wrapper.update_beacon_id()
-    EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.from_uper(beacon_manager.beacon_l7_wrapper.last_beacon_id)
+    result = beacon_manager_module.beacon_l7_wrapper.update_beacon_id()
+    EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.from_uper(beacon_manager_module.beacon_l7_wrapper.last_beacon_id)
     root_logger.debug(f"Beacon (according to GEA Beacon) encoded in JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.to_jer()}")
 
     root_logger.debug("Initialization: Starting BST and getting VST...")
@@ -97,8 +96,8 @@ def main():
     # Requesting EFC, CCC and UNI
     required_applications = [1, 20, 29]
     root_logger.info(f"Preparing a BST requesting AIDs {required_applications}")
-    beacon_manager.cardme_transaction(eid=4, mand_applications=[1, 20, 29])
-    beacon_manager.cardme_transaction(eid=3, mand_applications=[1, 20, 29], accessCredentialsPresent=True)
+    beacon_manager_module.cardme_transaction(eid=4, mand_applications=[1, 20, 29])
+    beacon_manager_module.cardme_transaction(eid=3, mand_applications=[1, 20, 29], accessCredentialsPresent=True)
 
 # Main execution
 if __name__ == "__main__":

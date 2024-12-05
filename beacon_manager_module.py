@@ -15,24 +15,32 @@ import dsrc_security
 
 bcm_logger = logging.getLogger(__name__)
 
-with open('settings/beacon_manager_config.json', 'r') as beacon_manager_settings_file:
-    beacon_manager_settings = json.load(beacon_manager_settings_file)
-
-default_beacon_name = beacon_manager_settings["default_beacon_name"]
-l7_initialization_phase_lock = threading.Lock()
-l7_transfer_kernel_lock = threading.Lock()
-
 # if aid == 1:
 #     TApdu_container = TApdu_container
 TApdu_container = EFC_CCC_LAC_asn1_objs.EfcCcc.CccTApdus
 
-
 # Setting globals
+l7_initialization_phase_lock = None
+l7_transfer_kernel_lock = None
+
 beacon_l7_wrapper = None
 rnd_rse_bytes_value = None
 # rnd_rse_bytes_value = bytes()
 last_response_t_apdu_value = None
 last_vst_value = None
+
+def initialize_bcm():
+    """Initialize the beacon manager wrapper"""
+    global l7_initialization_phase_lock
+    global l7_transfer_kernel_lock
+    with open('settings/beacon_manager_config.json', 'r') as beacon_manager_settings_file:
+        beacon_manager_settings = json.load(beacon_manager_settings_file)
+
+    default_beacon_name = beacon_manager_settings["default_beacon_name"]
+    l7_initialization_phase_lock = threading.Lock()
+    l7_transfer_kernel_lock = threading.Lock()
+    safe_set_beacon(chosen_beacon_name = default_beacon_name)
+    bcm_logger.info("Initialized BCM!!")
 
 def update_rnd_rse():
     global rnd_rse_bytes_value
@@ -62,15 +70,11 @@ def update_rnd_rse():
 def safe_set_beacon(chosen_beacon_name):
     global beacon_l7_wrapper
 
-    beacon_l7_wrapper = globals()['beacon_l7_wrapper']
+    bcm_logger.info('Setting beacon to [{chosen_beacon_name}]')
     if beacon_l7_wrapper is not None:
         beacon_l7_wrapper.close()
     if chosen_beacon_name == "TGBV":
         beacon_l7_wrapper = BCM_GEA_DLL_Wrapper()
-        print(beacon_l7_wrapper)
-        setattr(sys.modules[__name__], "beacon_l7_wrapper", beacon_l7_wrapper)
-        print(beacon_l7_wrapper)
-safe_set_beacon(chosen_beacon_name = default_beacon_name)
 
 class BeaconManagerException(Exception):
     pass
@@ -79,6 +83,8 @@ class TransactionException(Exception):
 
 # Start sending a BST
 def start_bst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
+    global l7_transfer_kernel_lock
+
     mand_applications = [{'aid': mandatory_aid} for mandatory_aid in mand_applications]
 
     bst_value = {
