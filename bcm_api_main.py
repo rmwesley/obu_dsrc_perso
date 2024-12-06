@@ -4,10 +4,8 @@ from fastapi.responses import FileResponse
 from routers import beacon, security
 
 import logging
-logging.basicConfig(
-    format=f"%(levelname)-8s %(filename)22s:%(lineno)s - %(funcName)s() - %(threadName)s %(message)s",
-    level=logging.DEBUG
-    )
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
 
 root_app = FastAPI(title="TSP Testing API")
 

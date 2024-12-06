@@ -9,8 +9,10 @@ except:
     os.environ['MK_PATH'] = r"..\master_keys.json"
 
 import threading
+
 import logging
-import dsrc_security
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
 
 from ASN.compiled_DSRC_instances import LACv2_1 as EFC_CCC_LAC_asn1_objs
 
@@ -19,9 +21,7 @@ from ASN.compiled_DSRC_instances import LACv2_1 as EFC_CCC_LAC_asn1_objs
 from gea_bcm_dll_wrapper import *
 # from beacon_manager_class import BeaconManager
 import beacon_manager_module
-
-root_logger = logging.getLogger()
-root_logger.setLevel(logging.INFO)
+import dsrc_security
 
 def callback_logger(cb_code, error_code):
     if cb_code == BCM_CALLBACK_Enum.BCM_CB_ERR:
