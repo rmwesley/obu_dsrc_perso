@@ -4,7 +4,7 @@ from ctypes.wintypes import HWND, LPCWSTR, UINT, BYTE, WORD, DWORD, CHAR, BOOL, 
 
 import logging
 
-gea_dll_loader_logger = logging.getLogger(__name__)
+gea_dll_loader_logger = logging.getLogger(__name__ + ".loader")
 
 # Porting the GEA BCM DLL to Python. It mainly consisting of enums and foreign functions
 # Function prototypes are callables that return foreign functions when called with a long pointer address, LPFN, as argument
@@ -521,7 +521,7 @@ gea_dll_loader_logger.info(f"Loaded DLL version: {bytes_dll_version[1]}.{bytes_d
 import json
 import threading
 
-gea_dll_wrapper_logger = logging.getLogger(__name__)
+gea_dll_wrapper_logger = logging.getLogger(__name__ + ".wrapper")
 
 with open('settings/beacon_manager_config.json', 'r') as beacon_manager_settings_file:
     beacon_manager_settings = json.load(beacon_manager_settings_file)
@@ -836,7 +836,7 @@ class BCM_GEA_DLL_Wrapper:
         return result
 
     def update_state(self) -> ST_BCM_STATE:
-        gea_dll_wrapper_logger.debug(f"Udpating beacon state...")
+        gea_dll_wrapper_logger.debug(f"Updating beacon state...")
         if self.beacon_state.trxInProgress:
             gea_dll_wrapper_logger.error(f"Do not try to update the state: A transaction is in progress! Otherwise, an Exception will be raised.")
         
