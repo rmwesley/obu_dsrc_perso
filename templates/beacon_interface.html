@@ -8,12 +8,16 @@
   <head>
     <title>Beacon Manager Interface</title>
     <link rel="icon" href="beacon.svg">
+    <link rel="stylesheet" href="../beacon_interface/beacon_manager_front.css">
   </head>
 
   <body>
     <div>{{ message }}</div>
     
     <div id="app">
+      <div id="device-management" :class="deviceStyleCss">
+        <h3>Device Management</h3>
+      </div>
       <div id="beacon-management" style="background-color: #909090;">
         <h3>Beacon Management</h3>
         <button @click="initializeBeaconManager">Initialize Beacon Manager</button>
@@ -79,7 +83,8 @@
           toll_chargers: ['Charger1', 'Charger2'], // Example data
           transaction_types: ['CARDME', 'PISTA'], // Example data
           toll_charger: '',
-          transaction_type: ''
+          transaction_type: '',
+          deviceStyleCss: "device_error"
         }
       },
       created() {

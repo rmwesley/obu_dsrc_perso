@@ -1,0 +1,6 @@
+.device_ok {
+    background-color: green;
+}
+.device_error {
+    background-color: red;
+}
