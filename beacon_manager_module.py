@@ -102,6 +102,7 @@ def change_mode(mode_name='Stopped'):
     if beacon_l7_wrapper is None:
         bcm_logger.error("L7: Beacon not initialized/configured!!")
         return
+    bcm_logger.info(f"Changing beacon mode to '{mode_name}'")
 
     if current_beacon_name == 'TGBV':
         tgbv_gea_bcm_operating_modes_enum_values = beacon_manager_config['TGBV']['modes_config']

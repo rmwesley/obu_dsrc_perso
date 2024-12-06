@@ -862,8 +862,10 @@ class BCM_GEA_DLL_Wrapper:
         return bcm_config
     
     def change_mode(self, operating_mode_code):
+        gea_dll_wrapper_logger.debug(f"[TGBV L7]: Changing mode to ({operating_mode_code})")
         result = bcm_change_mode(self.reg_ptr, operating_mode_code)
         bcm_error_wrapper(result)
+        gea_dll_wrapper_logger.debug(f"[TGBV L7]: Finished changing mode")
     def shutdown(self):
         result = bcm_close_manager(ctypes.byref(self.reg_ptr))
         bcm_error_wrapper(result)
