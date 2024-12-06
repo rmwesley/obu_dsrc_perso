@@ -10,6 +10,11 @@
     "tcp_ip_config": {
       "ip_address": "133.38.40.152",
       "tcp_port": 10001
+    },
+    "modes_config": {
+      "Stopped": 0,
+      "Transparent": 1,
+      "Maintenance": 3
     }
   },
   "OPS1955":{

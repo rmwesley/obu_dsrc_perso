@@ -16,11 +16,15 @@ import dsrc_security
 bcm_logger = logging.getLogger(__name__)
 
 # Setting globals
-# Threading locks
+## Beacon configs
+current_beacon_name = None
+beacon_manager_config = None
+
+## Threading locks
 l7_initialization_phase_lock = None
 l7_transfer_kernel_lock = None
 
-# Beacon L7 necessary values
+## Beacon L7 necessary values
 TApdu_container = None
 beacon_l7_wrapper = None
 rnd_rse_bytes_value = None
@@ -31,6 +35,7 @@ last_response_t_apdu_json = None
 
 def initialize_bcm(aid=20):
     """Initialize the beacon manager wrapper"""
+    global beacon_manager_config
     global TApdu_container
     global l7_initialization_phase_lock
     global l7_transfer_kernel_lock
@@ -39,20 +44,32 @@ def initialize_bcm(aid=20):
         TApdu_container = TApdu_container
     else:
         TApdu_container = EFC_CCC_LAC_asn1_objs.EfcCcc.CccTApdus
-    with open('settings/beacon_manager_config.json', 'r') as beacon_manager_settings_file:
-        beacon_manager_settings = json.load(beacon_manager_settings_file)
+    with open('settings/beacon_manager_config.json', 'r') as beacon_manager_config_file:
+        beacon_manager_config = json.load(beacon_manager_config_file)
 
-    default_beacon_name = beacon_manager_settings["default_beacon_name"]
+    default_beacon_name = beacon_manager_config["default_beacon_name"]
     l7_initialization_phase_lock = threading.Lock()
     l7_transfer_kernel_lock = threading.Lock()
     safe_set_beacon(chosen_beacon_name = default_beacon_name)
     bcm_logger.info("Initialized BCM!!")
 
+def change_mode(mode_name='Stopped'):
+    global beacon_manager_config
+    global current_beacon_name
+    global beacon_l7_wrapper
+
+    if current_beacon_name == 'TGBV':
+        tgbv_gea_bcm_operating_modes_enum_values = beacon_manager_config['TGBV']['modes_config']
+        mode_code = tgbv_gea_bcm_operating_modes_enum_values[mode_name]
+        beacon_l7_wrapper.change_mode(operating_mode_code=mode_code)
+
 def shutdown_beacon():
+    global beacon_l7_wrapper
     beacon_l7_wrapper.shutdown()
 
 def get_last_beacon_state():
-    beacon_l7_wrapper.get_last_beacon_state()
+    global beacon_l7_wrapper
+    return beacon_l7_wrapper.get_last_beacon_state_description()
 
 def update_rnd_rse():
     global rnd_rse_bytes_value
@@ -80,13 +97,19 @@ def update_rnd_rse():
     return rnd_rse_bytes_value
 
 def safe_set_beacon(chosen_beacon_name):
+    global current_beacon_name
     global beacon_l7_wrapper
 
     bcm_logger.info(f'Setting beacon to ({chosen_beacon_name})')
     if beacon_l7_wrapper is not None:
         beacon_l7_wrapper.close()
+
     if chosen_beacon_name == "TGBV":
         beacon_l7_wrapper = BCM_GEA_DLL_Wrapper()
+        current_beacon_name = chosen_beacon_name
+
+    if chosen_beacon_name == "OPS1955":
+        current_beacon_name = chosen_beacon_name
 
 class BeaconManagerException(Exception):
     pass
@@ -329,7 +352,7 @@ def send_action_request(
         iid = None,
         close_transaction = False):
     global TApdu_container
-    
+
     if accessCredentialsPresent:
         accessCredentials = compute_access_credentials(eid)
     else:

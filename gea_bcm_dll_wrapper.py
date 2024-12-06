@@ -783,7 +783,7 @@ class BCM_GEA_DLL_Wrapper:
         elif result == BCM_ERR_Enum.BCM_SocketNotConnected:
             gea_dll_wrapper_logger.error("Wait for socket to connect before sending commands!")
         else:
-            gea_dll_wrapper_logger.error("We could not handle the error, so it will be raised")
+            gea_dll_wrapper_logger.critical("We could not handle the error, so it will be raised")
             bcm_error_wrapper(result)
         
         self.wait_until_ok()
@@ -835,7 +835,7 @@ class BCM_GEA_DLL_Wrapper:
         gea_dll_wrapper_logger.debug(f"Latest Beacon ID in hex: {self.last_beacon_id.hex().upper()}")
         return result
 
-    def update_state(self):
+    def update_state(self) -> ST_BCM_STATE:
         gea_dll_wrapper_logger.debug(f"Udpating beacon state...")
         if self.beacon_state.trxInProgress:
             gea_dll_wrapper_logger.error(f"Do not try to update the state: A transaction is in progress! Otherwise, an Exception will be raised.")
@@ -846,9 +846,12 @@ class BCM_GEA_DLL_Wrapper:
         gea_dll_wrapper_logger.debug(f"Beacon state: {self.beacon_state}")
         gea_dll_wrapper_logger.info(f"Beacon state description: {self.beacon_state.get_description()}")
         return result
-    def get_last_beacon_state(self):
+    def get_last_beacon_state_dict(self):
         gea_dll_wrapper_logger.debug(f"Beacon state dict: {dict(self.beacon_state)}")
         return dict(self.beacon_state)
+    def get_last_beacon_state_description(self):
+        gea_dll_wrapper_logger.debug(f"Beacon state description: {self.beacon_state.get_description()}")
+        return self.beacon_state.get_description()
     
     def get_config(self):
         bcm_config = ST_BCM_CONFIG()
