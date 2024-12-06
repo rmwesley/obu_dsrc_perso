@@ -50,12 +50,18 @@ async def shutdown():
     beacon_manager_module.shutdown_beacon()
     return "Beacon Manager was shut down!"
 
+class LoopRequest(BaseModel):
+    loop_state: str
 @router.post("/loop-transactions")
-async def initialize_beacon_manager():
-    ''' Simply Loop Transactions
+async def loop_transactions(loop_req: LoopRequest):
+    ''' Manage Loop Transactions
     '''
-    beacon_manager_module.loop_transactions()
-    return "looping transactions!!"
+    if loop_req.loop_state == 'ON':
+        beacon_manager_module.loop_transactions()
+        return "looping transactions!!"
+    if loop_req.loop_state == 'OFF':
+        beacon_manager_module.stop_loop()
+        return "Killed loop!!"
 
 # Endpoint to get the current beacon state
 @router.get("/beacon-state")
@@ -157,8 +163,15 @@ async def send_presentation_request(request_body: PresentationReq):
         "response_t_apdu": get_stamped_response_json
         }
 
-# Endpoint to close transaction
-@router.post("/send-close-set-mmi-to-obu")
+# Endpoints to close transaction
+@router.post("/send-close-transaction-echo-to-obu")
+async def send_close_transaction_echo_to_obu():
+    response_t_apdu_json = beacon_manager_module.send_close_transaction_echo()
+    return {
+        "message": "Transaction closed!",
+        "response_t_apdu": response_t_apdu_json
+        }
+@router.post("/send-close-transaction-set-mmi-to-obu")
 async def send_close_set_mmi_to_obu():
     response_t_apdu_json = beacon_manager_module.send_close_transaction_setmmi()
     return {
