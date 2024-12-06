@@ -97,30 +97,7 @@ def main():
     required_applications = [1, 20, 29]
     root_logger.info(f"Preparing a BST requesting AIDs {required_applications}")
 
-    try:
-        beacon_manager_module.cardme_transaction(eid=4, mand_applications=[1], set_mmi=True)
-        time.sleep(0.2)
-    except beacon_manager_module.EIDNotFoundException:
-        root_logger.error("EID not present!", stack_info=True)
-
-    while True:
-        beacon_manager_module.get_attributes_in_list(eid=4, attrIdList=[32], mand_applications=[1, 20], set_mmi=False)
-        time.sleep(0.1)
-
-
-        beacon_manager_module.get_attributes_in_list(eid=2, attrIdList=[16, 17, 18, 19, 20, 22, 32], mand_applications=[1, 20], set_mmi=False)
-        time.sleep(0.01)
-        beacon_manager_module.get_attributes_in_list(eid=2, attrIdList=[50, 51, 52], mand_applications=[1, 20], set_mmi=False)
-        beacon_manager_module.get_attributes_in_list(eid=2, attrIdList=[53, 99, 100, 101], mand_applications=[1, 20], set_mmi=False)
-        time.sleep(0.1)
-
-        beacon_manager_module.get_attributes_in_list(eid=3, attrIdList=[16, 17, 18, 19, 20, 22, 32], mand_applications=[1, 20])
-        time.sleep(0.01)
-        beacon_manager_module.get_attributes_in_list(eid=3, attrIdList=[50, 51, 52], mand_applications=[1, 20], set_mmi=False)
-        beacon_manager_module.get_attributes_in_list(eid=3, attrIdList=[53, 99, 100, 101], mand_applications=[1, 20], set_mmi=False)
-        time.sleep(0.1)
-
-        time.sleep(1)
+    beacon_manager_module.loop_transactions()
 
 # Main execution
 if __name__ == "__main__":

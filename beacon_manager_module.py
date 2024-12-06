@@ -1,4 +1,5 @@
 import sys
+import time
 
 # from ASN.compiled_DSRC_instances import CCCv4_1 as EFC_CCC_LAC_asn1_objs
 # from ASN.compiled_DSRC_instances import EFCv10_1 as EFC_CCC_LAC_asn1_objs
@@ -618,3 +619,32 @@ def get_attributes_in_list(eid, accessCredentialsPresent=True, attrIdList=[32], 
         send_echo_action_request(eid=eid, close_transaction_bool=True)
 
     return obtained_attrs, get_responses
+
+def loop_transactions():
+    try:
+        cardme_transaction(eid=4, mand_applications=[1], set_mmi=True)
+        time.sleep(0.2)
+    except EIDNotFoundException:
+        root_logger.error("EID not present!", stack_info=True)
+
+    while True:
+        try:
+            get_attributes_in_list(eid=4, attrIdList=[32], mand_applications=[1, 20], set_mmi=False)
+            time.sleep(0.1)
+
+            get_attributes_in_list(eid=2, attrIdList=[16, 17, 18, 19, 20, 22, 32], mand_applications=[1, 20], set_mmi=False)
+            time.sleep(0.01)
+            get_attributes_in_list(eid=2, attrIdList=[50, 51, 52], mand_applications=[1, 20], set_mmi=False)
+            get_attributes_in_list(eid=2, attrIdList=[53, 99, 100, 101], mand_applications=[1, 20], set_mmi=False)
+            time.sleep(0.1)
+
+            get_attributes_in_list(eid=3, attrIdList=[16, 17, 18, 19, 20, 22, 32], mand_applications=[1, 20])
+            time.sleep(0.01)
+            get_attributes_in_list(eid=3, attrIdList=[50, 51, 52], mand_applications=[1, 20], set_mmi=False)
+            get_attributes_in_list(eid=3, attrIdList=[53, 99, 100, 101], mand_applications=[1, 20], set_mmi=False)
+            time.sleep(0.1)
+
+            time.sleep(1)
+        except:
+            bcm_logger.error("Error occurred during loop!", exc_info=True)
+            time.sleep(2)
