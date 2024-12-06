@@ -99,6 +99,10 @@ def change_mode(mode_name='Stopped'):
     global current_beacon_name
     global beacon_l7_wrapper
 
+    if beacon_l7_wrapper is None:
+        bcm_logger.error("L7: Beacon not initialized/configured!!")
+        return
+
     if current_beacon_name == 'TGBV':
         tgbv_gea_bcm_operating_modes_enum_values = beacon_manager_config['TGBV']['modes_config']
         mode_code = tgbv_gea_bcm_operating_modes_enum_values[mode_name]
@@ -106,10 +110,17 @@ def change_mode(mode_name='Stopped'):
 
 def shutdown_beacon():
     global beacon_l7_wrapper
+    if beacon_l7_wrapper is None:
+        bcm_logger.error("L7: Beacon not initialized/configured!!")
+        return
     beacon_l7_wrapper.shutdown()
 
 def get_last_beacon_state():
     global beacon_l7_wrapper
+    if beacon_l7_wrapper is None:
+        bcm_logger.error("L7: Beacon not initialized/configured!!")
+        return
+
     return beacon_l7_wrapper.get_last_beacon_state_description()
 
 def update_rnd_rse():
