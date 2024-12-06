@@ -19,12 +19,14 @@
         <h3>Device Management</h3>
       </div>
       <button @click="startTransactionLoop">Start Transaction Loop</button>
-      <div id="beacon-management" style="background-color: #909090;">
+      <button @click="showEverything">Show everything</button>
+      <button @click="hideEverything" :class="{ hidden: isHidden}">Hide everything</button>
+      <div id="beacon-management" :class="{ hidden: isHidden}" style="background-color: #909090;">
         <h3>Beacon Management</h3>
         <button @click="startTransactionLoop">Start Transaction Loop</button>
         <button @click="initializeBeaconManager">Initialize Beacon Manager</button>
       </div>
-      <div id="beacon-state" style="background-color: #60FF60;">
+      <div id="beacon-state" :class="{ hidden: isHidden}" style="background-color: #60FF60;">
         <h3>Beacon State</h3>
         <button @click="getBeaconState">Update/Get beacon's state</button>
         <div id="beacon-state" style="margin: 1em; border:0.2em solid black;">
@@ -57,9 +59,9 @@
           </div>
         </div>
       </div>
-      <div id="transaction-management" style="background-color: #909090;">
+      <div id="transaction-management" :class="{ hidden: isHidden}" style="background-color: #909090;">
         <h3>Transaction Management</h3>
-      <div id="transaction-state" style="background-color: #8888FF;">
+      <div id="transaction-state" :class="{ hidden: isHidden}" style="background-color: #8888FF;">
         <h3>Last VST</h3>
         <div style="margin: 1em; border:0.2em solid black;">
         <button @click="initializeAndCloseTransaction">Initialize and close transaction</button>
@@ -86,7 +88,8 @@
           transaction_types: ['CARDME', 'PISTA'], // Example data
           toll_charger: '',
           transaction_type: '',
-          deviceStyleCss: "device_error"
+          deviceStyleCss: "device_error",
+          isHidden: true
         }
       },
       created() {
@@ -94,6 +97,12 @@
         this.getLastVST()
       },
       methods: {
+        showEverything(){
+          this.isHidden = false
+        },
+        hideEverything(){
+          isHidden = true
+        },
         async startTransactionLoop() {
           const response = await fetch('/beacon/loop-transactions')
           const data = await response.json()
