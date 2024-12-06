@@ -1,13 +1,13 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.templating import Jinja2Templates
 
 from pydantic import BaseModel, Field
-import beacon_manager_module
 
 from typing import Literal, Optional
 from enum import IntEnum
 
+import beacon_manager_module
 import dsrc_security
 
 router = APIRouter(
@@ -16,9 +16,9 @@ router = APIRouter(
 
 templates = Jinja2Templates(directory="templates")
 @router.get('/', include_in_schema=False)
-def get_beacon_interface():
+def get_beacon_interface(request: Request):
     return templates.TemplateResponse(
-        request,
+        request=request,
         name="beacon_interface.html")
 @router.get('/beacon.svg', include_in_schema=False)
 async def favicon():
@@ -27,7 +27,7 @@ async def favicon():
 # Endpoint to initialize the Beacon Manager
 # It instantiates a BeaconManager object and keeps it as a global attribute
 # of the FastAPI application
-@router.post("/initialize-manager")
+@router.post("/initialize-beacon-manager")
 async def initialize_beacon_manager():
     ''' Initialize the BeaconManager
     '''
@@ -47,19 +47,16 @@ async def shutdown():
 @router.get("/beacon-state")
 async def get_beacon_state():
     return {"beacon_state": beacon_manager_module.get_last_beacon_state()}
+
 # Endpoint to update the current beacon state
 @router.post("/update-beacon-state")
 async def update_beacon_state():
     beacon_manager_module.update_state()
     return {"beacon_state": beacon_manager_module.get_last_beacon_state()}
 
-operating_modes_enum_values = {
-    "Stopped": 0,
-    "Transparent": 1,
-    "Maintenance": 3
-}
+
 class ChangeModeRequest(BaseModel):
-    mode_name: Literal[tuple(operating_modes_enum_values.keys())]
+    mode_name: Literal['Transparent', 'Stopped', 'Maintenance']
 
     model_config = {
         "json_schema_extra": {
@@ -79,10 +76,9 @@ class ChangeModeRequest(BaseModel):
 # Endpoint to change the beacon mode
 @router.post("/change-mode")
 async def change_mode(request_body: ChangeModeRequest):
-    mode_name = (await request.json())["mode_name"]
-    mode_code = operating_modes_enum_values[mode_name]
-    beacon_manager_module.beacon_l7_wrapper.change_mode(mode_code)
-    return {"message": f"Changed mode to {mode_name} ({mode_code})!"}
+    mode_name = request_body.mode_name
+    beacon_manager_module.change_mode(mode_name=mode_name)
+    return {"message": f"Changed mode to {mode_name}!"}
 
 # Endpoint to initialize the beacon to access EFC functions
 @router.post("/initialize-transaction")
@@ -192,6 +188,8 @@ async def cardme(request_body: TransactionReq):
 async def get_all_attributes(request_body: TransactionReq):
     return beacon_manager_module.get_all_attributes(request_body.eid)
 
+class EFCFunctionRequest(BaseModel):
+    pass
 # Endpoint to handle EFC functions
 @router.post("/efc-function")
 async def efc_function(request: EFCFunctionRequest):
