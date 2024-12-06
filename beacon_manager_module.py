@@ -214,11 +214,12 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     
     bcm_logger.info("We now wait on the main thread until we a VST notification is received...")
     beacon_l7_wrapper.wait_for_vst_notification()
+    bcm_logger.info("A VST notification was received! Releasing locks!")
     l7_initialization_phase_lock.release()
     l7_transfer_kernel_lock.release()
     #no_transaction_in_progress.set()
 
-    bcm_logger.info("A VST notification was received! We now get the VST")
+    bcm_logger.debug("Locks released! We now get the VST")
     fragmented_t_apdu_init_resp_datagram = beacon_l7_wrapper.get_vst()
     bcm_logger.debug(f"Fragmented T_APDU containing VST (UPER hex): {fragmented_t_apdu_init_resp_datagram.hex().upper()}")
     
@@ -344,7 +345,7 @@ def compute_access_credentials(eid:int) -> bytes:
         access_credentials_int = dsrc_security.compute_access_credentials(efc_cm, rnd_obe, ac_cr_key_ref)
         access_credentials_bytes = access_credentials_int.to_bytes(4, 'big')
         return access_credentials_bytes
-    except:
+    except KeyError:
         return None
 
 def send_get_request(eid, accessCredentialsPresent:bool = False, attrIdList=None, close_transaction = False) -> EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.Get_Response:
@@ -476,7 +477,7 @@ def verify_obe_authenticity(get_stamped_action_response_value=None, efc_cm=None)
         get_stamped_action_response_value = last_response_t_apdu_value[1]
     try:
         get_stamped_rs = get_stamped_action_response_value['responseParameter'][1]
-    except:
+    except KeyError:
         bcm_logger.error('No responseParameter in GET_STAMPED.response!!!')
         return
 
@@ -633,7 +634,7 @@ def get_attributes_in_list(eid, accessCredentialsPresent=True, attrIdList=[32], 
                     bcm_logger.info(last_response_t_apdu_json['getResponse'])
                     obtained_attrs.add(attr)
                     get_responses.append(last_response_t_apdu_json['getResponse']['attributelist'])
-            except:
+            except KeyError:
                 bcm_logger.info(last_response_t_apdu_json['getResponse'])
                 obtained_attrs.add(attr)
                 get_responses.append(last_response_t_apdu_json['getResponse']['attributelist'])
@@ -656,11 +657,8 @@ def stop_loop():
     global keep_looping
     keep_looping = False
 
-def loop_transactions():  
+def loop_transactions_in_new_thread():  
     global keep_looping
-    if keep_looping == True:
-        bcm_logger.error('Loop already in progress!!')
-        return
     keep_looping = True
     loop_thread = threading.Thread(target=loop_transactions_not_safe)
     loop_thread.start()
@@ -669,7 +667,7 @@ def set_beeping_state(beep_state=False):
     global activate_set_mmi_keeping
     activate_set_mmi_keeping = beep_state
 
-def loop_transactions_not_safe():
+def loop_transactions():
     global keep_looping
     global activate_set_mmi_keeping
     # try:
@@ -677,6 +675,10 @@ def loop_transactions_not_safe():
     #     time.sleep(0.2)
     # except EIDNotFoundException:
     #     bcm_logger.error("EID not present!", stack_info=True)
+    if keep_looping == True:
+        bcm_logger.error('Loop already in progress!!')
+        return
+    keep_looping = True
 
     while keep_looping:
         try:
@@ -696,7 +698,7 @@ def loop_transactions_not_safe():
             time.sleep(0.1)
 
             time.sleep(1)
-        except:
+        except TransactionException:
             keep_looping = False
-            bcm_logger.error("Error occurred during loop!", exc_info=True)
+            bcm_logger.error("Transaction error occurred during loop!", exc_info=True)
             time.sleep(2)

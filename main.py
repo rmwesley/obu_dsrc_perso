@@ -65,7 +65,7 @@ def callback_logger(cb_code, error_code):
     root_logger.debug(f"Callback IN ({cb_code})")
     root_logger.debug(BCM_Callback.get_description(cb_code))
 
-def main():
+def simple_bcm_transactions():
     root_logger.debug("Instantiating BeaconManager class...")
     beacon_manager_module.initialize_bcm()
 
@@ -92,9 +92,14 @@ def main():
     required_applications = [1, 20, 29]
     root_logger.info(f"Preparing a BST requesting AIDs {required_applications}")
 
+    beacon_manager_module.set_beeping_state(beep_state=False)
     beacon_manager_module.loop_transactions()
+    #beacon_manager_module.cardme_transaction(4)
 
 # Main execution
 if __name__ == "__main__":
-    main_thread = threading.Thread(target=main)
-    main_thread.start()
+    beacon_thread = threading.Thread(target=simple_bcm_transactions, daemon=True)
+    beacon_thread.start()
+
+    beacon_thread.join()
+    beacon_manager_module.tra
