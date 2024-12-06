@@ -24,6 +24,13 @@ def get_beacon_interface(request: Request):
 async def favicon():
     return FileResponse('static/beacon_interface/beacon.svg')
 
+@router.post("/loop-transactions")
+async def initialize_beacon_manager():
+    ''' Simply Loop Transactions
+    '''
+    beacon_manager_module.loop_transactions()
+    return "looping transactions!!"
+
 # Endpoint to initialize the Beacon Manager
 # It instantiates a BeaconManager object and keeps it as a global attribute
 # of the FastAPI application
