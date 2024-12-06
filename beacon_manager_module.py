@@ -14,7 +14,47 @@ from gea_bcm_dll_wrapper import BCM_GEA_DLL_Wrapper, BCM_BST_TYPE_Enum, BCM_MODE
 import custom_its_per_decoders
 import dsrc_security
 
+from datetime import datetime
+
 bcm_logger = logging.getLogger(__name__)
+
+# SETTING UP COLORED CONSOLE LOGGING
+console_handler = logging.StreamHandler()
+class ColoredFormatterWrapper(logging.Formatter):
+    GRAY = "\033[38m"
+    YELLOW = "\033[33m"
+    RED = "\033[31;20m"
+    BOLD_RED = "\033[31m"
+    BLUE = "\33[34m"
+    RESET_COLOR = "\033[0m"
+    default_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)")
+    formatter = None
+
+    LEVEL_COLORS = {
+        logging.DEBUG: GRAY,
+        logging.INFO: BLUE,
+        logging.WARNING: YELLOW,
+        logging.ERROR: RED,
+        logging.CRITICAL: BOLD_RED,
+    }
+
+    def __init__(self, formatter=default_formatter):
+        self.formatter = formatter
+
+    def format(self, record):
+        color = ColoredFormatterWrapper.LEVEL_COLORS.get(record.levelno)
+        colored_formatting = color + self.formatter.format(record) + ColoredFormatterWrapper.RESET_COLOR
+        return colored_formatting
+console_formatter = ColoredFormatterWrapper(logging.Formatter(f"%(levelname)-8s %(filename)22s:%(lineno)-4s - %(threadName)s: %(message)s"))
+console_handler.setFormatter(console_formatter)
+bcm_logger.addHandler(console_handler)
+
+# SETTING UP LOGGER FILE HANDLER
+date_prefix = datetime.now().strftime('%y%m%d')
+file_handler = logging.FileHandler(f'beacon_logs/{date_prefix}_beacon_manager.log')
+file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
+file_handler.setFormatter(file_formatter)
+bcm_logger.addHandler(file_handler)
 
 # Setting globals
 ## Beacon configs
@@ -625,7 +665,7 @@ def loop_transactions():
         cardme_transaction(eid=4, mand_applications=[1], set_mmi=True)
         time.sleep(0.2)
     except EIDNotFoundException:
-        root_logger.error("EID not present!", stack_info=True)
+        bcm_logger.error("EID not present!", stack_info=True)
 
     while True:
         try:

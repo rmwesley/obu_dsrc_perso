@@ -12,8 +12,6 @@ import threading
 import logging
 import dsrc_security
 
-from datetime import datetime
-
 from ASN.compiled_DSRC_instances import LACv2_1 as EFC_CCC_LAC_asn1_objs
 
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
@@ -24,44 +22,6 @@ import beacon_manager_module
 
 root_logger = logging.getLogger()
 root_logger.setLevel(logging.INFO)
-
-# SETTING UP COLORED CONSOLE LOGGING
-console_handler = logging.StreamHandler()
-class ColoredFormatterWrapper(logging.Formatter):
-    GRAY = "\033[38m"
-    YELLOW = "\033[33m"
-    RED = "\033[31;20m"
-    BOLD_RED = "\033[31m"
-    BLUE = "\33[34m"
-    RESET_COLOR = "\033[0m"
-    default_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)")
-    formatter = None
-
-    LEVEL_COLORS = {
-        logging.DEBUG: GRAY,
-        logging.INFO: BLUE,
-        logging.WARNING: YELLOW,
-        logging.ERROR: RED,
-        logging.CRITICAL: BOLD_RED,
-    }
-
-    def __init__(self, formatter=default_formatter):
-        self.formatter = formatter
-
-    def format(self, record):
-        color = ColoredFormatterWrapper.LEVEL_COLORS.get(record.levelno)
-        colored_formatting = color + self.formatter.format(record) + ColoredFormatterWrapper.RESET_COLOR
-        return colored_formatting
-console_formatter = ColoredFormatterWrapper(logging.Formatter(f"%(levelname)-8s %(filename)22s:%(lineno)-4s - %(threadName)s: %(message)s"))
-console_handler.setFormatter(console_formatter)
-root_logger.addHandler(console_handler)
-
-# SETTING UP LOGGER FILE HANDLER
-date_prefix = datetime.now().strftime('%y%m%d')
-file_handler = logging.FileHandler(f'main_logs/{date_prefix}_gea_bcm_dll_python_wrapper.log')
-file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
-file_handler.setFormatter(file_formatter)
-root_logger.addHandler(file_handler)
 
 def callback_logger(cb_code, error_code):
     if cb_code == BCM_CALLBACK_Enum.BCM_CB_ERR:
