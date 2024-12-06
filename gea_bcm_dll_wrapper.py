@@ -795,7 +795,7 @@ class BCM_GEA_DLL_Wrapper:
         if self.beacon_state.trxInProgress:
             gea_dll_wrapper_logger.error("Previously unclosed transaction in progress!")
             gea_dll_wrapper_logger.info("We will forcefully reset the beacon...")
-            self.reset_manager()
+            self.reset_beacon()
             
             self.wait_until_ok()
 
@@ -870,7 +870,7 @@ class BCM_GEA_DLL_Wrapper:
         result = bcm_close_manager(ctypes.byref(self.reg_ptr))
         bcm_error_wrapper(result)
         
-    def reset_manager(self):
+    def reset_beacon(self):
         result = bcm_reset(self.reg_ptr)
         bcm_error_wrapper(result)
 

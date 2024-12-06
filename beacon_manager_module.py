@@ -94,6 +94,12 @@ def initialize_bcm(aid=20):
     safe_set_beacon(chosen_beacon_name = default_beacon_name)
     bcm_logger.info("Initialized BCM!!")
 
+def reset_beacon():
+    global beacon_l7_wrapper
+
+    bcm_logger.info('L7: Resetting beacon!!')
+    beacon_l7_wrapper.reset_beacon()
+
 def change_mode(mode_name='Stopped'):
     global beacon_manager_config
     global current_beacon_name
