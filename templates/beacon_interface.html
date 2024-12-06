@@ -18,8 +18,10 @@
       <div id="device-management" :class="deviceStyleCss">
         <h3>Device Management</h3>
       </div>
+      <button @click="startTransactionLoop">Start Transaction Loop</button>
       <div id="beacon-management" style="background-color: #909090;">
         <h3>Beacon Management</h3>
+        <button @click="startTransactionLoop">Start Transaction Loop</button>
         <button @click="initializeBeaconManager">Initialize Beacon Manager</button>
       </div>
       <div id="beacon-state" style="background-color: #60FF60;">
@@ -92,6 +94,10 @@
         this.getLastVST()
       },
       methods: {
+        async startTransactionLoop() {
+          const response = await fetch('/beacon/loop-transactions')
+          const data = await response.json()
+        },
         async getBeaconState() {
           const response = await fetch('/beacon/beacon-state')
           const data = await response.json()
