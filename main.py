@@ -14,9 +14,6 @@ import dsrc_security
 
 from datetime import datetime
 
-# from ASN.compiled_DSRC_instances import CCCv1 as EFC_CCC_LAC_asn1_objs
-# from ASN.compiled_DSRC_instances import CCCv4_1 as EFC_CCC_LAC_asn1_objs
-# from ASN.compiled_DSRC_instances import EFCv10_1 as EFC_CCC_LAC_asn1_objs
 from ASN.compiled_DSRC_instances import LACv2_1 as EFC_CCC_LAC_asn1_objs
 
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
@@ -87,7 +84,9 @@ def main():
     root_logger.debug("Getting beacon state...")
     result = beacon_manager_module.beacon_l7_wrapper.update_state()
 
-    root_logger.debug("We now update/get the BeaconID according to the beacon before sending the BST")
+    root_logger.debug("We now update/get the BeaconID (L7, so according to the beacon) before sending the BST")
+    root_logger.debug("This is weird... We should be the ones to set the BeaconID freely in the BST")
+    root_logger.debug("The beacon should then just keep the last sent BeaconID in its memory")
     result = beacon_manager_module.beacon_l7_wrapper.update_beacon_id()
     EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.from_uper(beacon_manager_module.beacon_l7_wrapper.last_beacon_id)
     root_logger.debug(f"Beacon (according to GEA Beacon) encoded in JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.to_jer()}")
@@ -97,7 +96,6 @@ def main():
     # Requesting EFC, CCC and UNI
     required_applications = [1, 20, 29]
     root_logger.info(f"Preparing a BST requesting AIDs {required_applications}")
-    # beacon_manager_module.cardme_transaction(eid=4, mand_applications=[1, 20, 29])
 
     try:
         beacon_manager_module.cardme_transaction(eid=4, mand_applications=[1], set_mmi=True)
@@ -106,7 +104,6 @@ def main():
         root_logger.error("EID not present!", stack_info=True)
 
     while True:
-        # beacon_manager_module.cardme_transaction(eid=4, mand_applications=[1, 20], set_mmi=False)
         beacon_manager_module.get_attributes_in_list(eid=4, attrIdList=[32], mand_applications=[1, 20], set_mmi=False)
         time.sleep(0.1)
 
@@ -124,7 +121,6 @@ def main():
         time.sleep(0.1)
 
         time.sleep(1)
-    # beacon_manager_module.cardme_transaction(eid=3, mand_applications=[1, 20, 29], accessCredentialsPresent=True)
 
 # Main execution
 if __name__ == "__main__":
