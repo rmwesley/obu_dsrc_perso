@@ -24,13 +24,6 @@ def get_beacon_interface(request: Request):
 async def favicon():
     return FileResponse('static/beacon_interface/beacon.svg')
 
-@router.post("/loop-transactions")
-async def initialize_beacon_manager():
-    ''' Simply Loop Transactions
-    '''
-    beacon_manager_module.loop_transactions()
-    return "looping transactions!!"
-
 # Endpoint to initialize the Beacon Manager
 # It instantiates a BeaconManager object and keeps it as a global attribute
 # of the FastAPI application
@@ -41,6 +34,13 @@ async def initialize_beacon_manager():
     beacon_manager_module.initialize_bcm()
     return "Beacon Manager was intialized!"
 
+@router.post("/reset-beacon")
+async def shutdown():
+    ''' Reset beacon
+    '''
+    beacon_manager_module.reset_beacon()
+    return "Beacon Manager was shut down!"
+
 @router.post("/shutdown-manager")
 async def shutdown():
     ''' Run on shutdown
@@ -49,6 +49,13 @@ async def shutdown():
     '''
     beacon_manager_module.shutdown_beacon()
     return "Beacon Manager was shut down!"
+
+@router.post("/loop-transactions")
+async def initialize_beacon_manager():
+    ''' Simply Loop Transactions
+    '''
+    beacon_manager_module.loop_transactions()
+    return "looping transactions!!"
 
 # Endpoint to get the current beacon state
 @router.get("/beacon-state")
