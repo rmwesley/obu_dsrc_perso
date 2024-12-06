@@ -57,6 +57,9 @@ file_handler.setFormatter(file_formatter)
 bcm_logger.addHandler(file_handler)
 
 # Setting globals
+## Garbage unsafe temporary globals
+keep_looping = False
+
 ## Beacon configs
 current_beacon_name = None
 beacon_manager_config = None
@@ -73,6 +76,8 @@ rnd_rse_bytes_value = None
 last_response_t_apdu_value = None
 last_vst_value = None
 last_response_t_apdu_json = None
+
+activate_set_mmi_keeping = False
 
 def initialize_bcm(aid=20):
     """Initialize the beacon manager wrapper"""
@@ -678,16 +683,35 @@ def get_attributes_in_list(eid, accessCredentialsPresent=True, attrIdList=[32], 
 
     return obtained_attrs, get_responses
 
-def loop_transactions():
-    try:
-        cardme_transaction(eid=4, mand_applications=[1], set_mmi=True)
-        time.sleep(0.2)
-    except EIDNotFoundException:
-        bcm_logger.error("EID not present!", stack_info=True)
+def stop_loop():
+    global keep_looping
+    keep_looping = False
 
-    while True:
+def loop_transactions():  
+    global keep_looping
+    if keep_looping == True:
+        bcm_logger.error('Loop already in progress!!')
+        return
+    keep_looping = True
+    loop_thread = threading.Thread(target=loop_transactions_not_safe)
+    loop_thread.start()
+
+def set_beeping_state(beep_state=False):
+    global activate_set_mmi_keeping
+    activate_set_mmi_keeping = beep_state
+
+def loop_transactions_not_safe():
+    global keep_looping
+    global activate_set_mmi_keeping
+    # try:
+    #     cardme_transaction(eid=4, mand_applications=[1], set_mmi=True)
+    #     time.sleep(0.2)
+    # except EIDNotFoundException:
+    #     bcm_logger.error("EID not present!", stack_info=True)
+
+    while keep_looping:
         try:
-            get_attributes_in_list(eid=4, attrIdList=[32], mand_applications=[1, 20], set_mmi=False)
+            get_attributes_in_list(eid=4, attrIdList=[32], mand_applications=[1, 20], set_mmi=activate_set_mmi_keeping)
             time.sleep(0.1)
 
             get_attributes_in_list(eid=2, attrIdList=[16, 17, 18, 19, 20, 22, 32], mand_applications=[1, 20], set_mmi=False)
@@ -704,5 +728,6 @@ def loop_transactions():
 
             time.sleep(1)
         except:
+            keep_looping = False
             bcm_logger.error("Error occurred during loop!", exc_info=True)
             time.sleep(2)
