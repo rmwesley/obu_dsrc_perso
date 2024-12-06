@@ -101,5 +101,9 @@ if __name__ == "__main__":
     beacon_thread = threading.Thread(target=simple_bcm_transactions, daemon=True)
     beacon_thread.start()
 
-    beacon_thread.join()
-    beacon_manager_module.tra
+    while beacon_thread.is_alive:
+        beacon_thread.join(1)
+
+    # Wait for a KeyboardInterrupt
+    # while True:
+    #     time.sleep(1)

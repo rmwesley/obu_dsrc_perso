@@ -650,7 +650,10 @@ class BCM_GEA_DLL_Wrapper:
     # Wait for the application to be notified through a callback
     def wait_for_vst_notification(self):
         with self.callback_received_notifier:
-            self.callback_received_notifier.wait()
+            # self.callback_received_notifier.wait()
+            while not self.callback_received_notifier.wait(2):
+                gea_dll_wrapper_logger.debug("Waiting for callback notification...")
+                pass
 
     # Wait for a notification then get the VST
     def wait_and_get_vst(self):
@@ -743,7 +746,7 @@ class BCM_GEA_DLL_Wrapper:
             gea_dll_wrapper_logger.debug("CB: We thus notify all threads waiting on the callback_received_notifier condition")
             with self.callback_received_notifier:
                 self.callback_received_notifier.notify_all()
-        except:
+        except BeaconError:
             gea_dll_wrapper_logger.error(f"CB: Error, with BCM error code {error_code}") 
     def bcm_alarm(self, reg_ptr, alarm_type, alarm_state):
         """
