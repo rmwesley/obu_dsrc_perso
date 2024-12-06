@@ -15,14 +15,13 @@ import dsrc_security
 
 bcm_logger = logging.getLogger(__name__)
 
-# if aid == 1:
-#     TApdu_container = TApdu_container
-TApdu_container = EFC_CCC_LAC_asn1_objs.EfcCcc.CccTApdus
-
 # Setting globals
+# Threading locks
 l7_initialization_phase_lock = None
 l7_transfer_kernel_lock = None
 
+# Beacon L7 necessary values
+TApdu_container = None
 beacon_l7_wrapper = None
 rnd_rse_bytes_value = None
 # rnd_rse_bytes_value = bytes()
@@ -30,10 +29,16 @@ last_response_t_apdu_value = None
 last_vst_value = None
 last_response_t_apdu_json = None
 
-def initialize_bcm():
+def initialize_bcm(aid=20):
     """Initialize the beacon manager wrapper"""
+    global TApdu_container
     global l7_initialization_phase_lock
     global l7_transfer_kernel_lock
+
+    if aid == 1:
+        TApdu_container = TApdu_container
+    else:
+        TApdu_container = EFC_CCC_LAC_asn1_objs.EfcCcc.CccTApdus
     with open('settings/beacon_manager_config.json', 'r') as beacon_manager_settings_file:
         beacon_manager_settings = json.load(beacon_manager_settings_file)
 
@@ -92,6 +97,7 @@ class EIDNotFoundException(Exception):
 
 # Start sending a BST
 def start_bst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
+    global TApdu_container
     global l7_transfer_kernel_lock
 
     mand_applications = [{'aid': mandatory_aid} for mandatory_aid in mand_applications]
@@ -134,6 +140,7 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     The initialization phase locks the transaction thread when a VST is received!
     When the transaction is closed (no longer in progress) the transaction lock is released.
     """
+    global TApdu_container
     global last_response_t_apdu_value
     global last_response_t_apdu_json
     global last_vst_value
@@ -191,6 +198,7 @@ def get_efc_cm_for_eid(eid):
     return get_parameter_bytes_from_eid_on_vst_value(eid=eid)
 
 def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close=False) -> dict:
+    global TApdu_container
     global last_response_t_apdu_value
     global last_response_t_apdu_json
 
@@ -320,6 +328,8 @@ def send_action_request(
         actionParameter = None,
         iid = None,
         close_transaction = False):
+    global TApdu_container
+    
     if accessCredentialsPresent:
         accessCredentials = compute_access_credentials(eid)
     else:
