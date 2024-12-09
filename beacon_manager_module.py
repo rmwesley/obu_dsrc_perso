@@ -266,7 +266,12 @@ def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close=Fals
 
     # Sending command!!!
     l7_transfer_kernel_lock.acquire()
-    fragmented_t_apdu_with_get_response_bytes = beacon_l7_wrapper.send_command(TApdu_container.to_uper(), close)
+    try:
+        fragmented_t_apdu_with_get_response_bytes = beacon_l7_wrapper.send_command(TApdu_container.to_uper(), close)
+    except :
+        bcm_logger.error(f'L7: Exception when sending command (T-APDU)', stack_info=True)
+        l7_transfer_kernel_lock.release()
+        return
     l7_transfer_kernel_lock.release()
     bcm_logger.info(f"Fragmented T-APDU response obtained from beacon in hex (UPER hex): {fragmented_t_apdu_with_get_response_bytes.hex().upper()}")
 
