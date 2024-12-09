@@ -683,22 +683,22 @@ def loop_transactions():
     while keep_looping:
         try:
             get_attributes_in_list(eid=4, attrIdList=[32], mand_applications=[1, 20], set_mmi=activate_set_mmi_keeping)
-            time.sleep(0.1)
+            time.sleep(0.3)
 
             get_attributes_in_list(eid=2, attrIdList=[16, 17, 18, 19, 20, 22, 32], mand_applications=[1, 20], set_mmi=False)
             time.sleep(0.01)
             get_attributes_in_list(eid=2, attrIdList=[50, 51, 52], mand_applications=[1, 20], set_mmi=False)
             get_attributes_in_list(eid=2, attrIdList=[53, 99, 100, 101], mand_applications=[1, 20], set_mmi=False)
-            time.sleep(0.1)
+            time.sleep(0.3)
 
             get_attributes_in_list(eid=3, attrIdList=[16, 17, 18, 19, 20, 22, 32], mand_applications=[1, 20])
             time.sleep(0.01)
             get_attributes_in_list(eid=3, attrIdList=[50, 51, 52], mand_applications=[1, 20], set_mmi=False)
             get_attributes_in_list(eid=3, attrIdList=[53, 99, 100, 101], mand_applications=[1, 20], set_mmi=False)
-            time.sleep(0.1)
+            time.sleep(0.3)
 
-            time.sleep(1)
+            time.sleep(3)
         except TransactionException:
             keep_looping = False
             bcm_logger.error("Transaction error occurred during loop!", exc_info=True)
-            time.sleep(2)
+            time.sleep(3)
