@@ -551,7 +551,7 @@ def cb_error_handler(callback_code, error_code):
 class BCM_GEA_DLL_Wrapper:
     def __init__(self, external_callback:callable = None, external_alarm:callable = None, serial_port=None):
         self.beacon_state_ok_trigger = threading.Event()
-        self.callback_received_notifier = threading.Condition()
+        self.callback_received_event = threading.Event()
         self.beacon_name = "TGBV"
 
         self.external_callback = external_callback
@@ -648,16 +648,14 @@ class BCM_GEA_DLL_Wrapper:
         return result
     
     # Wait for the application to be notified through a callback
-    def wait_for_vst_notification(self):
-        with self.callback_received_notifier:
-            # self.callback_received_notifier.wait()
-            while not self.callback_received_notifier.wait(2):
-                gea_dll_wrapper_logger.debug("Waiting for callback notification...")
-                pass
+    def wait_for_vst_event(self):
+        while not self.callback_received_event.wait(2):
+            gea_dll_wrapper_logger.debug("Waiting for callback notification...")
+            pass
 
     # Wait for a notification then get the VST
     def wait_and_get_vst(self):
-        self.wait_for_vst_notification()
+        self.wait_for_vst_event()
         return self.get_vst()
 
     def get_vst(self):
@@ -684,6 +682,8 @@ class BCM_GEA_DLL_Wrapper:
         gea_dll_wrapper_logger.debug("Handling errors (if any)...")
         bcm_error_wrapper(result)
         gea_dll_wrapper_logger.debug("VST received!")
+        gea_dll_wrapper_logger.debug("Unsetting the VST received event...")
+        self.callback_received_event.clear()
 
         # Slicing a ctypes array or pointer will automatically produce a Python list
         # We slice it at the given size, not the buffer's maximum size
@@ -744,10 +744,9 @@ class BCM_GEA_DLL_Wrapper:
             bcm_error_wrapper(error_code)
             gea_dll_wrapper_logger.debug("CB: OK! No error occurred in callback: This means a VST was received!")
             gea_dll_wrapper_logger.debug("CB: We thus notify all threads waiting on the callback_received_notifier condition")
-            with self.callback_received_notifier:
-                self.callback_received_notifier.notify_all()
+            self.callback_received_event.set()
         except BeaconError:
-            gea_dll_wrapper_logger.error(f"CB: Error, with BCM error code {error_code}") 
+            gea_dll_wrapper_logger.error(f"CB: Error, with BCM error code {error_code}")
     def bcm_alarm(self, reg_ptr, alarm_type, alarm_state):
         """
         This is the default Alarm function (it is a callback function)
@@ -815,8 +814,7 @@ class BCM_GEA_DLL_Wrapper:
 
     def display_cb_event_trigger(self):
         gea_dll_wrapper_logger.debug("\tWaiting for CB notification...")
-        with self.callback_received_notifier:
-            self.callback_received_notifier.wait()
+        self.callback_received_event.wait()
         gea_dll_wrapper_logger.debug("\tCB notification received!!! You can receive a VST now.")
 
     def update_beacon_id(self) -> bytes:

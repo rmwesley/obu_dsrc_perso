@@ -212,9 +212,9 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     start_bst(manufacturer_id=manufacturer_id, individual_id=individual_id, mand_applications=mand_applications, profile=profile, profile_list=profile_list, non_mand_applications=non_mand_applications, bst_type=bst_type)
     bcm_logger.debug("No errors occurred when starting BST!")
     
-    bcm_logger.info("We now wait on the main thread until we a VST notification is received...")
-    beacon_l7_wrapper.wait_for_vst_notification()
-    bcm_logger.info("A VST notification was received! Releasing locks!")
+    bcm_logger.info("We now wait on the main thread until we a VST is received...")
+    beacon_l7_wrapper.wait_for_vst_event()
+    bcm_logger.info("A VST was received! Releasing locks!")
     l7_initialization_phase_lock.release()
     l7_transfer_kernel_lock.release()
     #no_transaction_in_progress.set()
