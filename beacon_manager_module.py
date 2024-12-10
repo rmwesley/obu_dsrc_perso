@@ -254,30 +254,12 @@ def find_eid_with_accepted_contract():
 def get_efc_cm_for_eid(eid):
     return get_parameter_bytes_from_eid_on_vst_value(eid=eid)
 
-def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close=False) -> dict:
+def decode_t_apdu_response_uper(t_apdu_with_response_bytes):
     global TApdu_container
     global last_response_t_apdu_value
     global last_response_t_apdu_json
 
-    bcm_logger.debug(f"Preparing request T-APDU to be sent...")
-    TApdu_container.set_val(asn1_request_t_apdu_value)
-    bcm_logger.debug(f"Request T-APDU value: {TApdu_container._val}")
-    bcm_logger.debug(f"T-APDU in JER:\n{TApdu_container.to_jer()}")
-
-    # Sending command!!!
-    l7_transfer_kernel_lock.acquire()
-    try:
-        fragmented_t_apdu_with_get_response_bytes = beacon_l7_wrapper.send_command(TApdu_container.to_uper(), close)
-    except :
-        bcm_logger.error(f'L7: Exception when sending command (T-APDU)', stack_info=True)
-        l7_transfer_kernel_lock.release()
-        return
-    l7_transfer_kernel_lock.release()
-    bcm_logger.info(f"Fragmented T-APDU response obtained from beacon in hex (UPER hex): {fragmented_t_apdu_with_get_response_bytes.hex().upper()}")
-
     bcm_logger.debug(f"Decoding received response T-APDU...")
-    t_apdu_with_response_bytes = bytes(fragmented_t_apdu_with_get_response_bytes[1:])
-
     TApdu_container.from_uper(t_apdu_with_response_bytes)
     last_response_t_apdu_value = TApdu_container._val
     bcm_logger.info(f"Response T-APDU value: {last_response_t_apdu_value}")
@@ -299,7 +281,34 @@ def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close=Fals
             bcm_logger.error(f"ReturnStatus ASN1 decoding:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.ReturnStatus.to_asn1()}")
     except KeyError:
         bcm_logger.info(f"No return code in T-APDU! (No errors)")
-    return last_response_t_apdu_json
+    return last_response_t_apdu_value
+
+def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close=False) -> dict:
+    global TApdu_container
+
+    bcm_logger.debug(f"Preparing request T-APDU to be sent...")
+    TApdu_container.set_val(asn1_request_t_apdu_value)
+    bcm_logger.debug(f"Request T-APDU value: {TApdu_container._val}")
+    bcm_logger.debug(f"T-APDU in JER:\n{TApdu_container.to_jer()}")
+
+    # Sending command!!!
+    l7_transfer_kernel_lock.acquire()
+    try:
+        fragmented_t_apdu_with_response_bytes = beacon_l7_wrapper.send_command(TApdu_container.to_uper(), close)
+    except :
+        bcm_logger.error(f'L7: Exception when sending command (T-APDU)', stack_info=True)
+    l7_transfer_kernel_lock.release()
+    bcm_logger.info(f"Fragmented T-APDU response obtained from beacon in hex (UPER hex): {fragmented_t_apdu_with_response_bytes.hex().upper()}")
+
+    try:
+        t_apdu_with_response_bytes = bytes(fragmented_t_apdu_with_response_bytes[1:])
+        return decode_t_apdu_response_uper(t_apdu_with_response_bytes)
+    except:
+        bcm_logger.error("Error when decoding T-APDU response!!")
+        bcm_logger.info("Transaction Exception: We simply send an ECHO.request to close the transaction...")
+
+        eid = asn1_request_t_apdu_value[1]['eid']
+        send_close_transaction_echo(eid=eid)
 
 def decode_vst_parameter_from_eid(eid):
     bcm_logger.debug(f"Decoding VST parameter with EID {eid}...")
