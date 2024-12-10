@@ -526,7 +526,7 @@ gea_dll_wrapper_logger = logging.getLogger(__name__ + ".wrapper")
 with open('settings/beacon_manager_config.json', 'r') as beacon_manager_settings_file:
     beacon_manager_settings = json.load(beacon_manager_settings_file)
 
-class BeaconError(Exception):
+class Layer7Exception(Exception):
     pass
 def bcm_error_wrapper(bcm_error: BCMError):
     if not isinstance(bcm_error, int):
@@ -537,7 +537,7 @@ def bcm_error_wrapper(bcm_error: BCMError):
         # Handle error case if needed
         if bcm_error == BCM_ERR_Enum.BCM_TrxInProgress:
             gea_dll_wrapper_logger.error(f"Cannot execute function because a transaction is in progress!")
-        raise BeaconError(f"{bcm_error}: {BCMError(bcm_error).get_error_description()}")
+        raise Layer7Exception(f"{bcm_error}: {BCMError(bcm_error).get_error_description()}")
 
 def cb_error_handler(callback_code, error_code):
     if callback_code == BCM_CALLBACK_Enum.BCM_CB_ERR:
@@ -745,7 +745,7 @@ class BCM_GEA_DLL_Wrapper:
             gea_dll_wrapper_logger.debug("CB: OK! No error occurred in callback: This means a VST was received!")
             gea_dll_wrapper_logger.debug("CB: We thus notify all threads waiting on the callback_received_notifier condition")
             self.callback_received_event.set()
-        except BeaconError:
+        except Layer7Exception:
             gea_dll_wrapper_logger.error(f"CB: Error, with BCM error code {error_code}")
     def bcm_alarm(self, reg_ptr, alarm_type, alarm_state):
         """
