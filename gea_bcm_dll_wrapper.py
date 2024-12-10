@@ -518,6 +518,7 @@ gea_dll_loader_logger.debug(bytes_dll_version)
 
 gea_dll_loader_logger.info(f"Loaded DLL version: {bytes_dll_version[1]}.{bytes_dll_version[2]}.{bytes_dll_version[3]}")
 
+import time
 import json
 import threading
 
@@ -804,6 +805,9 @@ class BCM_GEA_DLL_Wrapper:
         if self.beacon_state.mode != BCM_MODE_Enum.BCM_MOD_Stopped:
             self.change_mode(BCM_MODE_Enum.BCM_MOD_Stopped)
             gea_dll_wrapper_logger.debug("Changed operating mode to stopped!")
+
+        gea_dll_wrapper_logger.debug("Waiting 1 second and then updating the beacon's state...")
+        time.sleep(1)
         self.update_state()
         return self.beacon_state
 
