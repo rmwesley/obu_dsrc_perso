@@ -29,24 +29,8 @@ bcm_logger.addHandler(file_handler)
 ## Garbage unsafe temporary globals
 keep_looping = False
 
-## Beacon configs
-current_beacon_name = None
-beacon_manager_config = None
-
-## Threading locks
-l7_initialization_phase_lock = None
-l7_transfer_kernel_lock = None
-
 ## Beacon L7 necessary values
-TApdu_container = None
 beacon_l7_wrapper = None
-rnd_rse_bytes_value = None
-# rnd_rse_bytes_value = bytes()
-last_response_t_apdu_value = None
-last_vst_value = None
-last_response_t_apdu_json = None
-
-loop_set_mmi_bool = False
 
 def initialize_bcm(aid=20):
     """Initialize the beacon manager wrapper"""
