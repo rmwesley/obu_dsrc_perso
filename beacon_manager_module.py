@@ -46,7 +46,7 @@ last_response_t_apdu_value = None
 last_vst_value = None
 last_response_t_apdu_json = None
 
-activate_set_mmi_keeping = False
+loop_set_mmi_bool = False
 
 def initialize_bcm(aid=20):
     """Initialize the beacon manager wrapper"""
@@ -662,20 +662,22 @@ def stop_loop():
     keep_looping = False
 
 def set_beeping_state(beep_state=False):
-    global activate_set_mmi_keeping
-    activate_set_mmi_keeping = beep_state
+    global loop_set_mmi_bool
+    loop_set_mmi_bool = beep_state
 
 def loop_transactions():
     global keep_looping
-    global activate_set_mmi_keeping
+    global loop_set_mmi_bool
     if keep_looping == True:
         bcm_logger.error('Loop already in progress!!')
         return
     keep_looping = True
+    if 'loop_set_mmi_bool' not in globals():
+        loop_set_mmi_bool = False
 
     while keep_looping:
         try:
-            get_attributes_in_list(eid=4, attrIdList=[32], mand_applications=[1, 20], set_mmi=activate_set_mmi_keeping)
+            get_attributes_in_list(eid=4, attrIdList=[32], mand_applications=[1, 20], set_mmi=loop_set_mmi_bool)
             time.sleep(0.3)
 
             get_attributes_in_list(eid=2, attrIdList=[16, 17, 18, 19, 20, 22, 32], mand_applications=[1, 20], set_mmi=False)
