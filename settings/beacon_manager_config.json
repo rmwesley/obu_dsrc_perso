@@ -3,7 +3,7 @@
   "TGBV":{
     "default_communication_mode": "serial",
     "beacon_alarm_state_polling_ms": 2000,
-    "send_OK_state_as_well": true,
+    "send_OK_state_alarms": false,
     "serial_config": {
       "beacon_serial_port": 10
     },

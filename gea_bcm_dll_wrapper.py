@@ -551,7 +551,7 @@ def cb_error_handler(callback_code, error_code):
 # Defining the BCM (Beacon Manager) GEA DLL Python wrapper class
 class BCM_GEA_DLL_Wrapper:
     def __init__(self, external_callback:callable = None, external_alarm:callable = None, serial_port=None):
-        self.beacon_state_ok_trigger = threading.Event()
+        self.beacon_state_ok_event = threading.Event()
         self.callback_received_event = threading.Event()
         self.beacon_name = "TGBV"
 
@@ -586,7 +586,7 @@ class BCM_GEA_DLL_Wrapper:
         gea_dll_wrapper_logger.debug(f"Current beacon manager settings in moment of initialization: {json.dumps(beacon_manager_settings, indent=2)}")
         tgbv_beacon_settings = beacon_manager_settings["TGBV"]
 
-        send_event_polling_OK = tgbv_beacon_settings["send_OK_state_as_well"]
+        send_event_polling_OK = tgbv_beacon_settings["send_OK_state_alarms"]
         beacon_alarm_state_polling_ms = tgbv_beacon_settings["beacon_alarm_state_polling_ms"]
 
         if tgbv_beacon_settings["default_communication_mode"] == "serial":
@@ -767,7 +767,7 @@ class BCM_GEA_DLL_Wrapper:
         gea_dll_wrapper_logger.debug(f"Alarm description: {BCM_Alarm.get_description(alarm_type)}")
         
         if alarm_type == BCM_ALARMS_Enum.BCM_EventPollingOK:
-            self.beacon_state_ok_trigger.set()
+            self.beacon_state_ok_event.set()
         return
     def handle_init_errors(self):
         """This function handles initialization issues, like:
@@ -789,7 +789,7 @@ class BCM_GEA_DLL_Wrapper:
             gea_dll_wrapper_logger.critical("We could not handle the error, so it will be raised")
             bcm_error_wrapper(result)
         
-        self.wait_until_ok()
+        self.wait_for_ok_alarm()
 
         gea_dll_wrapper_logger.debug("Updating beacon state (It should now be OK)...")
         result = self.update_state()
@@ -800,7 +800,7 @@ class BCM_GEA_DLL_Wrapper:
             gea_dll_wrapper_logger.info("We will forcefully reset the beacon...")
             self.reset_beacon()
             
-            self.wait_until_ok()
+            self.wait_for_ok_alarm()
 
         if self.beacon_state.mode != BCM_MODE_Enum.BCM_MOD_Stopped:
             self.change_mode(BCM_MODE_Enum.BCM_MOD_Stopped)
@@ -811,10 +811,13 @@ class BCM_GEA_DLL_Wrapper:
         self.update_state()
         return self.beacon_state
 
-    def wait_until_ok(self):
-        gea_dll_wrapper_logger.debug("Waiting for the beacon to be in an OK state again...")
-        self.beacon_state_ok_trigger.wait()
-        gea_dll_wrapper_logger.debug("Beacon is OK!!!")
+    def wait_for_ok_alarm(self):
+        if beacon_manager_settings['TGBV']['send_OK_state_alarms'] == True and beacon_manager_settings['TGBV']['beacon_alarm_state_polling_ms'] > 0:
+            gea_dll_wrapper_logger.debug("Waiting for an OK state alarm...")
+            self.beacon_state_ok_event.wait()
+            gea_dll_wrapper_logger.debug("Beacon is OK!!!")
+        else:
+            gea_dll_wrapper_logger.debug("Skipping wait for OK state alarm: OK state is not being sent/alarmed")
 
     def display_cb_event_trigger(self):
         gea_dll_wrapper_logger.debug("\tWaiting for CB notification...")
