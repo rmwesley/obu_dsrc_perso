@@ -1,8 +1,6 @@
 import sys
 import time
 
-# from ASN.compiled_DSRC_instances import CCCv4_1 as EFC_CCC_LAC_asn1_objs
-# from ASN.compiled_DSRC_instances import EFCv10_1 as EFC_CCC_LAC_asn1_objs
 from ASN.compiled_DSRC_instances import LACv2_1 as EFC_CCC_LAC_asn1_objs
 
 from datetime import datetime
@@ -14,7 +12,7 @@ import gea_bcm_dll_wrapper
 import custom_its_per_decoders
 import dsrc_security
 
-from datetime import datetime
+import pymongo
 
 bcm_logger = logging.getLogger(__name__)
 
@@ -38,6 +36,7 @@ def initialize_bcm(aid=20):
     global TApdu_container
     global l7_initialization_phase_lock
     global l7_transfer_kernel_lock
+    global db_transactions_collection
 
     if aid == 1:
         TApdu_container = TApdu_container
@@ -45,6 +44,15 @@ def initialize_bcm(aid=20):
         TApdu_container = EFC_CCC_LAC_asn1_objs.EfcCcc.CccTApdus
     with open('settings/beacon_manager_config.json', 'r') as beacon_manager_config_file:
         beacon_manager_config = json.load(beacon_manager_config_file)
+    bcm_logger.info('Initializing database connection...')
+    mongodb_connection_string = beacon_manager_config["database_config"]['MongoDB']['connection_string']
+    mongodb_client = pymongo.MongoClient(mongodb_connection_string)
+
+    db_name = beacon_manager_config['database_config']['MongoDB']['database_name']
+    database_connection = mongodb_client[db_name]
+
+    db_transactions_collection_name = beacon_manager_config['transaction_manager']['db_collection_name']
+    db_transactions_collection = database_connection[db_transactions_collection_name]
 
     default_beacon_name = beacon_manager_config["default_beacon_name"]
     l7_initialization_phase_lock = threading.Lock()
@@ -158,19 +166,21 @@ def start_bst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 2
     bcm_logger.debug(f"BST value (UPER hex): {last_sent_bst.hex().upper()}")
 
     TApdu_container.set_val(('initialisationRequest', EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BST._val))
+    bcm_logger.debug(f"Instantiated T_APDU object ASN1 decoding/representation:\n{TApdu_container.to_asn1()}")
     bcm_logger.debug(f"T_APDU containing BST in JER:\n{TApdu_container.to_jer()}")
 
+    initialization_request_jval = TApdu_container._to_jval()
     last_sent_t_apdu_containing_bst = TApdu_container.to_uper()
 
     l7_transfer_kernel_lock.acquire()
     l7_initialization_phase_lock.acquire()
-    result = beacon_l7_wrapper.start_bst_wrapper(last_sent_t_apdu_containing_bst, bst_type)
+    beacon_l7_wrapper.start_bst_wrapper(last_sent_t_apdu_containing_bst, bst_type)
 
     bcm_logger.debug("We now get the lastest BeaconID just after starting the BST")
     beacon_l7_wrapper.update_beacon_id()
     bcm_logger.debug(f"Last BeaconID: {beacon_l7_wrapper.last_beacon_id.hex().upper()}")
 
-    return result
+    return initialization_request_jval
 
 def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = gea_bcm_dll_wrapper.BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
     """
@@ -186,6 +196,9 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     global last_response_t_apdu_json
     global last_vst_value
 
+    global db_transactions_collection
+    global current_transaction_id
+    
     beacon_l7_wrapper.update_state()
     if beacon_l7_wrapper.beacon_state.mode == gea_bcm_dll_wrapper.BCM_MODE_Enum.BCM_MOD_Stopped:
         raise BeaconManagerException("Beacon is in Stopped mode, not Transparent!!") 
@@ -194,7 +207,10 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
         # bcm_logger.debug("We lock the thread until the opened transaction is closed!")
         raise BeaconManagerException("Transaction already in progress!!")
 
-    start_bst(manufacturer_id=manufacturer_id, individual_id=individual_id, mand_applications=mand_applications, profile=profile, profile_list=profile_list, non_mand_applications=non_mand_applications, bst_type=bst_type)
+    initialization_data = {}
+    # Adding initialisationRequest json to initialization_data dict
+    initialization_request_jval = start_bst(manufacturer_id=manufacturer_id, individual_id=individual_id, mand_applications=mand_applications, profile=profile, profile_list=profile_list, non_mand_applications=non_mand_applications, bst_type=bst_type)
+    initialization_data |= initialization_request_jval
     bcm_logger.debug("No errors occurred when starting BST!")
     
     bcm_logger.info("We now wait on the main thread until we a VST is received...")
@@ -220,11 +236,17 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     last_response_t_apdu_json = TApdu_container._to_jval()
     last_response_t_apdu_value = TApdu_container._val
 
+    # Adding initialisationResponse json to initialization_data dict
+    initialization_data |= last_response_t_apdu_json
+    
+    initialization_data["exchanged_data"] = []
     # Storing VST in field
     last_vst_json = last_response_t_apdu_json['initialisationResponse']
     last_vst_value = last_response_t_apdu_value[1]
 
-    return last_response_t_apdu_json
+    current_transaction_id = db_transactions_collection.insert_one(document = initialization_data)
+
+    return initialization_data
 
 def find_eid_with_accepted_contract():
     eid = None
