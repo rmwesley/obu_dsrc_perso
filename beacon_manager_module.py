@@ -286,11 +286,18 @@ def decode_t_apdu_response_uper(t_apdu_with_response_bytes):
 def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close=False) -> dict:
     global TApdu_container
 
+    global db_transactions_collection
+    global current_transaction_id
+
     bcm_logger.debug(f"Preparing request T-APDU to be sent...")
     TApdu_container.set_val(asn1_request_t_apdu_value)
     bcm_logger.debug(f"Request T-APDU value: {TApdu_container._val}")
     bcm_logger.debug(f"T-APDU in JER:\n{TApdu_container.to_jer()}")
 
+    exchanged_data = {}
+    # Adding T-APDU with request data to dict
+    request_t_apdu_jval = TApdu_container._to_jval()
+    exchanged_data |= request_t_apdu_jval
     # Sending command!!!
     l7_transfer_kernel_lock.acquire()
     try:
@@ -302,7 +309,18 @@ def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close=Fals
 
     try:
         t_apdu_with_response_bytes = bytes(fragmented_t_apdu_with_response_bytes[1:])
-        return decode_t_apdu_response_uper(t_apdu_with_response_bytes)
+
+        t_apdu_response_value = decode_t_apdu_response_uper(t_apdu_with_response_bytes)
+
+        # Adding T-APDU with response data to dict
+        TApdu_container.set_val(t_apdu_response_value)
+        response_t_apdu_jval = TApdu_container._to_jval()
+        exchanged_data |= response_t_apdu_jval
+        # Pushing T-APDU to transactions database collection
+
+        db_transactions_collection.update_one(filter={'_id': current_transaction_id.inserted_id}, update={"$push": { "exchanged_data": exchanged_data}}) 
+
+        return response_t_apdu_jval
     except:
         bcm_logger.error("Error when decoding T-APDU response!!")
         bcm_logger.info("Transaction Exception: We simply send an ECHO.request to close the transaction...")
