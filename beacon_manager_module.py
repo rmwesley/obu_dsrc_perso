@@ -239,13 +239,6 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     last_vst_json = last_response_t_apdu_json['initialisationResponse']
     last_vst_value = last_response_t_apdu_value[1]
 
-    # # Decoding VST
-    # bcm_logger.debug("We now obtain the VST object from the T_APDU response!")
-    # bcm_logger.debug("VST is a parameterized type, so we cannot decode/encode it, only the APDU!")
-    # last_initialisation_response_json = last_response_t_apdu_json['initialisationResponse']
-
-    # bcm_logger.debug(f'Decoded VST: {last_initialisation_response_json}')
-    # return last_initialisation_response_json
     return last_response_t_apdu_json
 
 def find_eid_with_accepted_contract():
@@ -346,10 +339,6 @@ def get_parameter_bytes_from_eid_on_vst_value(eid:int, vst_value=None) -> bytes:
 def compute_access_credentials(eid:int) -> bytes:
     bcm_logger.debug(f"Computing Access Credentials for EID {eid}...")
     decoded_vst_param = decode_vst_parameter_from_eid(eid)
-    # try:
-    #     decoded_vst_param = decode_vst_parameter_from_eid(eid)
-    # except:
-    #     bcm_logger.error("Transaction Exception!", stack_info=True)
 
     try:
         efc_cm = decoded_vst_param['EFC-ContextMark']
@@ -671,12 +660,6 @@ def stop_loop():
     global keep_looping
     keep_looping = False
 
-def loop_transactions_in_new_thread():  
-    global keep_looping
-    keep_looping = True
-    loop_thread = threading.Thread(target=loop_transactions_not_safe)
-    loop_thread.start()
-
 def set_beeping_state(beep_state=False):
     global activate_set_mmi_keeping
     activate_set_mmi_keeping = beep_state
@@ -684,11 +667,6 @@ def set_beeping_state(beep_state=False):
 def loop_transactions():
     global keep_looping
     global activate_set_mmi_keeping
-    # try:
-    #     cardme_transaction(eid=4, mand_applications=[1], set_mmi=True)
-    #     time.sleep(0.2)
-    # except EIDNotFoundException:
-    #     bcm_logger.error("EID not present!", stack_info=True)
     if keep_looping == True:
         bcm_logger.error('Loop already in progress!!')
         return

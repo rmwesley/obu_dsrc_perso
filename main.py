@@ -15,14 +15,11 @@ from ASN.compiled_DSRC_instances import LACv2_1 as EFC_CCC_LAC_asn1_objs
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
 from gea_bcm_dll_wrapper import *
-# from beacon_manager_class import BeaconManager
 import dsrc_security
+import beacon_manager_module
 
 import logging
-# root_logger = logging.getLogger()
-# logging.basicConfig(level=logging.DEBUG, format=f"%(levelname)-8s %(filename)22s:%(lineno)-4s - %(threadName)s: %(message)s")
 
-import beacon_manager_module
 
 root_logger = logging.getLogger()
 # SETTING UP COLORED CONSOLE LOGGING
@@ -103,7 +100,3 @@ if __name__ == "__main__":
 
     while beacon_thread.is_alive:
         beacon_thread.join(1)
-
-    # Wait for a KeyboardInterrupt
-    # while True:
-    #     time.sleep(1)
