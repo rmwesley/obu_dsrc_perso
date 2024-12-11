@@ -22,5 +22,14 @@
     "serial_config": {
       "beacon_serial_port": 7
     }
+  },
+  "database_config": {
+    "MongoDB":{
+      "connection_string": null,
+      "database_name": "bm_db"
+    }
+  },
+  "transaction_manager": {
+    "db_collection_name": "transactions"
   }
 }
