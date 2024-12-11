@@ -10,7 +10,7 @@ import json
 import logging
 import threading
 
-from gea_bcm_dll_wrapper import BCM_GEA_DLL_Wrapper, BCM_BST_TYPE_Enum, BCM_MODE_Enum
+import gea_bcm_dll_wrapper
 import custom_its_per_decoders
 import dsrc_security
 
@@ -138,7 +138,8 @@ def safe_set_beacon(chosen_beacon_name):
         beacon_l7_wrapper.close()
 
     if chosen_beacon_name == "TGBV":
-        beacon_l7_wrapper = BCM_GEA_DLL_Wrapper()
+        beacon_l7_wrapper = gea_bcm_dll_wrapper
+        gea_bcm_dll_wrapper.initialize_gea_bcm_dll_wrapper()
         current_beacon_name = chosen_beacon_name
 
     if chosen_beacon_name == "OPS1955":
@@ -152,7 +153,7 @@ class EIDNotFoundException(Exception):
     pass
 
 # Start sending a BST
-def start_bst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
+def start_bst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = gea_bcm_dll_wrapper.BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
     global TApdu_container
     global l7_transfer_kernel_lock
 
@@ -187,7 +188,7 @@ def start_bst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 2
 
     return result
 
-def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
+def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = gea_bcm_dll_wrapper.BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
     """
     The initialization phase comprises 2 steps for the beacon:
     Start of a BST, and
@@ -202,7 +203,7 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     global last_vst_value
 
     beacon_l7_wrapper.update_state()
-    if beacon_l7_wrapper.beacon_state.mode == BCM_MODE_Enum.BCM_MOD_Stopped:
+    if beacon_l7_wrapper.beacon_state.mode == gea_bcm_dll_wrapper.BCM_MODE_Enum.BCM_MOD_Stopped:
         raise BeaconManagerException("Beacon is in Stopped mode, not Transparent!!") 
     if beacon_l7_wrapper.beacon_state.trxInProgress:
         bcm_logger.error("Do not try to initilize a transaction! One is already in progress!")
