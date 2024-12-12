@@ -121,7 +121,7 @@
           this.isHidden = false
         },
         hideEverything(){
-          isHidden = true
+          this.isHidden = true
         },
         async initializeBeaconManager() {
           await fetch('/beacon/initialize-beacon-manager', { method: 'POST' })
