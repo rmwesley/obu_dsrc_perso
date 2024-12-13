@@ -244,7 +244,8 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     last_vst_json = last_response_t_apdu_json['initialisationResponse']
     last_vst_value = last_response_t_apdu_value[1]
 
-    current_transaction_id = db_transactions_collection.insert_one(document = initialization_data)
+    mongodb_document = initialization_data.copy()
+    current_transaction_id = db_transactions_collection.insert_one(document = mongodb_document)
 
     return initialization_data
 
