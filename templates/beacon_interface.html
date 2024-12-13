@@ -87,7 +87,9 @@
       <div id="transaction-state" :class="{ hidden: isHidden}" style="background-color: #8888FF;">
         <h3>Last VST</h3>
         <div style="margin: 1em; border:0.2em solid black;">
-        <p>{{ last_vst }}</p>
+          <div id="vst-data" v-text="last_vst">
+            <p>{{ last_vst }}</p>
+          </div>
       </div>
       <div>
         <h3>Beacon State</h3>
@@ -114,7 +116,7 @@
       },
       created() {
         this.getBeaconState()
-        this.getLastVST()
+        this.getLastTransactionInitData()
       },
       methods: {
         showEverything(){
@@ -148,10 +150,10 @@
           const data = await response.json()
           this.beacon_state = data.beacon_state
         },
-        async getLastVST() {
-          const response = await fetch('/beacon/last-vst')
+        async getLastTransactionInitData() {
+          const response = await fetch('/beacon/last-transaction-init-data')
           const data = await response.json()
-          this.last_vst = data.last_vst
+          this.last_vst = data.initialisationResponse
         },
         async changeToTransparent() {
           await fetch('/beacon/change-mode', { method: 'POST', body: JSON.stringify({ mode_name: 'Transparent' }), headers: { 'Content-Type': 'application/json' } })
@@ -159,12 +161,12 @@
         async initializeTransaction() {
           await fetch('/beacon/initialize-transaction', { method: 'POST' })
           this.transaction_initialized = true
-          this.getLastVST()
+          this.getLastTransactionInitData()
         },
         async initializeAndCloseTransaction() {
           await fetch('/beacon/initialize-and-close-transaction', { method: 'POST' })
           this.getBeaconState()
-          this.getLastVST()
+          this.getLastTransactionInitData()
         },
         async closeTransaction(){
           await fetch('/beacon/send-close-transaction-echo-to-obu', { method: 'POST' })

@@ -100,14 +100,19 @@ async def change_mode(request_body: ChangeModeRequest):
     beacon_manager_module.change_mode(mode_name=mode_name)
     return {"message": f"Changed mode to {mode_name}!"}
 
-# Endpoint to initialize the beacon to access EFC functions
 @router.post("/initialize-transaction")
 async def initialize_transaction():
+    """Endpoint to initialize a transaction (send a BST and get a VST)
+    After intializing a transactions, the EFC functions can be called"""
     try:
         last_decoded_vst_obj = beacon_manager_module.initialize_transaction()
     except BeaconManagerException as beacon_error:
         raise HTTPException(status_code=400, detail=f"{type(beacon_error).__name__}: {beacon_error}")
     return {"last_vst": last_decoded_vst_obj}
+
+@router.get("/last-transaction-init-data")
+async def get_last_initialization_data():
+    return beacon_manager_module.get_init_data()
 
 class GetRequest(BaseModel):
     eid:int
