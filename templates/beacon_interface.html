@@ -4,188 +4,102 @@
       "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js"
     }
   }
-  </script>
-  <head>
-    <title>Beacon Manager Interface</title>
-    <link rel="icon" href="beacon.svg">
-    <link rel="stylesheet" href="../beacon_interface/beacon_manager_front.css">
-  </head>
+</script>
 
-  <body>
-    <div>{{ message }}</div>
-    
-    <div id="app">
-      <div id="device-management" :class="deviceStyleCss">
-        <h3>Device Management</h3>
-      </div>
-      <button @click="showEverything">Show everything</button>
-      <button @click="hideEverything" :class="{ hidden: isHidden}">Hide everything</button>
-      <div id="beacon-management" :class="{ hidden: isHidden}" style="background-color: #909090;">
-        <h3>Beacon Management</h3>
-        <div>
-          <button @click="initializeBeaconManager">Initialize Beacon Manager</button>
-        </div>
-        <div>
-          <button @click="changeToTransparent">Change mode to Transparent</button>
-        </div>
-        <div>
-          <button @click="stopBeacon">Change mode to Stopped</button>
-        </div>
-        <div>
-          <button @click="resetBeacon">Reset Beacon</button>
-        </div>
-      </div>
-      <div id="transaction-management" :class="{ hidden: isHidden}" style="background-color: #909090;">
-        <h3>Transaction Management</h3>
-        <div>
-          <button @click="startTransactionLoop">Start Transaction Loop</button>
-        </div>
-        <div>
-          <button @click="stopTransactionLoop">Stop Transaction Loop</button>
-        </div>
-        <div>
-          <button @click="initializeAndCloseTransaction">Initialize and close transaction</button>
-        </div>
-        <div>
-          <button @click="initializeTransaction">Initialize transaction</button>
-        </div>
-        <div>
-          <button @click="closeTransaction">Close transaction</button>
-        </div>
-      </div>
-      <div id="beacon-state" :class="{ hidden: isHidden}" style="background-color: #60FF60;">
-        <h3>Beacon State</h3>
-        <button @click="getBeaconState">Update/Get beacon's state</button>
-        <div id="beacon-state" style="margin: 1em; border:0.2em solid black;">
-          <div>
-            <p>Beacon is stopped!</p>
-          </div>
-          <div>
-            <p>Beacon is in transparent mode!</p>
-          </div>
-          <div>
-            <p>Transaction in Progress!</p>
-            <button @click="closeTransaction">Close Transaction</button> <!-- Add this button -->
-            <div>
-              <button @click="efcGet">GET</button>
-              <button @click="efcSet">SET</button>
-              <button @click="efcAction">ACTION</button>
-            </div>
-          </div>
-          <div>
-            <h3>EFC Transaction</h3>
-            <select v-model="toll_charger">
-              <option v-for="charger in toll_chargers" :value="charger">{{ charger }}</option>
-            </select>
-            <select v-model="transaction_type">
-              <option v-for="type in transaction_types" :value="type">{{ type }}</option>
-            </select>
-            <button @click="executeTransaction">Execute transaction</button>
-          </div>
-        </div>
-      </div>
-      <div id="transaction-state" :class="{ hidden: isHidden}" style="background-color: #8888FF;">
-        <h3>Last VST</h3>
-        <div style="margin: 1em; border:0.2em solid black;">
-          <div id="vst-data" v-text="last_vst">
-            {{ last_vst }}
-          </div>
+<head>
+  <title>Beacon Manager Interface</title>
+  <link rel="icon" href="beacon.svg">
+  <link rel="stylesheet" href="../beacon_interface/beacon-manager-front.css">
+</head>
+
+<body>
+  <div id="app">
+    <div id="device-management" :class="deviceStyleCss">
+      <h3>Device Management</h3>
+    </div>
+    <button @click="showEverything">Show everything</button>
+    <button @click="hideEverything" :class="{ hidden: isHidden}">Hide everything</button>
+    <div id="beacon-management" :class="{ hidden: isHidden}" style="background-color: #909090;">
+      <h3>Beacon Management</h3>
+      <div>
+        <button @click="initializeBeaconManager">Initialize Beacon Manager</button>
       </div>
       <div>
-        <h3>Beacon State</h3>
-        <p>{{ beacon_state }}</p>
+        <button @click="changeToTransparent">Change mode to Transparent</button>
+      </div>
+      <div>
+        <button @click="stopBeacon">Change mode to Stopped</button>
+      </div>
+      <div>
+        <button @click="resetBeacon">Reset Beacon</button>
       </div>
     </div>
+    <div id="transaction-management" :class="{ hidden: isHidden}" style="background-color: #909090;">
+      <h3>Transaction Management</h3>
+      <div>
+        <button @click="startTransactionLoop">Start Transaction Loop</button>
+      </div>
+      <div>
+        <button @click="stopTransactionLoop">Stop Transaction Loop</button>
+      </div>
+      <div>
+        <button @click="initializeAndCloseTransaction">Initialize and close transaction</button>
+      </div>
+      <div>
+        <button @click="initializeTransaction">Initialize transaction</button>
+      </div>
+      <div>
+        <button @click="closeTransaction">Close transaction</button>
+      </div>
+    </div>
+    <div id="beacon-state" :class="{ hidden: isHidden}" style="background-color: #60FF60;">
+      <h3>Beacon State</h3>
+      <button @click="getBeaconState">Update/Get beacon's state</button>
+      <div id="beacon-state" style="margin: 1em; border:0.2em solid black;">
+        <div>
+          <p>Beacon is stopped!</p>
+        </div>
+        <div>
+          <p>Beacon is in transparent mode!</p>
+        </div>
+        <div>
+          <p>Transaction in Progress!</p>
+          <button @click="closeTransaction">Close Transaction</button> <!-- Add this button -->
+          <div>
+            <button @click="efcGet">GET</button>
+            <button @click="efcSet">SET</button>
+            <button @click="efcAction">ACTION</button>
+          </div>
+        </div>
+        <div>
+          <h3>EFC Transaction</h3>
+          <select v-model="toll_charger">
+            <option v-for="charger in toll_chargers" :value="charger">{{ charger }}</option>
+          </select>
+          <select v-model="transaction_type">
+            <option v-for="type in transaction_types" :value="type">{{ type }}</option>
+          </select>
+          <button @click="executeTransaction">Execute transaction</button>
+        </div>
+      </div>
+    </div>
+    <div id="transaction-state" :class="{ hidden: isHidden}" style="background-color: #8888FF;">
+      <h3>Last VST</h3>
+      <div style="margin: 1em; border:0.2em solid black;">
+        <div id="vst-data" v-text="last_vst">
+          {{ last_vst }}
+        </div>
+    </div>
+    <div>
+      <h3>Beacon State</h3>
+      <p>{{ beacon_state }}</p>
+    </div>
   </div>
+  </div>
+  <script type="module">
+  import { createApp } from 'vue'
+  import BeaconFrontendApp from '../beacon_interface/beacon-manager-front.js'
+  
+  createApp(BeaconFrontendApp).mount('#app')
+  </script>
 </body>
-
-    <script type="module">
-    import { createApp } from 'vue'
-
-    createApp({
-      data() {
-        return {
-          beacon_state: '',
-          transaction_initialized: false,
-          last_vst: '',
-          toll_chargers: ['Charger1', 'Charger2'], // Example data
-          transaction_types: ['CARDME', 'PISTA'], // Example data
-          toll_charger: '',
-          transaction_type: '',
-          deviceStyleCss: "device_error",
-          isHidden: true
-        }
-      },
-      created() {
-        this.getBeaconState()
-        this.getLastTransactionInitData()
-      },
-      methods: {
-        showEverything(){
-          this.isHidden = false
-        },
-        hideEverything(){
-          this.isHidden = true
-        },
-        async initializeBeaconManager() {
-          await fetch('/beacon/initialize-beacon-manager', { method: 'POST' })
-          this.beacon_manager_initialized = true
-        },
-        async resetBeacon() {
-          await fetch('/beacon/reset-beacon', { method: 'POST' })
-        },
-        async stopBeacon(){
-          const response = await fetch('/beacon/change-mode', { method: 'POST', body: JSON.stringify({ mode_name: 'Stopped' }), headers: { 'Content-Type': 'application/json' } })
-          const data = await response.json()
-          this.beacon_state = data.beacon_state
-        },
-        async startTransactionLoop() {
-          const response = await fetch('/beacon/loop-transactions', { method: 'POST', body: JSON.stringify({ loop_state: 'ON' }), headers: { 'Content-Type': 'application/json' } })
-          const data = await response.json()
-        },
-        async stopTransactionLoop() {
-          const response = await fetch('/beacon/loop-transactions', { method: 'POST', body: JSON.stringify({ loop_state: 'OFF' }), headers: { 'Content-Type': 'application/json' } })
-          const data = await response.json()
-        },
-        async getBeaconState() {
-          const response = await fetch('/beacon/beacon-state')
-          const data = await response.json()
-          this.beacon_state = data.beacon_state
-        },
-        async getLastTransactionInitData() {
-          const response = await fetch('/beacon/last-transaction-init-data')
-          const data = await response.json()
-          this.last_vst = data.initialisationResponse
-        },
-        async changeToTransparent() {
-          await fetch('/beacon/change-mode', { method: 'POST', body: JSON.stringify({ mode_name: 'Transparent' }), headers: { 'Content-Type': 'application/json' } })
-        },
-        async initializeTransaction() {
-          await fetch('/beacon/initialize-transaction', { method: 'POST' })
-          this.transaction_initialized = true
-          this.getLastTransactionInitData()
-        },
-        async initializeAndCloseTransaction() {
-          await fetch('/beacon/initialize-and-close-transaction', { method: 'POST' })
-          this.getBeaconState()
-          this.getLastTransactionInitData()
-        },
-        async closeTransaction(){
-          await fetch('/beacon/send-close-transaction-echo-to-obu', { method: 'POST' })
-          this.getBeaconState()
-        },
-        async efcGet() {
-          // Implement EFC GET functionality
-        },
-        async efcSet() {
-          // Implement EFC SET functionality
-        },
-        async efcAction() {
-          // Implement EFC ACTION functionality
-        },
-        async executeTransaction() {
-          // Implement transaction execution functionality
-        }
-      }
-    }).mount('#app')
-    </script>
