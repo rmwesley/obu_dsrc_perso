@@ -134,11 +134,8 @@ class GetRequest(BaseModel):
     }
 @router.post("/send-get-request")
 async def send_get_request(request_body: GetRequest):
-    get_response_json = beacon_manager_module.send_get_request(**request_body.dict())
-    return {
-        "message": "Transaction closed!",
-        "response_t_apdu": get_response_json
-        }
+    beacon_manager_module.send_get_request(**request_body.dict())
+    return "Success!"
 
 class PresentationReq(BaseModel):
     eid:int
@@ -163,37 +160,26 @@ class PresentationReq(BaseModel):
 @router.post("/send-presentation-request")
 async def send_presentation_request(request_body: PresentationReq):
     get_stamped_response_json = beacon_manager_module.presentation_request(**request_body.dict())
-    return {
-        "message": "Transaction closed!",
-        "response_t_apdu": get_stamped_response_json
-        }
+    return "Success!"
 
 # Endpoints to close transaction
 @router.post("/send-close-transaction-echo-to-obu")
 async def send_close_transaction_echo_to_obu():
-    response_t_apdu_json = beacon_manager_module.send_close_transaction_echo()
-    return {
-        "message": "Transaction closed!",
-        "response_t_apdu": response_t_apdu_json
-        }
+    beacon_manager_module.send_close_transaction_echo()
+    return "Success!"
+
 @router.post("/send-close-transaction-set-mmi-to-obu")
 async def send_close_set_mmi_to_obu():
-    response_t_apdu_json = beacon_manager_module.send_close_transaction_setmmi()
-    return {
-        "message": "Transaction closed!",
-        "response_t_apdu": response_t_apdu_json
-        }
+    beacon_manager_module.send_close_transaction_setmmi()
+    return "Success!"
 
 # Endpoint to initialize the beacon and close transaction
 @router.post("/initialize-and-close-transaction")
 async def initialize_and_close_transaction():
-    t_apdu_response_list = []
     beacon_manager_module.initialize_transaction()
-    t_apdu_response_list.append(beacon_manager_module.last_response_t_apdu_json)
 
     beacon_manager_module.send_close_transaction_setmmi()
-    t_apdu_response_list.append(beacon_manager_module.last_response_t_apdu_json)
-    return t_apdu_response_list
+    return "Success!"
 
 @router.get("/last-response-t-apdu-with-vst-json")
 async def get_last_vst():
