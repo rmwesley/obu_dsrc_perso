@@ -127,7 +127,7 @@ class GetRequest(BaseModel):
             ]
         }
     }
-@router.post("/send_get_request")
+@router.post("/send-get-request")
 async def send_get_request(request_body: GetRequest):
     get_response_json = beacon_manager_module.send_get_request(**request_body.dict())
     return {
@@ -155,7 +155,7 @@ class PresentationReq(BaseModel):
             ]
         }
     }
-@router.post("/send_presentation_request")
+@router.post("/send-presentation-request")
 async def send_presentation_request(request_body: PresentationReq):
     get_stamped_response_json = beacon_manager_module.presentation_request(**request_body.dict())
     return {
@@ -190,11 +190,11 @@ async def initialize_and_close_transaction():
     t_apdu_response_list.append(beacon_manager_module.last_response_t_apdu_json)
     return t_apdu_response_list
 
-@router.get("/last_response_t_apdu_with_vst_json")
+@router.get("/last-response-t-apdu-with-vst-json")
 async def get_last_vst():
     return beacon_manager_module.last_response_t_apdu_with_vst_json
 
-@router.get("/last_response_t_apdu_json")
+@router.get("/last-response-t-apdu-json")
 async def get_last_vst():
     return beacon_manager_module.last_response_t_apdu_json
 
@@ -211,7 +211,7 @@ class TransactionReq(BaseModel):
 async def cardme(request_body: TransactionReq):
     return beacon_manager_module.cardme_transaction(request_body.eid)
 
-@router.post("/Get_all_128_attrs")
+@router.post("/Get-all-128-attrs")
 async def get_all_attributes(request_body: TransactionReq):
     return beacon_manager_module.get_all_attributes(request_body.eid)
 
