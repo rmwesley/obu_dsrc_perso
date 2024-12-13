@@ -196,6 +196,7 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     global last_response_t_apdu_json
     global last_vst_value
 
+    global initialization_data
     global db_transactions_collection
     global current_transaction_id
     
@@ -246,6 +247,11 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
 
     mongodb_document = initialization_data.copy()
     current_transaction_id = db_transactions_collection.insert_one(document = mongodb_document)
+
+    return initialization_data
+
+def get_init_data():
+    global initialization_data
 
     return initialization_data
 
