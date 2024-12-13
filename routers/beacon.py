@@ -219,25 +219,3 @@ async def cardme(request_body: TransactionReq):
 @router.post("/Get-all-128-attrs")
 async def get_all_attributes(request_body: TransactionReq):
     return beacon_manager_module.get_all_attributes(request_body.eid)
-
-class EFCFunctionRequest(BaseModel):
-    pass
-# Endpoint to handle EFC functions
-@router.post("/efc-function")
-async def efc_function(request: EFCFunctionRequest):
-    request_body = (await request.json())
-    function_type = request_body.function_type
-    eid = request_body.eid
-    attribute_id_list = request_body.attribute_id_list
-
-    if function_type == "GET":
-        response = beacon_manager_module.send_get_request(eid, attribute_id_list)
-    elif function_type == "SET":
-        response = beacon_manager_module.send_set_request(eid, attribute_id_list)
-    elif function_type == "ACTION":
-        action_type = request_body.action_type
-        response = beacon_manager_module.send_action_request(eid, action_type, attribute_id_list)
-    else:
-        raise HTTPException(status_code=400, detail="Invalid function type")
-    
-    return {"response": response}
