@@ -91,7 +91,7 @@ def simple_bcm_transactions():
 
     beacon_manager_module.set_beeping_state(beep_state=False)
     beacon_manager_module.loop_transactions()
-    #beacon_manager_module.cardme_transaction(4)
+    # beacon_manager_module.cardme_transaction(2)
 
 # Main execution
 if __name__ == "__main__":

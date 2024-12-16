@@ -7,12 +7,11 @@ from datetime import datetime
 import json
 import logging
 import threading
+import uuid
 
 import gea_bcm_dll_wrapper
 import custom_its_per_decoders
 import dsrc_security
-
-import pymongo
 
 bcm_logger = logging.getLogger(__name__)
 
@@ -36,7 +35,6 @@ def initialize_bcm(aid=20):
     global TApdu_container
     global l7_initialization_phase_lock
     global l7_transfer_kernel_lock
-    global db_transactions_collection
 
     if aid == 1:
         TApdu_container = TApdu_container
@@ -44,15 +42,6 @@ def initialize_bcm(aid=20):
         TApdu_container = EFC_CCC_LAC_asn1_objs.EfcCcc.CccTApdus
     with open('settings/beacon_manager_config.json', 'r') as beacon_manager_config_file:
         beacon_manager_config = json.load(beacon_manager_config_file)
-    bcm_logger.info('Initializing database connection...')
-    mongodb_connection_string = beacon_manager_config["database_config"]['MongoDB']['connection_string']
-    mongodb_client = pymongo.MongoClient(mongodb_connection_string)
-
-    db_name = beacon_manager_config['database_config']['MongoDB']['database_name']
-    database_connection = mongodb_client[db_name]
-
-    db_transactions_collection_name = beacon_manager_config['transaction_manager']['db_collection_name']
-    db_transactions_collection = database_connection[db_transactions_collection_name]
 
     default_beacon_name = beacon_manager_config["default_beacon_name"]
     l7_initialization_phase_lock = threading.Lock()
@@ -197,7 +186,6 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     global last_vst_value
 
     global initialization_data
-    global db_transactions_collection
     global current_transaction_id
     
     beacon_l7_wrapper.update_state()
@@ -245,15 +233,19 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     last_vst_json = last_response_t_apdu_json['initialisationResponse']
     last_vst_value = last_response_t_apdu_value[1]
 
-    mongodb_document = initialization_data.copy()
-    current_transaction_id = db_transactions_collection.insert_one(document = mongodb_document)
-
+    current_transaction_id = uuid.uuid1()
+    with open(f'local_file_storage/transactions/{current_transaction_id}.json', 'w') as json_file:
+        json.dump(initialization_data, json_file, indent=2)
+        
     return initialization_data
 
 def get_init_data():
     global initialization_data
 
-    return initialization_data
+    try:
+        return initialization_data
+    except:
+        return {}
 
 def find_eid_with_accepted_contract():
     eid = None
@@ -293,7 +285,6 @@ def decode_t_apdu_response_uper(t_apdu_with_response_bytes):
 def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close=False) -> dict:
     global TApdu_container
 
-    global db_transactions_collection
     global current_transaction_id
 
     bcm_logger.debug(f"Preparing request T-APDU to be sent...")
@@ -301,10 +292,10 @@ def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close=Fals
     bcm_logger.debug(f"Request T-APDU value: {TApdu_container._val}")
     bcm_logger.debug(f"T-APDU in JER:\n{TApdu_container.to_jer()}")
 
-    exchanged_data = {}
+    current_exchanged_data = {}
     # Adding T-APDU with request data to dict
     request_t_apdu_jval = TApdu_container._to_jval()
-    exchanged_data |= request_t_apdu_jval
+    current_exchanged_data |= request_t_apdu_jval
     # Sending command!!!
     l7_transfer_kernel_lock.acquire()
     try:
@@ -322,10 +313,15 @@ def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close=Fals
         # Adding T-APDU with response data to dict
         TApdu_container.set_val(t_apdu_response_value)
         response_t_apdu_jval = TApdu_container._to_jval()
-        exchanged_data |= response_t_apdu_jval
+        current_exchanged_data |= response_t_apdu_jval
         # Pushing T-APDU to transactions database collection
 
-        db_transactions_collection.update_one(filter={'_id': current_transaction_id.inserted_id}, update={"$push": { "exchanged_data": exchanged_data}}) 
+        with open(f'local_file_storage/transactions/{current_transaction_id}.json', 'r') as json_file:
+            transaction_data = json.load(json_file)
+            transaction_data['exchanged_data'].append(current_exchanged_data)
+            
+        with open(f'local_file_storage/transactions/{current_transaction_id}.json', 'w') as json_file:
+            json.dump(transaction_data, json_file, indent=2)
 
         return response_t_apdu_jval
     except:
