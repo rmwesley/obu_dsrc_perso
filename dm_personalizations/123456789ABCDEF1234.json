@@ -1,0 +1,258 @@
+{
+    "deviceId": "1073741824",
+    "vehicleInfo": {
+      "vehicleLicencePlateNumber": {
+        "countryCode": "D",
+        "licencePlateNumber": "WE1"
+      },
+      "vehicleAxles": {
+        "vehicleAxlesNumber": {
+          "numberOfAxles": {
+            "trailerAxles": 3,
+            "tractorAxles": 2,
+            "defaultAxles": 5
+          }
+        }
+      },
+      "vehicleWeightLimits": {
+        "vehicleMaxLadenWeight": 1800,
+        "vehicleTrainMaximumWeight": 4000
+      }
+    },
+    "instances": [
+      {
+        "instanceName": "TIS",
+        "action": "set",
+        "instanceValues": [
+          {
+            "attribute": 0,
+            "value": "20B2803100FF77"
+          },
+          {
+            "attribute": 4,
+            "value": "2404627E8088"
+          },
+          {
+            "attribute": 16,
+            "value": "2F94000D57453100000000000000000000"
+          },
+          {
+            "attribute": 17,
+            "value": "3150"
+          },
+          {
+            "attribute": 18,
+            "value": "32000000"
+          },
+          {
+            "attribute": 19,
+            "value": "33001A"
+          },
+          {
+            "attribute": 20,
+            "value": "3407080FA00000"
+          },
+          {
+            "attribute": 22,
+            "value": "3660000024"
+          },
+          {
+            "attribute": 23,
+            "value": "37046F96ECC4"
+          },
+          {
+            "attribute": 32,
+            "value": "40123456789ABCDEF1234F597E0000"
+          },
+          {
+            "attribute": 111,
+            "value": "020865A08F057FD7A9CC"
+          },
+          {
+            "attribute": 112,
+            "value": "0208D411C43D1CF27F51"
+          },
+          {
+            "attribute": 113,
+            "value": "0208DA49B2D8F270D86D"
+          },
+          {
+            "attribute": 114,
+            "value": "020837FD755F2388C06C"
+          },
+          {
+            "attribute": 115,
+            "value": "0208B6F52FD0B9DC2018"
+          },
+          {
+            "attribute": 116,
+            "value": "0208BBC661632C544A65"
+          },
+          {
+            "attribute": 117,
+            "value": "0208AD8891D3FF2D60AA"
+          },
+          {
+            "attribute": 118,
+            "value": "0208B46F8CFBF65461B5"
+          }
+        ]
+      },
+      {
+        "instanceName": "BE",
+        "action": "set",
+        "instanceValues": [
+          {
+            "attribute": 0,
+            "value": "20B2803100FE66"
+          },
+          {
+            "attribute": 16,
+            "value": "2F94000E5745310000000000000000000000"
+          },
+          {
+            "attribute": 17,
+            "value": "3150"
+          },
+          {
+            "attribute": 18,
+            "value": "32000000"
+          },
+          {
+            "attribute": 19,
+            "value": "33001A"
+          },
+          {
+            "attribute": 20,
+            "value": "3407080FA00000"
+          },
+          {
+            "attribute": 22,
+            "value": "3660000024"
+          },
+          {
+            "attribute": 32,
+            "value": "40123456789ABCDEF1234F597E0000"
+          },
+          {
+            "attribute": 111,
+            "value": "0208860B5647A50DE957"
+          },
+          {
+            "attribute": 112,
+            "value": "0208C79A244C75E770DE"
+          },
+          {
+            "attribute": 113,
+            "value": "020830AF171ECB5B54B7"
+          },
+          {
+            "attribute": 114,
+            "value": "0208C036F823004F802C"
+          },
+          {
+            "attribute": 115,
+            "value": "02080CE4A55F3EAA9578"
+          },
+          {
+            "attribute": 116,
+            "value": "0208337911B701868D29"
+          },
+          {
+            "attribute": 117,
+            "value": "0208B2ABD9DE60B67232"
+          },
+          {
+            "attribute": 118,
+            "value": "020833A62E2522387135"
+          },
+          {
+            "attribute": 120,
+            "value": "0208A052B8C7B179B5E0"
+          },
+          {
+            "attribute": 121,
+            "value": "02020073"
+          }
+        ]
+      },
+      {
+        "instanceName": "ET1",
+        "action": "set",
+        "instanceValues": [
+          {
+            "attribute": 0,
+            "value": "20B2803100FF78"
+          },
+          {
+            "attribute": 16,
+            "value": "2F94000E5745310000000000000000000000"
+          },
+          {
+            "attribute": 17,
+            "value": "3150"
+          },
+          {
+            "attribute": 18,
+            "value": "32000000"
+          },
+          {
+            "attribute": 19,
+            "value": "33001A"
+          },
+          {
+            "attribute": 20,
+            "value": "3407080FA00000"
+          },
+          {
+            "attribute": 22,
+            "value": "3660000024"
+          },
+          {
+            "attribute": 32,
+            "value": "40123456789ABCDEF1234F597E0000"
+          },
+          {
+            "attribute": 111,
+            "value": "02080BC69B334E1EEC2B"
+          },
+          {
+            "attribute": 112,
+            "value": "0208B9348665AA18149C"
+          },
+          {
+            "attribute": 113,
+            "value": "0208BD008A57BB0C00AD"
+          },
+          {
+            "attribute": 114,
+            "value": "0208D423D22350A4887B"
+          },
+          {
+            "attribute": 115,
+            "value": "020838198959FC69518A"
+          },
+          {
+            "attribute": 116,
+            "value": "020829E5F380A8B71255"
+          },
+          {
+            "attribute": 117,
+            "value": "02081755C3454B070704"
+          },
+          {
+            "attribute": 118,
+            "value": "0208D7CBFC2237BFC71A"
+          },
+          {
+            "attribute": 120,
+            "value": "0208C9578030103D0CB4"
+          },
+          {
+            "attribute": 121,
+            "value": "02020073"
+          }
+        ]
+      }
+    ]
+  }
