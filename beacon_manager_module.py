@@ -235,6 +235,7 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
 
     current_transaction_id = uuid.uuid1()
     with open(f'local_file_storage/transactions/{current_transaction_id}.json', 'w') as json_file:
+        initialization_data['creation_time'] = datetime.now().isoformat()
         json.dump(initialization_data, json_file, indent=2)
         
     return initialization_data
@@ -321,6 +322,7 @@ def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close=Fals
             transaction_data['exchanged_data'].append(current_exchanged_data)
             
         with open(f'local_file_storage/transactions/{current_transaction_id}.json', 'w') as json_file:
+            transaction_data['last_update_timestamp'] = datetime.now().isoformat()
             json.dump(transaction_data, json_file, indent=2)
 
         return response_t_apdu_jval
