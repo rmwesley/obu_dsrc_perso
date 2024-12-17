@@ -55,13 +55,6 @@ root_logger.addHandler(console_handler)
 
 root_logger.setLevel(logging.DEBUG)
 
-def callback_logger(cb_code, error_code):
-    if cb_code == BCM_CALLBACK_Enum.BCM_CB_ERR:
-        root_logger.error(f"Callback Error ({cb_code}) occurred, with error code {error_code}")
-        return
-    root_logger.debug(f"Callback IN ({cb_code})")
-    root_logger.debug(BCM_Callback.get_description(cb_code))
-
 def simple_bcm_transactions():
     root_logger.debug("Instantiating BeaconManager class...")
     beacon_manager_module.initialize_bcm()
