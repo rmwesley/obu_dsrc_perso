@@ -70,6 +70,29 @@ def change_mode(mode_name='Stopped'):
         mode_code = tgbv_gea_bcm_operating_modes_enum_values[mode_name]
         beacon_l7_wrapper.change_mode(operating_mode_code=mode_code)
 
+def init_bcm_and_set_transparent_mode():
+    global beacon_l7_wrapper
+
+    bcm_logger.debug("Instantiating BeaconManager class...")
+    initialize_bcm()
+
+    bcm_logger.debug("Getting beacon configuration...")
+    bcm_config = beacon_l7_wrapper.get_config()
+    bcm_logger.debug(f"Displaying config data...: {bcm_config}")
+
+    beacon_l7_wrapper.change_mode(gea_bcm_dll_wrapper.BCM_MODE_Enum.BCM_MOD_Transparent)
+    bcm_logger.debug("Changed mode to transparent!")
+
+    bcm_logger.debug("Getting beacon state...")
+    result = beacon_l7_wrapper.update_state()
+
+    bcm_logger.debug("We now update/get the BeaconID (L7, so according to the beacon) before sending the BST")
+    bcm_logger.debug("This is weird... We should be the ones to set the BeaconID freely in the BST")
+    bcm_logger.debug("The beacon should then just keep the last sent BeaconID in its memory")
+    result = beacon_l7_wrapper.update_beacon_id()
+    EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.from_uper(beacon_l7_wrapper.last_beacon_id)
+    bcm_logger.debug(f"Beacon (according to GEA Beacon) encoded in JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.to_jer()}")
+
 def shutdown_beacon():
     global beacon_l7_wrapper
     if beacon_l7_wrapper is None:
