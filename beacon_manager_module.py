@@ -197,6 +197,9 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
         raise BeaconManagerException("Transaction already in progress!!")
 
     initialization_data = {}
+    current_transaction_id = uuid.uuid1()
+    initialization_data['_id'] = current_transaction_id.hex
+
     # Adding initialisationRequest json to initialization_data dict
     initialization_request_jval = start_bst(manufacturer_id=manufacturer_id, individual_id=individual_id, mand_applications=mand_applications, profile=profile, profile_list=profile_list, non_mand_applications=non_mand_applications, bst_type=bst_type)
     initialization_data |= initialization_request_jval
@@ -233,7 +236,6 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     last_vst_json = last_response_t_apdu_json['initialisationResponse']
     last_vst_value = last_response_t_apdu_value[1]
 
-    current_transaction_id = uuid.uuid1()
     with open(f'local_file_storage/transactions/{current_transaction_id}.json', 'w') as json_file:
         initialization_data['creation_time'] = datetime.now().isoformat()
         json.dump(initialization_data, json_file, indent=2)
