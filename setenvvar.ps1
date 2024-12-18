@@ -1,0 +1,2 @@
+$env:MK_PATH = Resolve-Path '..\master_keys.json' | select -ExpandProperty Path
+$env:PYTHONPATH="$PYTHONPATH;."
