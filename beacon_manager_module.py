@@ -210,7 +210,7 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
 
     global initialization_data
     global current_transaction_id
-    
+
     beacon_l7_wrapper.update_state()
     if beacon_l7_wrapper.beacon_state.mode == gea_bcm_dll_wrapper.BCM_MODE_Enum.BCM_MOD_Stopped:
         raise BeaconManagerException("Beacon is in Stopped mode, not Transparent!!") 
@@ -227,7 +227,7 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     initialization_request_jval = start_bst(manufacturer_id=manufacturer_id, individual_id=individual_id, mand_applications=mand_applications, profile=profile, profile_list=profile_list, non_mand_applications=non_mand_applications, bst_type=bst_type)
     initialization_data |= initialization_request_jval
     bcm_logger.debug("No errors occurred when starting BST!")
-    
+
     bcm_logger.info("We now wait on the main thread until we a VST is received...")
     beacon_l7_wrapper.wait_for_vst_event()
     bcm_logger.info("A VST was received! Releasing locks!")
@@ -238,12 +238,12 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     bcm_logger.debug("Locks released! We now get the VST")
     fragmented_t_apdu_init_resp_datagram = beacon_l7_wrapper.get_vst()
     bcm_logger.debug(f"Fragmented T_APDU containing VST (UPER hex): {fragmented_t_apdu_init_resp_datagram.hex().upper()}")
-    
+
     bcm_logger.debug("We now remove the fragmentation header and instantiate an T_APDU object from the response!")
     t_apdu_init_resp_datagram = bytes(fragmented_t_apdu_init_resp_datagram[1:])
     TApdu_container.from_uper(t_apdu_init_resp_datagram)
     bcm_logger.debug(f"T-APDU without fragmentation header (UPER hex): {t_apdu_init_resp_datagram}")
-    
+
     bcm_logger.debug("We now instantiate a T_APDU object from the response!")
     bcm_logger.debug(f"Instantiated T_APDU object ASN1 decoding/representation:\n{TApdu_container.to_asn1()}")
     bcm_logger.debug(f"T_APDU containing VST in JER:\n{TApdu_container.to_jer()}")
@@ -253,7 +253,7 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
 
     # Adding initialisationResponse json to initialization_data dict
     initialization_data |= last_response_t_apdu_json
-    
+
     initialization_data["exchanged_data"] = []
     # Storing VST in field
     last_vst_json = last_response_t_apdu_json['initialisationResponse']
@@ -293,7 +293,7 @@ def decode_t_apdu_response_uper(t_apdu_with_response_bytes):
     bcm_logger.debug(f"Response T-APDU decoded with JER:\n{TApdu_container.to_jer()}")
     last_response_t_apdu_json = TApdu_container._to_jval()
     bcm_logger.debug(f"Response T-APDU in JSON: {last_response_t_apdu_json}")
-    
+
     bcm_logger.debug(f"Checking if T-APDU contains a return (ret) value (error code)...")
     try:
         return_code = last_response_t_apdu_value[1]["ret"]
@@ -326,8 +326,9 @@ def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close=Fals
     l7_transfer_kernel_lock.acquire()
     try:
         fragmented_t_apdu_with_response_bytes = beacon_l7_wrapper.send_command(TApdu_container.to_uper(), close)
-    except :
-        bcm_logger.error(f'L7: Exception when sending command (T-APDU)', stack_info=True)
+    except gea_bcm_dll_wrapper.Layer7Exception as e:
+        bcm_logger.error(f"L7 Error!", exc_info=True)
+        return
     l7_transfer_kernel_lock.release()
     bcm_logger.info(f"Fragmented T-APDU response obtained from beacon in hex (UPER hex): {fragmented_t_apdu_with_response_bytes.hex().upper()}")
 
@@ -361,12 +362,12 @@ def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close=Fals
 def decode_vst_parameter_from_eid(eid):
     bcm_logger.debug(f"Decoding VST parameter with EID {eid}...")
     parameter_bytes = get_parameter_bytes_from_eid_on_vst_value(eid)
-    
+
     if parameter_bytes is None:
         return None
     decoded_parameter = custom_its_per_decoders.decode_vst_parameter_oct_str_bytes(parameter_bytes)
     return decoded_parameter
-    
+
 def get_parameter_hex_str_from_eid_on_json_vst(eid:int, vst_json=None) -> str:
     if vst_json is None:
         vst_json = last_vst_json
@@ -432,7 +433,7 @@ def send_get_request(eid, accessCredentialsPresent:bool = False, attrIdList=None
 
     bcm_logger.debug("We now obtain the GET.response object from the T_APDU response!")
     bcm_logger.debug("GET.response is a parameterized type, so we cannot encode/decode it, only the T_APDU!")
-    
+
     return json_encoded_response_t_apdu
 
 def send_action_request(
@@ -459,7 +460,7 @@ def send_action_request(
 
     bcm_logger.debug(f"ActionParameter is an EfcContainer of Type ({actionParameter[0]}) (tag {parameter_tag}) value decoded with JER:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_jer()}")
     bcm_logger.debug(f"Same value but APER-encoded in hex: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_aper().hex().upper()}")
-    
+
     action_request_value = {
         'mode': mode,
         'eid': eid,
@@ -594,7 +595,7 @@ def get_stamped_request_action_parameter_preparation(eid:int, attrIdList:list = 
         }
     bcm_logger.debug(f"GetStampedRq value to be stored in definition: {get_stamped_rq_value}")
     EFC_CCC_LAC_asn1_objs.EfcDsrcApplication.GetStampedRq.set_val(get_stamped_rq_value)
-    
+
     bcm_logger.debug(f"GetStampedRq value: {EFC_CCC_LAC_asn1_objs.EfcDsrcApplication.GetStampedRq._val}")
     bcm_logger.info(f"GetStampedRs in JER:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcApplication.GetStampedRq.to_jer()}")
     return get_stamped_rq_value
@@ -671,13 +672,38 @@ def cardme_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPres
     else:
         send_echo_action_request(eid=eid, close_transaction_bool=True)
 
+def tis_cip_cardme_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
+    initialize_transaction(mand_applications=mand_applications)
+    presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[17, 18, 19, 20, 22])
+
+    # Getting TIS specific/reserved attributes...
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[125, 126])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[95, 96])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[97, 98, 99])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=list(range(100, 104)))
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=list(range(104, 108)))
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=list(range(108, 112)))
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=list(range(112, 116)))
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[116])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[124])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[127])
+
+    # Close the transaction
+    if set_mmi == True:
+        send_close_transaction_setmmi(eid=eid)
+    else:
+        send_echo_action_request(eid=eid, close_transaction_bool=True)
+
 def get_all_attributes(eid, mand_applications=[1, 20, 29]):
     attrIdList = list(range(0, 128))
     return get_attributes_in_list(eid, attrIdList, mand_applications=mand_applications)
 
 def get_attributes_in_list(eid, accessCredentialsPresent=True, attrIdList=[32], mand_applications=[1, 20, 29], set_mmi=False):
     global last_response_t_apdu_json
-    
+
     # Initialize transaction
     initialize_transaction(mand_applications=mand_applications)
 
@@ -750,4 +776,12 @@ def loop_transactions():
         except TransactionException:
             keep_looping = False
             bcm_logger.error("Transaction error occurred during loop!", exc_info=True)
-            time.sleep(3)
+            time.sleep(1)
+        # except gea_bcm_dll_wrapper.Layer7Exception:
+        #     bcm_logger.error("L7 Error!", exc_info=True)
+        #     send_close_transaction_echo()
+        #     time.sleep(2)
+            # shutdown_beacon()
+            # time.sleep(3)
+            # set_transparent_mode()
+            # time.sleep(1)
