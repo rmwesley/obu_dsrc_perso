@@ -647,7 +647,7 @@ def start_bst_wrapper(t_apdu_bst_datagram:bytes, bst_type:int):
 
     fragmented_t_apdu_bst_datagram = frag_header + t_apdu_bst_datagram
     if len(fragmented_t_apdu_bst_datagram) > BCM_SIZEMAX_Enum.BCM_SIZEMAX_BST:
-        bcm_logger.error(f"Datagram is too big! Will probably cause a BST error")
+        gea_dll_loader_logger.error(f"Datagram is too big! Will probably cause a BST error")
 
     bst_datagram_buffer = ctypes.create_string_buffer(fragmented_t_apdu_bst_datagram, size=len(fragmented_t_apdu_bst_datagram))
     # Pointer to the buffered BST datagram
@@ -661,8 +661,6 @@ def start_bst_wrapper(t_apdu_bst_datagram:bytes, bst_type:int):
                             byte_bst_type)
     bcm_error_wrapper(result)
     gea_dll_wrapper_logger.debug("No errors occurred: BST started!")
-    st_bcm_reg_ptr_value = ctypes.cast(reg_ptr, ctypes.c_void_p).value
-    #bcm_logger.debug(f"ST_BCM_REG (dereferenced value): {st_bcm_reg_ptr_value}")
     return result
 
 # Wait for the application to be notified through a callback
@@ -739,7 +737,6 @@ def send_command(t_apdu_datagram: bytes, close_transaction_transaction=False):
         dword_cmd_resonse_max_size,
         close_transaction_transaction
         )
-    last_cmd_req = bytes(fragmented_t_apdu_datagram)
     bcm_error_wrapper(result)
 
     # Iterating cmd response pointer to get its value/contents
