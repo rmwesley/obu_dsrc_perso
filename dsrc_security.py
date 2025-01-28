@@ -54,10 +54,8 @@ def prepare_3DES_cipher(efc_cm:str, key_ref:str):
 # CODE FOR DERIVED ACCESS KEY (Uses MasterKey with ref 120)
 def compute_access_key(efc_cm:str, ac_cr_key_ref:int):
     key_derivation_logger.debug("Preparing the Master Access Key (MAcK) 3DES cipher")
-    try:
-        cipher = prepare_3DES_cipher(efc_cm, '120')
-    except:
-        return bytes(0)
+
+    cipher = prepare_3DES_cipher(efc_cm, '120')
     
     # We concatenate the AC_CR-KeyReference 4 times to get 8 bytes
     ciphertext = ac_cr_key_ref.to_bytes(2, 'big') * 4
