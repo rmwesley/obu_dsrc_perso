@@ -715,7 +715,7 @@ def get_vst():
     gea_dll_wrapper_logger.info(f"Received VST value (UPER hex): {t_apdu_containing_vst.hex().upper()}")
     return t_apdu_containing_vst
 
-def send_command(t_apdu_datagram: bytes, close_transaction_transaction=False):
+def send_req_t_apdu_and_receive_resp_t_apdu(t_apdu_datagram: bytes, close_transaction_transaction=False):
     global frag_header
 
     fragmented_t_apdu_datagram = frag_header + t_apdu_datagram
@@ -949,7 +949,7 @@ def set_mmi(close = False):
     # SetMMI ActionType is 0xA, or 10 in decimal
     set_mmi_request = [frag_header, 0x05, 0x00, 0x0A, 0x00, 0x00]
     set_mmi_datagram = bytes(set_mmi_request)
-    send_command(set_mmi_datagram, close)
+    send_req_t_apdu_and_receive_resp_t_apdu(set_mmi_datagram, close)
 def send_close_transaction_to_obu():
     """
     To close the transaction, we just send a SetMMI request...

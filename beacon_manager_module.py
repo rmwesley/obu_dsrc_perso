@@ -173,10 +173,6 @@ def start_bst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 2
     global l7_transfer_kernel_lock
     global current_beacon_name
 
-    if beacon_manager_config[current_beacon_name]["automatic_internal_beacon_bst"]:
-        bcm_logger.info("BST emission set to automatic!!")
-        return {'initialisationRequest': None}
-
     mand_applications = [{'aid': mandatory_aid} for mandatory_aid in mand_applications]
 
     bst_value = {
@@ -190,7 +186,7 @@ def start_bst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 2
         'profileList': profile_list
         }
 
-    bcm_logger.debug(f"T_APDU containing BST value:\n{TApdu_container._val}")
+    bcm_logger.info(f"BST value:\n{bst_value}")
     EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BST.set_val(bst_value)
     last_sent_bst = EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BST.to_uper()
     bcm_logger.debug(f"BST value (UPER hex): {last_sent_bst.hex().upper()}")
@@ -349,7 +345,7 @@ def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close=Fals
     # Sending command!!!
     l7_transfer_kernel_lock.acquire()
     try:
-        fragmented_t_apdu_with_response_bytes = beacon_l7_wrapper.send_command(TApdu_container.to_uper(), close)
+        fragmented_t_apdu_with_response_bytes = beacon_l7_wrapper.send_req_t_apdu_and_receive_resp_t_apdu(TApdu_container.to_uper(), close)
     except gea_bcm_dll_wrapper.Layer7Exception as e:
         bcm_logger.error(f"L7 Error!", exc_info=True)
         return
