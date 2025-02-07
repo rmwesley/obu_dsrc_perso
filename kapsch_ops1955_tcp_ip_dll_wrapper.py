@@ -58,10 +58,6 @@ def dll_version() -> int:
     return ops1955_beacon_manager_dll.etc_Version()
 print(f"DLL version: {dll_version()}")
 
-# def dll_versions():
-#     return ops1955_beacon_manager_dll.etc_Versions()
-# print(dll_versions())
-
 def etc_write_wrapper(message_id:int, message_content:bytes):
     message_id_16_bits = ctypes.c_int16(message_id)
     ops1955_beacon_manager_dll.etc_Write(ctypes.byref(message_id_16_bits), message_content)
@@ -99,20 +95,15 @@ def ops1955_init(
 # The polling function is periodically called in a separate thread
 def message_queue_polling():
     global messages_polling_seconds
-    # if not messages_polling_seconds:
-    #     messages_polling_seconds = 0.5
 
     while True:
         message_queue_status = ops1955_beacon_manager_dll.etc_Poll()
-        # kapsch_dll_loader_logger.debug(f'Current message queue status ({message_queue_status}): {status_description}')
         status_description = message_queue_status_descriptions.get(message_queue_status)
         kapsch_dll_loader_logger.debug(f'Message queue status ({message_queue_status}). Description: {status_description}')
         if message_queue_status == 0:
             message_queue_non_empty_event.clear()
         else:
             message_queue_non_empty_event.set()
-        # if message_queue_status > 2:
-        #     raise kapsch_dll_loader_logger.error('Error in message!')
         time.sleep(messages_polling_seconds)
 
 
@@ -124,10 +115,8 @@ def shutdown():
 def bst_cyclic_emission_wrapper(t_apdu_datagram):
     while not vst_notification_event.wait(0.2):
         send_t_apdu(t_apdu_datagram = t_apdu_datagram)
-        # threading.Thread(target=bst_emission).start()
 def start_bst_wrapper(t_apdu_datagram, bst_type):
     kapsch_dll_loader_logger.info(f"Emitting BST manually!!")
-    # kapsch_dll_loader_logger.warning(f"If BST emission is set to automatic, there is no need to manually send a T-APDU!")
     threading.Thread(target=bst_cyclic_emission_wrapper, args=[t_apdu_datagram], daemon=True).start()
 
 message_waiting_time = 1
@@ -137,6 +126,28 @@ def continually_manage_message_queue():
         if message_queue_non_empty_event.wait(message_waiting_time):
             consume_message_from_beacon()
             time.sleep(message_waiting_time)
+
+def decode_message_tuple(message_tuple: tuple[int, bytes]):
+    Ops1955_Message_Types = OPS1955.KapschOps1955Message.Message_Types
+
+    choice_tag_dict_key = (2, message_id_val)
+    choice_identifier = Ops1955_Message_Types._cont_tags[choice_tag_dict_key]
+
+    kapsch_dll_loader_logger.debug(f'Message ID corresponding CHOICE identifier: {choice_identifier}')
+
+    message_content_type = Ops1955_Message_Types._cont[choice_identifier]
+    kapsch_dll_loader_logger.debug(f'Message content type: {message_content_type}')
+    message_content_type.from_aper(message_content[0:MAX_MESSAGE_SIZE])
+
+    Ops1955_Message_Types.set_val((choice_identifier, message_content_type._val))
+    kapsch_dll_loader_logger.debug(f'Message in ASN:\n{Ops1955_Message_Types.to_asn1()}')
+
+    # kapsch_dll_loader_logger.debug(f'Message in UPER in hex: {Ops1955_Message_Types.to_uper().hex().upper()}')
+
+    # kapsch_dll_loader_logger.debug(f'_root:\n{Ops1955_Message_Types._root}')
+    # choice_index = Ops1955_Message_Types._root.index(choice_identifier)
+    # kapsch_dll_loader_logger.debug(f'Choice index:\n{choice_index}')
+    return Ops1955_Message_Types._val
 
 already_read_message_list = []
 MAX_MESSAGE_SIZE = 255
@@ -149,38 +160,17 @@ def read_message_from_beacon() -> tuple[int, bytes]:
     kapsch_dll_loader_logger.debug(f"Message ID: {message_id_val}")
     kapsch_dll_loader_logger.debug(f"Message content: {message_content[0:MAX_MESSAGE_SIZE].hex().upper()}")
 
-    message_tuple = (message_id_val, message_content.value)
+    message_tuple = (message_id_val, message_content[0:MAX_MESSAGE_SIZE])
     already_read_message_list.append(message_tuple)
 
-    Ops1955_Message_Types = OPS1955.KapschOps1955Message.Message_Types
-
-    choice_tag_dict_key = (2, message_id_val)
-    choice_identifier = Ops1955_Message_Types._cont_tags[choice_tag_dict_key]
-
-    kapsch_dll_loader_logger.debug(f'Message ID corresponding CHOICE identifier: {choice_identifier}')
-
-    message_content_type = Ops1955_Message_Types._cont[choice_identifier]
-    kapsch_dll_loader_logger.debug(f'Message content type: {message_content_type}')
-    message_content_type.from_aper(message_content[0:MAX_MESSgitAGE_SIZE])
-
-    Ops1955_Message_Types.set_val((choice_identifier, message_content_type._val))
-    kapsch_dll_loader_logger.debug(f'Message in ASN:\n{Ops1955_Message_Types.to_asn1()}')
-
-    # choice_index = Ops1955_Message_Types._root.index(choice_identifier)    
-    # kapsch_dll_loader_logger.debug(f'Message ID corresponding CHOICE index: {choice_index}')
-    # message_uper_val = choice_index.to_bytes(length=2, byteorder='little') + message_content[0:MAX_MESSAGE_SIZE]
-
-    # kapsch_dll_loader_logger.debug(f'Message in UPER: {message_uper_val.hex().upper()}')
-    # Ops1955_Message_Types.from_uper(message_uper_val)
-
-    # kapsch_dll_loader_logger.debug(f'Message in ASN: {Ops1955_Message_Types.to_asn1()}')
+    decode_message_tuple(message_tuple)
 
     return message_tuple
-    # response_t_apdu = bytes(message_id, message_content[0:MAX_MESSAGE_SIZE])
 
 def get_latest_message_list():
     return already_read_message_list
 
+vst_notification_event = threading.Event()
 def consume_message_from_beacon():
     notify_vst_message_id = 12
 
@@ -206,7 +196,6 @@ def handle_already_read_messages():
     return True
 
 
-vst_notification_event = threading.Event()
 latest_vst = None
 def wait_for_vst_event():
     while not vst_notification_event.wait(5):
@@ -218,21 +207,36 @@ def wait_for_vst_event():
 def get_vst():
     return latest_vst
 
-def send_t_apdu(t_apdu_datagram: bytes):
+def convert_t_apdu_to_message(t_apdu_datagram : bytes) -> tuple[int, bytes]:
+    kapsch_dll_loader_logger.debug(f"[TGBV L7]: Converting T-APDU to KapschMessage")
+    OPS1955.EfcDsrcGeneric.T_APDUs.from_uper(t_apdu_datagram)
+    t_apdu_value = OPS1955.EfcDsrcGeneric.T_APDUs._val
+
+    kapsch_dll_loader_logger.debug(f"[TGBV L7]: T-APDU value:\n{t_apdu_value}")
+    OPS1955.KapschOps1955Message.Message_Types.set_val(t_apdu_value)
+
+    # kapsch_dll_loader_logger.debug(f"[TGBV L7]: KapschMessage value:\n{OPS1955.KapschOps1955Message.Message_Types._val}")
+    # kapsch_dll_loader_logger.debug(f"[TGBV L7]: KapschMessage:\n{OPS1955.KapschOps1955Message.Message_Types.__dict__}")
+
+    choice_identifier = OPS1955.KapschOps1955Message.Message_Types._val[0]
+    message_content_type = OPS1955.KapschOps1955Message.Message_Types._cont[choice_identifier]
+    # kapsch_dll_loader_logger.debug(f"[TGBV L7]: Message content type:\n{message_content_type.__dict__}")
+    message_id = message_content_type._tag[0]
+    kapsch_dll_loader_logger.debug(f"[TGBV L7]: Message ID: {message_id}")
+
+    message_content_value = OPS1955.KapschOps1955Message.Message_Types._val[1]
+    message_content_type.set_val(message_content_value)
+    message_content_bytes = message_content_type.to_uper()
+    kapsch_dll_loader_logger.debug(f"[TGBV L7]: Message content in hex: {message_content_bytes.hex().upper()}")
+    return message_id, message_content_bytes
+
+def send_t_apdu(t_apdu_datagram: bytes) -> tuple[int, bytes]:
     kapsch_dll_loader_logger.debug(f"[TGBV L7]: Sending T-APDU! T-APDU value in hex: {t_apdu_datagram.hex().upper()}")
+    message_id, message_content = convert_t_apdu_to_message(t_apdu_datagram)
 
-    t_apdu_type = t_apdu_datagram[0]
-    # t_apdu_content = t_apdu_datagram << 4
-    # t_apdu_content = (int.from_bytes(t_apdu_datagram, byteorder='big') << 4).to_bytes(byteorder='big')
-    t_apdu_content = bitarray.bitarray()
-    t_apdu_content.frombytes(t_apdu_datagram)
-    t_apdu_content = t_apdu_content << 4
-    t_apdu_content = t_apdu_content.tobytes()
-
-    kapsch_dll_loader_logger.debug(f"[TGBV L7]: T-APDU content in hex: {t_apdu_content.hex().upper()}")
-
-    etc_write_wrapper(message_id=t_apdu_type, message_content=t_apdu_content)
+    etc_write_wrapper(message_id=message_id, message_content=message_content)
     kapsch_dll_loader_logger.debug(f"[TGBV L7]: Successfully sent T-APDU!")
+    return message_id, message_content
 
 def receive_t_apdu():
     kapsch_dll_loader_logger.debug(f"[TGBV L7]: Receiving T-APDU!")
@@ -262,8 +266,3 @@ def is_mode(mode_code: str):
 
 def check_if_transaction_in_progress():
     return False
-
-# print(l7_trx_drv_get_chipID())
-# ops1955_l7_dll.l7_trx_drv_interface_start()
-# ops1955_l7_dll.l7_trx_drv_interface_start_with_full_status()
-# ops1955_l7_dll.l7_trx_drv_interface_stop()
