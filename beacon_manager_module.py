@@ -73,7 +73,7 @@ def change_trx_mode(mode_name='Stopped'):
 def init_bcm_and_set_transparent_mode():
     global beacon_l7_wrapper
 
-    bcm_logger.debug("Instantiating BeaconManager class...")
+    bcm_logger.debug("Instantiating/Initializing BeaconManager class...")
     initialize_bcm()
 
     bcm_logger.debug("Getting beacon configuration...")
@@ -126,7 +126,8 @@ def update_rnd_rse():
         }
     })
 
-    bcm_logger.debug(f"RndRSE or SessionTime value (of type DateAndTime) in JER:\n{EFC_CCC_LAC_asn1_objs.EfcDataDictionary.DateAndTime.to_jer()}")
+    bcm_logger.debug(f"RndRSE or SessionTime value (of type DateAndTime) in ASN:\n{EFC_CCC_LAC_asn1_objs.EfcDataDictionary.DateAndTime.to_asn1()}")
+    # bcm_logger.debug(f"RndRSE or SessionTime value (of type DateAndTime) in JER:\n{EFC_CCC_LAC_asn1_objs.EfcDataDictionary.DateAndTime.to_jer()}")
     rnd_rse_bytes_value = EFC_CCC_LAC_asn1_objs.EfcDataDictionary.DateAndTime.to_uper()
     setattr(sys.modules[__name__], "rnd_rse_bytes_value", rnd_rse_bytes_value)
 
@@ -173,13 +174,19 @@ def start_bst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 2
         'mandApplications': mand_applications,
         'profileList': profile_list
         }
+    
+    bcm_logger.debug(f"T_APDU containing BST value:\n{TApdu_container._val}")
     EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BST.set_val(bst_value)
     last_sent_bst = EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BST.to_uper()
     bcm_logger.debug(f"BST value (UPER hex): {last_sent_bst.hex().upper()}")
 
-    TApdu_container.set_val(('initialisationRequest', EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BST._val))
-    bcm_logger.debug(f"Instantiated T_APDU object ASN1 decoding/representation:\n{TApdu_container.to_asn1()}")
-    bcm_logger.debug(f"T_APDU containing BST in JER:\n{TApdu_container.to_jer()}")
+    initialization_request_value = ('initialisationRequest', bst_value)
+
+    bcm_logger.debug(f"T_APDU containing BST value:\n{initialization_request_value}")
+    TApdu_container.set_val(initialization_request_value)
+    bcm_logger.debug(f"T_APDU containing BST in ASN:\n{TApdu_container.to_asn1()}")
+
+    # bcm_logger.debug(f"T_APDU containing BST in JER:\n{TApdu_container.to_jer()}")
 
     initialization_request_jval = TApdu_container._to_jval()
     last_sent_t_apdu_containing_bst = TApdu_container.to_uper()
@@ -242,13 +249,14 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
 
     bcm_logger.debug("We now remove the fragmentation header and instantiate an T_APDU object from the response!")
     t_apdu_init_resp_datagram = bytes(fragmented_t_apdu_init_resp_datagram[1:])
-    TApdu_container.from_uper(t_apdu_init_resp_datagram)
     bcm_logger.debug(f"T-APDU without fragmentation header (UPER hex): {t_apdu_init_resp_datagram}")
 
-    bcm_logger.debug("We now instantiate a T_APDU object from the response!")
-    bcm_logger.debug(f"Instantiated T_APDU object ASN1 decoding/representation:\n{TApdu_container.to_asn1()}")
-    bcm_logger.debug(f"T_APDU containing VST in JER:\n{TApdu_container.to_jer()}")
-    bcm_logger.debug(f"Instantiated T_APDU object value: {TApdu_container._val}")
+    bcm_logger.debug("We now instantiate a T_APDU object from the UPER response!")
+    TApdu_container.from_uper(t_apdu_init_resp_datagram)
+    bcm_logger.debug(f"T_APDU containing VST value: {TApdu_container._val}")
+    bcm_logger.debug(f"T_APDU containing VST in ASN:\n{TApdu_container.to_asn1()}")
+
+    # bcm_logger.debug(f"T_APDU containing VST in JER:\n{TApdu_container.to_jer()}")
     last_response_t_apdu_json = TApdu_container._to_jval()
     last_response_t_apdu_value = TApdu_container._val
 
@@ -317,12 +325,12 @@ def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close=Fals
     bcm_logger.debug(f"Preparing request T-APDU to be sent...")
     TApdu_container.set_val(asn1_request_t_apdu_value)
     bcm_logger.debug(f"Request T-APDU value: {TApdu_container._val}")
-    bcm_logger.debug(f"T-APDU in JER:\n{TApdu_container.to_jer()}")
+    # bcm_logger.debug(f"T-APDU in JER:\n{TApdu_container.to_jer()}")
 
-    current_exchanged_data = {}
+    current_exchanged_data_json = {}
     # Adding T-APDU with request data to dict
     request_t_apdu_jval = TApdu_container._to_jval()
-    current_exchanged_data |= request_t_apdu_jval
+    current_exchanged_data_json |= request_t_apdu_jval
     # Sending command!!!
     l7_transfer_kernel_lock.acquire()
     try:
@@ -341,16 +349,16 @@ def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close=Fals
         # Adding T-APDU with response data to dict
         TApdu_container.set_val(t_apdu_response_value)
         response_t_apdu_jval = TApdu_container._to_jval()
-        current_exchanged_data |= response_t_apdu_jval
+        current_exchanged_data_json |= response_t_apdu_jval
         # Pushing T-APDU to transactions database collection
 
         with open(f'local_file_storage/transactions/{current_transaction_id}.json', 'r') as json_file:
-            transaction_data = json.load(json_file)
-            transaction_data['exchanged_data'].append(current_exchanged_data)
+            transaction_data_json = json.load(json_file)
+            transaction_data_json['exchanged_data'].append(current_exchanged_data_json)
             
         with open(f'local_file_storage/transactions/{current_transaction_id}.json', 'w') as json_file:
-            transaction_data['last_update_timestamp'] = datetime.now().isoformat()
-            json.dump(transaction_data, json_file, indent=2)
+            transaction_data_json['last_update_timestamp'] = datetime.now().isoformat()
+            json.dump(transaction_data_json, json_file, indent=2)
 
         return response_t_apdu_jval
     except:
@@ -369,7 +377,7 @@ def decode_vst_parameter_from_eid(eid):
     decoded_parameter = custom_its_per_decoders.decode_vst_parameter_oct_str_bytes(parameter_bytes)
     return decoded_parameter
 
-def get_parameter_hex_str_from_eid_on_json_vst(eid:int, vst_json=None) -> str:
+def get_parameter_hex_str_from_eid_on_vst_json(eid:int, vst_json=None) -> str:
     if vst_json is None:
         vst_json = last_vst_json
     bcm_logger.debug(f"Getting hex VST parameter for EID {eid} from JSON VST {vst_json}")
@@ -391,7 +399,7 @@ def get_parameter_bytes_from_eid_on_vst_value(eid:int, vst_value=None) -> bytes:
             bcm_logger.info(f"Found EID {eid} in VST!!! Parameter value in hex: {parameter_value.hex().upper()}")
             return parameter_value
     bcm_logger.error(f"EID {eid} is not present!")
-    raise EIDNotFoundException('L7: EID not present!')
+    raise EIDNotFoundException(f'L7: EID {eid} not present!')
 
 def compute_access_credentials(eid:int) -> bytes:
     bcm_logger.debug(f"Computing Access Credentials for EID {eid}...")
@@ -427,15 +435,15 @@ def send_get_request(eid, accessCredentialsPresent:bool = False, attrIdList=None
 
     EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.Get_Request.set_val(get_req_value)
     bcm_logger.debug(f"Get.Request value: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.Get_Request._val}")
-    bcm_logger.debug(f"Get.Request in JER:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.Get_Request.to_jer()}")
+    # bcm_logger.debug(f"Get.Request in JER:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.Get_Request.to_jer()}")
 
     t_apdu_with_get_request_value = ('getRequest', get_req_value)
-    json_encoded_response_t_apdu = send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_get_request_value, close=close_transaction)
+    response_t_apdu_value = send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_get_request_value, close=close_transaction)
 
     bcm_logger.debug("We now obtain the GET.response object from the T_APDU response!")
     bcm_logger.debug("GET.response is a parameterized type, so we cannot encode/decode it, only the T_APDU!")
 
-    return json_encoded_response_t_apdu
+    return response_t_apdu_value
 
 def send_action_request(
         mode=True,
@@ -481,12 +489,13 @@ def send_action_request(
     bcm_logger.debug(f"T-APDU with ACTION.request value: {t_apdu_with_action_req_value}")
 
     TApdu_container.set_val(t_apdu_with_action_req_value)
+    # bcm_logger.info(f"T-APDU with ACTION.request value:\n{TApdu_container._val}")
     bcm_logger.info(f"T-APDU with ACTION.request in ASN:\n{TApdu_container.to_asn1()}")
-    bcm_logger.debug(f"T-APDU with ACTION.request in JER:\n{TApdu_container.to_jer()}")
+    # bcm_logger.debug(f"T-APDU with ACTION.request in JER:\n{TApdu_container.to_jer()}")
     bcm_logger.debug(f"ACTION.request with ActionType {actionType} and actionParameter of type {actionParameter[0]} being now sent...")
 
-    json_encoded_response_t_apdu = send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_action_req_value, close_transaction)
-    return json_encoded_response_t_apdu
+    response_t_apdu_value = send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_action_req_value, close_transaction)
+    return response_t_apdu_value
 
 def presentation_request(
         eid:int,
@@ -512,7 +521,7 @@ def send_get_stamped_request(
     bcm_logger.debug(f"Container with GetStampedRq value: {container_with_get_stamped_rq_value}")
 
     # ActionType is 0 for GET_STAMPED.request and Mode is True (Always expects a response)
-    json_encoded_response_t_apdu = send_action_request(True, eid, 0, accessCredentialsPresent, container_with_get_stamped_rq_value, close_transaction=close)
+    response_t_apdu_json = send_action_request(True, eid, 0, accessCredentialsPresent, container_with_get_stamped_rq_value, close_transaction=close)
 
     bcm_logger.debug("We now obtain the GET_STAMPED.response object from the T_APDU response!")
     bcm_logger.debug("GET_STAMPED.response is a parameterized type, so we cannot encode/decode it, only the T_APDU!")
@@ -525,10 +534,10 @@ def send_get_stamped_request(
         get_stamped_response_value = action_response_parameter[1]
         bcm_logger.info(f'GetStampedRq value: {get_stamped_response_value}')
 
-        bcm_logger.debug(f"GET_STAMPED.response (Presentation response): {json_encoded_response_t_apdu['actionResponse']['responseParameter']}")
+        bcm_logger.debug(f"GET_STAMPED.response (Presentation response): {response_t_apdu_json['actionResponse']['responseParameter']}")
     except KeyError:
         bcm_logger.error(f"Reponse Parameter not present in GET_STAMPED.reponse!")
-    return json_encoded_response_t_apdu
+    return response_t_apdu_json
 
 def verify_obe_authenticity(get_stamped_action_response_value=None, efc_cm=None):
     global last_response_t_apdu_value
@@ -553,8 +562,10 @@ def verify_obe_authenticity(get_stamped_action_response_value=None, efc_cm=None)
     bcm_logger.info(f'attributeList value: {attributeList}')
 
     container_with_attribute_list = ('attrList', get_stamped_rs['attributeList'])
+
+    bcm_logger.info(f"EFC Container of Type/CHOICE 'attrList' value: {container_with_attribute_list}")
     EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.set_val(container_with_attribute_list)
-    bcm_logger.info(f"EFC Container of Type/CHOICE 'attrList' value: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer._val}")
+    bcm_logger.info(f"EFC Container of Type/CHOICE 'attrList' in ASN: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_asn1()}")
 
     attribute_list_bytes = EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_uper()[1:]
 
@@ -597,8 +608,8 @@ def get_stamped_request_action_parameter_preparation(eid:int, attrIdList:list = 
     bcm_logger.debug(f"GetStampedRq value to be stored in definition: {get_stamped_rq_value}")
     EFC_CCC_LAC_asn1_objs.EfcDsrcApplication.GetStampedRq.set_val(get_stamped_rq_value)
 
-    bcm_logger.debug(f"GetStampedRq value: {EFC_CCC_LAC_asn1_objs.EfcDsrcApplication.GetStampedRq._val}")
-    bcm_logger.info(f"GetStampedRs in JER:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcApplication.GetStampedRq.to_jer()}")
+    bcm_logger.debug(f"GetStampedRq in ASN: {EFC_CCC_LAC_asn1_objs.EfcDsrcApplication.GetStampedRq.to_asn1()}")
+    # bcm_logger.info(f"GetStampedRs in JER:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcApplication.GetStampedRq.to_jer()}")
     return get_stamped_rq_value
 
 def send_echo_action_request(eid=0, text='Hello, World!', close_transaction_bool=False):
@@ -611,8 +622,8 @@ def send_echo_action_request(eid=0, text='Hello, World!', close_transaction_bool
     bcm_logger.debug(f"EfcContainer of Type 69 (OCTET STRING) value decoded with PER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_uper()}")
 
     # ActionType is 15 or 0xF for ECHO.request and Mode is True (Always expects a response)
-    json_encoded_response_t_apdu = send_action_request(True, eid, 15, accessCredentialsPresent=False, actionParameter=echo_rq_value, close_transaction=close_transaction_bool)
-    return json_encoded_response_t_apdu
+    response_t_apdu_json = send_action_request(True, eid, 15, accessCredentialsPresent=False, actionParameter=echo_rq_value, close_transaction=close_transaction_bool)
+    return response_t_apdu_json
 
 def set_mmi(eid=0, close=False):
     bcm_logger.debug(f"Preparing a SET_MMI.request")

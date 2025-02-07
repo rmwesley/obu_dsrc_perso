@@ -22,6 +22,8 @@ import logging
 
 
 root_logger = logging.getLogger()
+root_logger.setLevel(logging.DEBUG)
+
 # SETTING UP COLORED CONSOLE LOGGING
 console_handler = logging.StreamHandler()
 class ColoredFormatterWrapper(logging.Formatter):
