@@ -1,7 +1,8 @@
 import sys
 import time
 
-from ASN.compiled_DSRC_instances import LACv2_1 as EFC_CCC_LAC_asn1_objs
+from ASN.compiled_DSRC_instances import EN15509 as EFC_CCC_LAC_asn1_objs
+# from ASN.compiled_DSRC_instances import LACv2_1 as EFC_CCC_LAC_asn1_objs
 
 from datetime import datetime
 import json
@@ -9,7 +10,9 @@ import logging
 import threading
 import uuid
 
+import kapsch_ops1955_tcp_ip_dll_wrapper
 import gea_bcm_dll_wrapper
+
 import custom_its_per_decoders
 import dsrc_security
 
@@ -76,23 +79,6 @@ def init_bcm_and_set_transparent_mode():
     bcm_logger.debug("Instantiating/Initializing BeaconManager class...")
     initialize_bcm()
 
-    bcm_logger.debug("Getting beacon configuration...")
-    bcm_config = beacon_l7_wrapper.get_config()
-    bcm_logger.debug(f"Displaying config data...: {bcm_config}")
-
-    beacon_l7_wrapper.change_trx_mode(gea_bcm_dll_wrapper.BCM_MODE_Enum.BCM_MOD_Transparent)
-    bcm_logger.debug("Changed mode to transparent!")
-
-    bcm_logger.debug("Getting beacon state...")
-    result = beacon_l7_wrapper.update_state()
-
-    bcm_logger.debug("We now update/get the BeaconID (L7, so according to the beacon) before sending the BST")
-    bcm_logger.debug("This is weird... We should be the ones to set the BeaconID freely in the BST")
-    bcm_logger.debug("The beacon should then just keep the last sent BeaconID in its memory")
-    result = beacon_l7_wrapper.update_beacon_id()
-    EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.from_uper(beacon_l7_wrapper.last_beacon_id)
-    bcm_logger.debug(f"Beacon (according to GEA Beacon) encoded in JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.to_jer()}")
-
 def shutdown_beacon():
     global beacon_l7_wrapper
     if beacon_l7_wrapper is None:
@@ -147,7 +133,31 @@ def safe_set_beacon(chosen_beacon_name):
         gea_bcm_dll_wrapper.initialize_gea_bcm_dll_wrapper()
         current_beacon_name = chosen_beacon_name
 
+        bcm_logger.debug("Getting beacon configuration...")
+        bcm_config = beacon_l7_wrapper.get_config()
+        bcm_logger.debug(f"Displaying config data...: {bcm_config}")
+
+        beacon_l7_wrapper.change_trx_mode(gea_bcm_dll_wrapper.BCM_MODE_Enum.BCM_MOD_Transparent)
+        bcm_logger.debug("Changed mode to transparent!")
+
+        bcm_logger.debug("Getting beacon state...")
+        result = beacon_l7_wrapper.update_state()
+
+        bcm_logger.debug("We now update/get the BeaconID (L7, so according to the beacon) before sending the BST")
+        bcm_logger.debug("Note: This is weird... We should be the ones to set the BeaconID freely in the BST")
+        bcm_logger.debug("The beacon should then just keep the last sent BeaconID in its memory")
+        result = beacon_l7_wrapper.update_beacon_id()
+
+        bcm_logger.debug(f"Beacon ID (according to GEA Beacon) value: {beacon_l7_wrapper.last_beacon_id}")
+        EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.from_uper(beacon_l7_wrapper.last_beacon_id)
+        bcm_logger.debug(f"Beacon ID (according to GEA Beacon) in ASN: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.to_asn()}")
+
+        # bcm_logger.debug(f"Beacon ID (according to GEA Beacon) encoded in JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.to_jer()}")
+
     if chosen_beacon_name == "OPS1955":
+        beacon_l7_wrapper = kapsch_ops1955_tcp_ip_dll_wrapper
+        current_beacon_name = chosen_beacon_name
+        kapsch_ops1955_tcp_ip_dll_wrapper.ops1955_init()
         current_beacon_name = chosen_beacon_name
 
 class BeaconManagerException(Exception):
@@ -174,7 +184,7 @@ def start_bst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 2
         'mandApplications': mand_applications,
         'profileList': profile_list
         }
-    
+
     bcm_logger.debug(f"T_APDU containing BST value:\n{TApdu_container._val}")
     EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BST.set_val(bst_value)
     last_sent_bst = EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BST.to_uper()

@@ -1,5 +1,5 @@
 {
-  "default_beacon_name": "TGBV",
+  "default_beacon_name": "OPS1955",
   "TGBV":{
     "default_communication_mode": "serial",
     "beacon_alarm_state_polling_ms": 2000,
@@ -18,10 +18,23 @@
     }
   },
   "OPS1955":{
-    "default_communication_mode": "serial",
+    "default_communication_mode": "tcp",
+    "tcp_ip_config": {
+      "ip_address": "127.0.0.1",
+      "tx_port": 4993,
+      "rx_port": 4994,
+      "trx_port": 4997,
+      "lic_port": 4998,
+      "blocking_read": false,
+      "tcp_port": 10001
+    },
     "serial_config": {
       "beacon_serial_port": 7
-    }
+    },
+    "max_message_size": 255,
+    "polling_instead_of_blocking": true,
+    "messages_polling_seconds": 0.5,
+    "message_waiting": 1,
   },
   "database_config": {
     "MongoDB":{
