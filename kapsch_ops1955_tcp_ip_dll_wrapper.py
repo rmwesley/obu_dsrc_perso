@@ -128,26 +128,26 @@ def continually_manage_message_queue():
             time.sleep(message_waiting_time)
 
 def decode_message_tuple(message_tuple: tuple[int, bytes]):
-    Ops1955_Message_Types = OPS1955.KapschOps1955Message.Message_Types
+    Ops1955_KapschMessages = OPS1955.KapschOps1955Message.KapschMessages
 
     choice_tag_dict_key = (2, message_id_val)
-    choice_identifier = Ops1955_Message_Types._cont_tags[choice_tag_dict_key]
+    choice_identifier = Ops1955_KapschMessages._cont_tags[choice_tag_dict_key]
 
     kapsch_dll_loader_logger.debug(f'Message ID corresponding CHOICE identifier: {choice_identifier}')
 
-    message_content_type = Ops1955_Message_Types._cont[choice_identifier]
+    message_content_type = Ops1955_KapschMessages._cont[choice_identifier]
     kapsch_dll_loader_logger.debug(f'Message content type: {message_content_type}')
     message_content_type.from_aper(message_content[0:MAX_MESSAGE_SIZE])
 
-    Ops1955_Message_Types.set_val((choice_identifier, message_content_type._val))
-    kapsch_dll_loader_logger.debug(f'Message in ASN:\n{Ops1955_Message_Types.to_asn1()}')
+    Ops1955_KapschMessages.set_val((choice_identifier, message_content_type._val))
+    kapsch_dll_loader_logger.debug(f'Message in ASN:\n{Ops1955_KapschMessages.to_asn1()}')
 
-    # kapsch_dll_loader_logger.debug(f'Message in UPER in hex: {Ops1955_Message_Types.to_uper().hex().upper()}')
+    # kapsch_dll_loader_logger.debug(f'Message in UPER in hex: {Ops1955_KapschMessages.to_uper().hex().upper()}')
 
-    # kapsch_dll_loader_logger.debug(f'_root:\n{Ops1955_Message_Types._root}')
-    # choice_index = Ops1955_Message_Types._root.index(choice_identifier)
+    # kapsch_dll_loader_logger.debug(f'_root:\n{Ops1955_KapschMessages._root}')
+    # choice_index = Ops1955_KapschMessages._root.index(choice_identifier)
     # kapsch_dll_loader_logger.debug(f'Choice index:\n{choice_index}')
-    return Ops1955_Message_Types._val
+    return Ops1955_KapschMessages._val
 
 already_read_message_list = []
 MAX_MESSAGE_SIZE = 255
@@ -213,18 +213,18 @@ def convert_t_apdu_to_message(t_apdu_datagram : bytes) -> tuple[int, bytes]:
     t_apdu_value = OPS1955.EfcDsrcGeneric.T_APDUs._val
 
     kapsch_dll_loader_logger.debug(f"[TGBV L7]: T-APDU value:\n{t_apdu_value}")
-    OPS1955.KapschOps1955Message.Message_Types.set_val(t_apdu_value)
+    OPS1955.KapschOps1955Message.KapschMessages.set_val(t_apdu_value)
 
-    # kapsch_dll_loader_logger.debug(f"[TGBV L7]: KapschMessage value:\n{OPS1955.KapschOps1955Message.Message_Types._val}")
-    # kapsch_dll_loader_logger.debug(f"[TGBV L7]: KapschMessage:\n{OPS1955.KapschOps1955Message.Message_Types.__dict__}")
+    # kapsch_dll_loader_logger.debug(f"[TGBV L7]: KapschMessage value:\n{OPS1955.KapschOps1955Message.KapschMessages._val}")
+    # kapsch_dll_loader_logger.debug(f"[TGBV L7]: KapschMessage:\n{OPS1955.KapschOps1955Message.KapschMessages.__dict__}")
 
-    choice_identifier = OPS1955.KapschOps1955Message.Message_Types._val[0]
-    message_content_type = OPS1955.KapschOps1955Message.Message_Types._cont[choice_identifier]
+    choice_identifier = OPS1955.KapschOps1955Message.KapschMessages._val[0]
+    message_content_type = OPS1955.KapschOps1955Message.KapschMessages._cont[choice_identifier]
     # kapsch_dll_loader_logger.debug(f"[TGBV L7]: Message content type:\n{message_content_type.__dict__}")
     message_id = message_content_type._tag[0]
     kapsch_dll_loader_logger.debug(f"[TGBV L7]: Message ID: {message_id}")
 
-    message_content_value = OPS1955.KapschOps1955Message.Message_Types._val[1]
+    message_content_value = OPS1955.KapschOps1955Message.KapschMessages._val[1]
     message_content_type.set_val(message_content_value)
     message_content_bytes = message_content_type.to_uper()
     kapsch_dll_loader_logger.debug(f"[TGBV L7]: Message content in hex: {message_content_bytes.hex().upper()}")
