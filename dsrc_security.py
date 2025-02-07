@@ -14,7 +14,7 @@ from ASN.compiled_DSRC_instances import EFCv10_1 as EFC
 try:
     os.environ['MK_PATH']
 except:
-    os.environ['MK_PATH'] = r"..\master_keys.json"
+    os.environ['MK_PATH'] = r"..\master_keys_v1.1.0.json"
 
 mk_path = os.environ['MK_PATH']
 master_keys = {}
