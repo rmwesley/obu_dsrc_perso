@@ -97,7 +97,7 @@ class ChangeModeRequest(BaseModel):
 @router.post("/change-mode")
 async def change_mode(request_body: ChangeModeRequest):
     mode_name = request_body.mode_name
-    beacon_manager_module.change_mode(mode_name=mode_name)
+    beacon_manager_module.change_trx_mode(mode_name=mode_name)
     return {"message": f"Changed mode to {mode_name}!"}
 
 @router.post("/initialize-transaction")

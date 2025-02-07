@@ -668,6 +668,7 @@ def wait_for_vst_event():
     while not callback_received_event.wait(2):
         gea_dll_wrapper_logger.debug("Waiting for callback notification...")
         pass
+    gea_dll_wrapper_logger.debug("No longer waiting for VST!")
 
 # Wait for a notification then get the VST
 def wait_and_get_vst():
@@ -826,7 +827,7 @@ def handle_init_errors():
         wait_for_ok_alarm()
 
     if beacon_state.mode != BCM_MODE_Enum.BCM_MOD_Stopped:
-        change_mode(BCM_MODE_Enum.BCM_MOD_Stopped)
+        change_trx_mode(BCM_MODE_Enum.BCM_MOD_Stopped)
         gea_dll_wrapper_logger.debug("Changed operating mode to stopped!")
 
     gea_dll_wrapper_logger.debug("Waiting 1 second and then updating the beacon's state...")
@@ -885,6 +886,16 @@ def update_state() -> ST_BCM_STATE:
     gea_dll_wrapper_logger.debug(f"Beacon state: {beacon_state}")
     gea_dll_wrapper_logger.info(f"Beacon state description: {beacon_state.get_description()}")
     return result
+
+def is_mode(mode_code: int):
+    global beacon_state
+    if beacon_state.mode == mode_code:
+        return True
+
+def check_if_transaction_in_progress():
+    global beacon_state
+    return beacon_state.trxInProgress
+
 def get_last_beacon_state_dict():
     global beacon_state
 
@@ -906,7 +917,7 @@ def get_config():
 
     return bcm_config
 
-def change_mode(operating_mode_code):
+def change_trx_mode(operating_mode_code):
     global reg_ptr
 
     gea_dll_wrapper_logger.debug(f"[TGBV L7]: Changing mode to ({operating_mode_code})")
@@ -916,8 +927,10 @@ def change_mode(operating_mode_code):
 def shutdown():
     global reg_ptr
 
+    gea_dll_wrapper_logger.debug(f"Shutting down GEA TGBV beacon...")
     result = bcm_close_manager(ctypes.byref(reg_ptr))
     bcm_error_wrapper(result)
+    gea_dll_wrapper_logger.debug(f"Shut down successfully!!")
     
 def reset_beacon():
     global reg_ptr
@@ -956,5 +969,5 @@ def close():
     update_state()
 
     if beacon_state.mode != BCM_MODE_Enum.BCM_MOD_Stopped:
-        change_mode(BCM_MODE_Enum.BCM_MOD_Stopped)
+        change_trx_mode(BCM_MODE_Enum.BCM_MOD_Stopped)
         gea_dll_wrapper_logger.debug("Changed mode to stopped!")

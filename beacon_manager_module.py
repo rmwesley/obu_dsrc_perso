@@ -55,7 +55,7 @@ def reset_beacon():
     bcm_logger.info('L7: Resetting beacon!!')
     beacon_l7_wrapper.reset_beacon()
 
-def change_mode(mode_name='Stopped'):
+def change_trx_mode(mode_name='Stopped'):
     global beacon_manager_config
     global current_beacon_name
     global beacon_l7_wrapper
@@ -68,7 +68,7 @@ def change_mode(mode_name='Stopped'):
     if current_beacon_name == 'TGBV':
         tgbv_gea_bcm_operating_modes_enum_values = beacon_manager_config['TGBV']['modes_config']
         mode_code = tgbv_gea_bcm_operating_modes_enum_values[mode_name]
-        beacon_l7_wrapper.change_mode(operating_mode_code=mode_code)
+        beacon_l7_wrapper.change_trx_mode(operating_mode_code=mode_code)
 
 def init_bcm_and_set_transparent_mode():
     global beacon_l7_wrapper
@@ -80,7 +80,7 @@ def init_bcm_and_set_transparent_mode():
     bcm_config = beacon_l7_wrapper.get_config()
     bcm_logger.debug(f"Displaying config data...: {bcm_config}")
 
-    beacon_l7_wrapper.change_mode(gea_bcm_dll_wrapper.BCM_MODE_Enum.BCM_MOD_Transparent)
+    beacon_l7_wrapper.change_trx_mode(gea_bcm_dll_wrapper.BCM_MODE_Enum.BCM_MOD_Transparent)
     bcm_logger.debug("Changed mode to transparent!")
 
     bcm_logger.debug("Getting beacon state...")
@@ -212,9 +212,10 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     global current_transaction_id
 
     beacon_l7_wrapper.update_state()
-    if beacon_l7_wrapper.beacon_state.mode == gea_bcm_dll_wrapper.BCM_MODE_Enum.BCM_MOD_Stopped:
-        raise BeaconManagerException("Beacon is in Stopped mode, not Transparent!!") 
-    if beacon_l7_wrapper.beacon_state.trxInProgress:
+    if beacon_l7_wrapper.is_mode(mode_code=gea_bcm_dll_wrapper.BCM_MODE_Enum.BCM_MOD_Stopped):
+        raise BeaconManagerException("Beacon is in Stopped mode, not Transparent!!")
+
+    if beacon_l7_wrapper.check_if_transaction_in_progress():
         bcm_logger.error("Do not try to initilize a transaction! One is already in progress!")
         # bcm_logger.debug("We lock the thread until the opened transaction is closed!")
         raise BeaconManagerException("Transaction already in progress!!")
