@@ -29,6 +29,9 @@ Required dependencies for running some other automatated tests/tasks:
 - requests_pkcs12
 - baudot
 
+Required dependencies for DM tests:
+- azure-cosmos
+
 # Rememeber to copy the `master_keys.json` file!
 TODO: Securely handle secrets instead of keeping them in plaintext on a json file!!
 
