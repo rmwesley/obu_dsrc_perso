@@ -171,6 +171,11 @@ class EIDNotFoundException(Exception):
 def start_bst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = gea_bcm_dll_wrapper.BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
     global TApdu_container
     global l7_transfer_kernel_lock
+    global current_beacon_name
+
+    if beacon_manager_config[current_beacon_name]["automatic_internal_beacon_bst"]:
+        bcm_logger.info("BST emission set to automatic!!")
+        return {'initialisationRequest': None}
 
     mand_applications = [{'aid': mandatory_aid} for mandatory_aid in mand_applications]
 

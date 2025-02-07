@@ -15,7 +15,8 @@
       "Stopped": 0,
       "Transparent": 1,
       "Maintenance": 3
-    }
+    },
+    "automatic_internal_beacon_bst": false
   },
   "OPS1955":{
     "default_communication_mode": "tcp",
@@ -35,6 +36,7 @@
     "polling_instead_of_blocking": true,
     "messages_polling_seconds": 0.5,
     "message_waiting": 1,
+    "automatic_internal_beacon_bst": true
   },
   "database_config": {
     "MongoDB":{
