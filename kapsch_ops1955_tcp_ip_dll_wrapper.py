@@ -75,7 +75,7 @@ def convert_uper_t_apdu_to_oer_bst_config(t_apdu_datagram:bytes):
     OPS1955.EfcDsrcGeneric.T_APDUs.from_uper(t_apdu_datagram)
     t_apdu_val = OPS1955.EfcDsrcGeneric.T_APDUs._val
 
-    kapsch_dll_loader_logger.info(f"Setting BST config...")
+    kapsch_dll_loader_logger.debug(f"Converting UPER-encoded T-APDU BST datagram to OER-encoded SET BST Config Request...")
 
     t_apdu_tag, bst_value = t_apdu_val
     assert t_apdu_tag == 'initialisation-request'
@@ -90,12 +90,12 @@ def convert_uper_t_apdu_to_oer_bst_config(t_apdu_datagram:bytes):
 def sent_set_bst_config_requests(t_apdu_datagram:bytes):
     bst_config_value = convert_uper_t_apdu_to_oer_bst_config(t_apdu_datagram=t_apdu_datagram)
 
-    kapsch_dll_loader_logger.info(f'[OP1955] > Sending set-bst-configuration with config value:\n{bst_config_value}')
+    kapsch_dll_loader_logger.debug(f'[BCM/OPS1955] > Calling wrapper to send set-bst-configuration with config value:\n{bst_config_value}')
     etc_write_message_choice_identifier_content_wrapper(choice_identifier='set-bst-configuration', msg_cont_val=bst_config_value)
     
-    kapsch_dll_loader_logger.info(f"[OP1955] > Wrote message to set BST!")
+    kapsch_dll_loader_logger.debug(f"[BCM/OPS1955] > Wrote message to set BST!")
     
-    kapsch_dll_loader_logger.info(f"[OP1955] > Writing message to read BST config...")
+    kapsch_dll_loader_logger.debug(f"[BCM/OPS1955] > Calling wrapper to send message to read BST config...")
     etc_write_message_id_content_wrapper(message_id=2458, msg_cont_oer_val=b'')
 
 def send_config_read_requests():
@@ -103,19 +103,19 @@ def send_config_read_requests():
     kapsch_dll_loader_logger.debug(f"Waiting {timeout_s}s between config requests")
     time.sleep(timeout_s)
 
-    kapsch_dll_loader_logger.debug(f"[OPS1955] >> Sending Read DSRC config request...")
+    kapsch_dll_loader_logger.debug(f"[BCM/OPS1955] >> Calling wrapper to send Read DSRC config request...")
     etc_write_message_id_content_wrapper(message_id=2456, msg_cont_oer_val=b'')
     time.sleep(timeout_s)
     
-    kapsch_dll_loader_logger.debug(f"[OPS1955] >> Sending Read DSRC link mode request...")
+    kapsch_dll_loader_logger.debug(f"[BCM/OPS1955] >> Calling wrapper to send Read DSRC link mode request...")
     etc_write_message_id_content_wrapper(message_id=2451, msg_cont_oer_val=b'')
     time.sleep(timeout_s)
 
-    kapsch_dll_loader_logger.debug(f"[OPS1955] >> Sending Read Time request...")
+    kapsch_dll_loader_logger.debug(f"[BCM/OPS1955] >> Calling wrapper to send Read Time request...")
     etc_write_message_id_content_wrapper(message_id=2460, msg_cont_oer_val=b'')
     time.sleep(timeout_s)
 
-    kapsch_dll_loader_logger.debug(f"[OPS1955] >> Sending Read TRX status and config request...")
+    kapsch_dll_loader_logger.debug(f"[BCM/OPS1955] >> Calling wrapper to send Read TRX status and config request...")
     etc_write_message_id_content_wrapper(message_id=1401, msg_cont_oer_val=b'')
     time.sleep(timeout_s)
 
@@ -166,12 +166,14 @@ def bst_cyclic_emission_wrapper():
     kapsch_dll_loader_logger.info(f"Successfully emitted a BST!!")
 
 def sent_set_dsrc_trx_config_requests():
-    kapsch_dll_loader_logger.info(f"[OPS1955] > Sending set-dsrc-link-mode (2450) with Single Shot (3)...")
+    kapsch_dll_loader_logger.debug(f"[OPS1955] > Sending set-dsrc-link-mode (2450) with Single Shot (3)...")
     etc_write_message_choice_identifier_content_wrapper(choice_identifier='set-dsrc-link-mode', msg_cont_val={'mode': 3})
-    kapsch_dll_loader_logger.info(f"[OPS1955] > Sending set-trx-my-power-mode (1405) with mode (2, ON)")
+    time.sleep(2)
+
+    kapsch_dll_loader_logger.debug(f"[OPS1955] > Sending set-trx-my-power-mode (1405) with mode (2, ON)")
     etc_write_message_choice_identifier_content_wrapper(choice_identifier='set-trx-my-power-mode', msg_cont_val={'instance': 1, 'mode': 2})
 
-    time.sleep(1)
+    time.sleep(2)
     
     # kapsch_dll_loader_logger.info(f"[OPS1955] > Sending read-dsrc-link-mode (2451)")
     # etc_write_message_choice_identifier_content_wrapper(choice_identifier='read-dsrc-link-mode', msg_cont_val=0)
@@ -203,7 +205,7 @@ def kapsch_msg_reader():
             read_message_from_queue()
             time.sleep(message_waiting_time)
         else:
-            kapsch_dll_loader_logger.info(f"Message queue empty!")
+            kapsch_dll_loader_logger.debug(f"Message queue empty!")
 
 def encode_kapsch_request_value_to_id_and_oer(choice_identifier: str, msg_cont_val: dict) -> tuple[int, bytes]:
     # Message ID (int)
