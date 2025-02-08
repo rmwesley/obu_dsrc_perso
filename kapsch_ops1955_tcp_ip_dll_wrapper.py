@@ -166,12 +166,12 @@ def sent_set_dsrc_trx_config_requests():
 
     time.sleep(1)
     
-    kapsch_dll_loader_logger.info(f"[OPS1955] > Sending read-dsrc-link-mode (2451)")
-    etc_write_message_choice_identifier_content_wrapper(choice_identifier='read-dsrc-link-mode', msg_cont_val=0)
-    kapsch_dll_loader_logger.info(f"[OPS1955] > Sending read-trx-status (1401)")
-    etc_write_message_choice_identifier_content_wrapper(choice_identifier='read-trx-status', msg_cont_val={'instance': 1})
-    kapsch_dll_loader_logger.info(f"[OPS1955] > Sending read-ui-status (1422)")
-    etc_write_message_choice_identifier_content_wrapper(choice_identifier='read-ui-status', msg_cont_val=0)
+    # kapsch_dll_loader_logger.info(f"[OPS1955] > Sending read-dsrc-link-mode (2451)")
+    # etc_write_message_choice_identifier_content_wrapper(choice_identifier='read-dsrc-link-mode', msg_cont_val=0)
+    # kapsch_dll_loader_logger.info(f"[OPS1955] > Sending read-trx-status (1401)")
+    # etc_write_message_choice_identifier_content_wrapper(choice_identifier='read-trx-status', msg_cont_val={'instance': 1})
+    # kapsch_dll_loader_logger.info(f"[OPS1955] > Sending read-ui-status (1422)")
+    # etc_write_message_choice_identifier_content_wrapper(choice_identifier='read-ui-status', msg_cont_val=0)
 
 def start_bst_wrapper(t_apdu_datagram:bytes, bst_type:int):
     kapsch_dll_loader_logger.debug(f"[OPS1955] > We send set a BST config request...")
