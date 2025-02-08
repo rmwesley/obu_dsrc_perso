@@ -68,7 +68,10 @@ def etc_write_message_id_content_wrapper(message_id:int, msg_cont_oer_val:bytes)
     return_val = ops1955_beacon_manager_dll.etc_Write(ctypes.byref(message_id_16_bits), msg_cont_oer_val)
     kapsch_dll_loader_logger.debug(f"[OPS1955] >>> Wrote message with ID ({message_id}), return was ({return_val})")
 
-def sent_set_bst_config_requests(t_apdu_datagram:bytes):
+def convert_uper_t_apdu_to_oer_bst_config(t_apdu_datagram:bytes):
+    """
+    Remember to use the custom Kapsch Message ID 2457 [set-bst-configuration], not 8 [initialisation-request]
+    """
     OPS1955.EfcDsrcGeneric.T_APDUs.from_uper(t_apdu_datagram)
     t_apdu_val = OPS1955.EfcDsrcGeneric.T_APDUs._val
 
@@ -82,8 +85,12 @@ def sent_set_bst_config_requests(t_apdu_datagram:bytes):
     del bst_config_value['time']
     del bst_config_value['profileList']
 
+    return bst_config_value
+
+def sent_set_bst_config_requests(t_apdu_datagram:bytes):
+    bst_config_value = convert_uper_t_apdu_to_oer_bst_config(t_apdu_datagram=t_apdu_datagram)
+
     kapsch_dll_loader_logger.info(f'[OP1955] > Sending set-bst-configuration with config value:\n{bst_config_value}')
-    # Changing Message ID from initialisation-request [8] to set-bst-configuration [2457]
     etc_write_message_choice_identifier_content_wrapper(choice_identifier='set-bst-configuration', msg_cont_val=bst_config_value)
     
     kapsch_dll_loader_logger.info(f"[OP1955] > Wrote message to set BST!")
