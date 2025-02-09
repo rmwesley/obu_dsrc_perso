@@ -85,9 +85,15 @@ def convert_uper_t_apdu_to_oer_bst_config(t_apdu_datagram:bytes):
     del bst_config_value['time']
     del bst_config_value['profileList']
 
+    for application in bst_config_value['mandApplications']:
+        application['unknown'] = 0
+
     return bst_config_value
 
-def sent_set_bst_config_requests(t_apdu_datagram:bytes):
+def send_set_bst_config_requests(t_apdu_datagram:bytes):
+    kapsch_dll_loader_logger.debug(f'[BCM/OPS1955] > Calling wrapper to send read-bst-configuration request')
+    etc_write_message_choice_identifier_content_wrapper(choice_identifier='read-bst-configuration', msg_cont_val=0)
+
     bst_config_value = convert_uper_t_apdu_to_oer_bst_config(t_apdu_datagram=t_apdu_datagram)
 
     kapsch_dll_loader_logger.debug(f'[BCM/OPS1955] > Calling wrapper to send set-bst-configuration with config value:\n{bst_config_value}')
@@ -119,7 +125,6 @@ def send_config_read_requests():
     etc_write_message_id_content_wrapper(message_id=1401, msg_cont_oer_val=b'')
     time.sleep(timeout_s)
 
-messages_polling_seconds = 1
 def ops1955_init(
     ip_address: bytes = bytes([127, 0, 0, 1]),
     tx_tcp_port: int = 4993,
@@ -141,18 +146,20 @@ def ops1955_init(
 
     return result
 
+messages_polling_seconds = 0.5
 # The polling function is periodically called in a separate thread
 def message_queue_status_polling():
     global messages_polling_seconds
+    message_queue_non_empty_event.set()
 
     while True:
         message_queue_status = ops1955_beacon_manager_dll.etc_Poll()
         status_description = message_queue_status_descriptions.get(message_queue_status)
         kapsch_dll_loader_logger.debug(f'Message queue status ({message_queue_status}). Description: {status_description}')
-        if message_queue_status == 0:
-            message_queue_non_empty_event.clear()
-        else:
-            message_queue_non_empty_event.set()
+        # if message_queue_status == 0:
+        #     message_queue_non_empty_event.clear()
+        # else:
+        #     message_queue_non_empty_event.set()
         time.sleep(messages_polling_seconds)
 
 def shutdown():
@@ -166,13 +173,13 @@ def bst_cyclic_emission_wrapper():
     kapsch_dll_loader_logger.info(f"Successfully emitted a BST!!")
 
 def sent_set_dsrc_trx_config_requests():
-    kapsch_dll_loader_logger.debug(f"[OPS1955] > Sending set-dsrc-link-mode (2450) with Single Shot (3)...")
-    etc_write_message_choice_identifier_content_wrapper(choice_identifier='set-dsrc-link-mode', msg_cont_val={'mode': 3})
-    time.sleep(2)
-
     kapsch_dll_loader_logger.debug(f"[OPS1955] > Sending set-trx-my-power-mode (1405) with mode (2, ON)")
     etc_write_message_choice_identifier_content_wrapper(choice_identifier='set-trx-my-power-mode', msg_cont_val={'instance': 1, 'mode': 2})
 
+    time.sleep(2)
+
+    kapsch_dll_loader_logger.debug(f"[OPS1955] > Sending set-dsrc-link-mode (2450) with Single Shot (3)...")
+    etc_write_message_choice_identifier_content_wrapper(choice_identifier='set-dsrc-link-mode', msg_cont_val={'message-status':0, 'mode': 3})
     time.sleep(2)
     
     # kapsch_dll_loader_logger.info(f"[OPS1955] > Sending read-dsrc-link-mode (2451)")
@@ -184,7 +191,9 @@ def sent_set_dsrc_trx_config_requests():
 
 def start_bst_wrapper(t_apdu_datagram:bytes, bst_type:int):
     kapsch_dll_loader_logger.debug(f"[OPS1955] > We send set a BST config request...")
-    sent_set_bst_config_requests(t_apdu_datagram)
+    # send_set_bst_config_requests(t_apdu_datagram)
+    etc_write_message_id_content_wrapper(message_id=2457, msg_cont_oer_val=bytes.fromhex('0000000001000000B70000000001000001'))
+
     
     kapsch_dll_loader_logger.debug(f"[OPS1955] > We send DSRC & TRX set config requests...")
     sent_set_dsrc_trx_config_requests()
@@ -197,7 +206,7 @@ def manually_send_bst():
     kapsch_dll_loader_logger.info(f"Emitting BST manually...")
     threading.Thread(target=bst_cyclic_emission_wrapper, daemon=True).start()
 
-message_waiting_time = 1
+message_waiting_time = 0.00000001
 message_queue_non_empty_event = threading.Event()
 def kapsch_msg_reader():
     while True:
@@ -216,7 +225,7 @@ def encode_kapsch_request_value_to_id_and_oer(choice_identifier: str, msg_cont_v
     content_type.set_val(msg_cont_val)
     message_oer_val = content_type.to_oer()
 
-    kapsch_dll_loader_logger.info(f'[OPS1955] >>> Request Message {message_id} OER value in hex: {message_oer_val.hex().upper()}')
+    kapsch_dll_loader_logger.info(f'[OPS1955] >>> Request Message ({message_id}) OER value in hex: {message_oer_val.hex().upper()}')
     
     kapsch_message_val = (choice_identifier, msg_cont_val)
     OPS1955.KapschOps1955Message.KapschRequestMessages.set_val(kapsch_message_val)
@@ -255,24 +264,28 @@ def encode_kapsch_response_value_to_id_and_oer(choice_identifier: str, msg_cont_
     content_type.set_val(msg_cont_val)
     message_oer_val = content_type.to_oer()
 
-    kapsch_dll_loader_logger.debug(f'[OPS1955] <<< Response ({message_id}) OER value in hex: {message_oer_val.hex().upper()}')
-    kapsch_dll_loader_logger.debug(f'[OPS1955] <<< Response ({message_id}) in ASN: {content_type.to_asn1()}')
+    if message_id != 0:
+        kapsch_dll_loader_logger.debug(f'[OPS1955] <<< Response ({message_id}) OER value in hex: {message_oer_val.hex().upper()}')
+        kapsch_dll_loader_logger.debug(f'[OPS1955] <<< Response ({message_id}) in ASN: {content_type.to_asn1()}')
 
     return message_id, message_oer_val
 
 def decode_kapsch_response_msg_cont_from_msg_id_and_oer_val(message_id:int, msg_oer_val:bytes) -> tuple[str, dict]:
+
     Ops1955_Response = OPS1955.KapschOps1955Message.KapschResponseMessages
     choice_tag_dict_key = (2, message_id)
     choice_identifier = Ops1955_Response._cont_tags[choice_tag_dict_key]
 
-    kapsch_dll_loader_logger.debug(f'[OPS1955] <<< Response CHOICE identifier: {choice_identifier} (Tag {message_id})')
+    if message_id != 0:
+        kapsch_dll_loader_logger.debug(f'[OPS1955] <<< Response CHOICE identifier: {choice_identifier} (Tag {message_id})')
 
     message_content_type = Ops1955_Response._cont[choice_identifier]
     message_content_type.from_oer(msg_oer_val)
 
     Ops1955_Response.set_val((choice_identifier, message_content_type._val))
-    kapsch_dll_loader_logger.info(f"[OPS1955] <<< Response ({message_id}) OER value in hex: {message_content_type.to_oer().hex().upper()}")
-    kapsch_dll_loader_logger.info(f'[OPS1955] <<< Response ({message_id}) in ASN:\n{Ops1955_Response.to_asn1()}')
+    if message_id != 0:
+        kapsch_dll_loader_logger.info(f"[OPS1955] <<< Response ({message_id}) OER value in hex: {message_content_type.to_oer().hex().upper()}")
+        kapsch_dll_loader_logger.info(f'[OPS1955] <<< Response ({message_id}) in ASN:\n{Ops1955_Response.to_asn1()}')
 
     kapsch_message = Ops1955_Response._val
     return kapsch_message
@@ -285,14 +298,17 @@ def etc_read_wrapper() -> tuple[int, bytes]:
     message_content = ctypes.create_string_buffer(MAX_MESSAGE_SIZE)
 
     result = ops1955_beacon_manager_dll.etc_Read(ctypes.byref(message_id), message_content)
-    kapsch_dll_loader_logger.debug(f"[OPS1955] <<<<< Successfully read a message! ({result})")
+    if message_id_val != 0:
+        kapsch_dll_loader_logger.debug(f"[OPS1955] <<<<< Successfully read a message! ({result})")
 
     message_id_val = message_id.value
 
     message_description = message_id_descriptions.get(message_id_val)
-    kapsch_dll_loader_logger.debug(f'[OPS1955] <<<<< Message ID is {message_id_val}. Description: {message_description}')
+    if message_id_val != 0:
+        kapsch_dll_loader_logger.debug(f'[OPS1955] <<<<< Message ID is {message_id_val}. Description: {message_description}')
     kapsch_message_cont_oer_val = message_content[0:MAX_MESSAGE_SIZE]
-    kapsch_dll_loader_logger.debug(f"[OPS1955] <<<<< Raw Response Message ({message_id_val}) in hex: {kapsch_message_cont_oer_val.hex().upper()}")
+    if message_id_val != 0:
+        kapsch_dll_loader_logger.debug(f"[OPS1955] <<<<< Raw Response Message ({message_id_val}) in hex: {kapsch_message_cont_oer_val.hex().upper()}")
 
     message_tuple = (message_id_val, kapsch_message_cont_oer_val)
     already_read_message_list.append(message_tuple)
@@ -307,6 +323,8 @@ def read_message_from_queue():
     Notify_Application_Beacon_MID = 12
 
     message_id, message_cont_oer_val = etc_read_wrapper()
+    if message_id != 0:
+        kapsch_dll_loader_logger.info(f'Received message #{message_id}')
 
     decode_kapsch_response_msg_cont_from_msg_id_and_oer_val(message_id, message_cont_oer_val)
     if message_id == Notify_Application_Beacon_MID:
@@ -360,12 +378,12 @@ def convert_t_apdu_to_kapsch_message(t_apdu_datagram : bytes) -> tuple[int, byte
     kapsch_dll_loader_logger.debug(f"Converted T-APDU to KapschMessage with ID {message_id} and content {message_cont_type._val}")
     return message_id, message_cont_oer_val
 
-def send_t_apdu(t_apdu_datagram: bytes) -> tuple[int, bytes]:
-    kapsch_dll_loader_logger.debug(f"[OPS1955 L7]: Sending T-APDU! T-APDU value in hex: {t_apdu_datagram.hex().upper()}")
-    message_id, msg_cont_oer_val = convert_t_apdu_to_kapsch_message(t_apdu_datagram)
+# def send_t_apdu(t_apdu_datagram: bytes) -> tuple[int, bytes]:
+#     kapsch_dll_loader_logger.debug(f"[OPS1955 L7]: Sending T-APDU! T-APDU value in hex: {t_apdu_datagram.hex().upper()}")
+#     message_id, msg_cont_oer_val = convert_t_apdu_to_kapsch_message(t_apdu_datagram)
 
-    etc_write_message_id_content_wrapper(message_id=message_id, msg_cont_oer_val=msg_cont_oer_val)
-    return message_id, msg_cont_oer_val
+#     etc_write_message_id_content_wrapper(message_id=message_id, msg_cont_oer_val=msg_cont_oer_val)
+#     return message_id, msg_cont_oer_val
 
 def receive_t_apdu():
     kapsch_dll_loader_logger.debug(f"[OPS1955 L7]: Receiving T-APDU!")
@@ -374,9 +392,9 @@ def receive_t_apdu():
     kapsch_dll_loader_logger.debug(f"T-APDU value in hex: {received_t_apdu.hex().upper()}")
     return received_t_apdu
 
-def send_req_t_apdu_and_receive_resp_t_apdu(t_apdu_datagram: bytes):
-    send_t_apdu(t_apdu_datagram)
-    return receive_t_apdu()
+# def send_req_t_apdu_and_receive_resp_t_apdu(t_apdu_datagram: bytes):
+#     send_t_apdu(t_apdu_datagram)
+#     return receive_t_apdu()
 
 def change_trx_mode(operating_mode_code):
     pass
