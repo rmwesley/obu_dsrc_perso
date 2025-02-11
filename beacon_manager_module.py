@@ -168,7 +168,7 @@ class EIDNotFoundException(Exception):
     pass
 
 # Start sending a BST
-def start_bst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = gea_bcm_dll_wrapper.BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
+def start_bst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = []):
     global TApdu_container
     global l7_transfer_kernel_lock
     global current_beacon_name
@@ -204,7 +204,8 @@ def start_bst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 2
 
     l7_transfer_kernel_lock.acquire()
     l7_initialization_phase_lock.acquire()
-    beacon_l7_wrapper.start_bst_wrapper(last_sent_t_apdu_containing_bst, bst_type)
+
+    beacon_l7_wrapper.start_bst_wrapper(last_sent_t_apdu_containing_bst)
 
     bcm_logger.debug("We now get the lastest BeaconID just after starting the BST")
     beacon_l7_wrapper.update_beacon_id()
@@ -212,7 +213,7 @@ def start_bst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 2
 
     return initialization_request_jval
 
-def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = [], bst_type:int = gea_bcm_dll_wrapper.BCM_BST_TYPE_Enum.BCM_BST_ChangeBID):
+def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = []):
     """
     The initialization phase comprises 2 steps for the beacon:
     Start of a BST, and
@@ -243,7 +244,7 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     initialization_data['_id'] = current_transaction_id.hex
 
     # Adding initialisationRequest json to initialization_data dict
-    initialization_request_jval = start_bst(manufacturer_id=manufacturer_id, individual_id=individual_id, mand_applications=mand_applications, profile=profile, profile_list=profile_list, non_mand_applications=non_mand_applications, bst_type=bst_type)
+    initialization_request_jval = start_bst(manufacturer_id=manufacturer_id, individual_id=individual_id, mand_applications=mand_applications, profile=profile, profile_list=profile_list, non_mand_applications=non_mand_applications)
     initialization_data |= initialization_request_jval
     bcm_logger.debug("No errors occurred when starting BST!")
 

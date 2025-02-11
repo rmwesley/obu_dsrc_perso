@@ -641,7 +641,7 @@ def initialize_gea_bcm_dll_wrapper(external_callback_param:callable = None, exte
     update_beacon_id()
     handle_init_errors()
     
-def start_bst_wrapper(t_apdu_bst_datagram:bytes, bst_type:int):
+def start_bst_wrapper(t_apdu_bst_datagram:bytes):
     global reg_ptr
     global frag_header
 
@@ -652,8 +652,13 @@ def start_bst_wrapper(t_apdu_bst_datagram:bytes, bst_type:int):
     bst_datagram_buffer = ctypes.create_string_buffer(fragmented_t_apdu_bst_datagram, size=len(fragmented_t_apdu_bst_datagram))
     # Pointer to the buffered BST datagram
     lp_bst_datagram = ctypes.cast(bst_datagram_buffer, POINTER(BYTE))
-    byte_bst_type = BYTE(bst_type)
     gea_dll_wrapper_logger.info(f"Fragmented T-APDU with BST to be sent (UPER hex): {fragmented_t_apdu_bst_datagram.hex().upper()}")
+
+    if beacon_manager_settings['TGBV']['change_beacon_id_internally_periodically']:
+        bst_type = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID
+    else:
+        bst_type = BCM_BST_TYPE_Enum.BCM_BST_Normal
+    byte_bst_type = BYTE(bst_type)
 
     result = bcm_start_bst(reg_ptr,
                             lp_bst_datagram,

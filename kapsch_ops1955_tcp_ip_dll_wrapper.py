@@ -189,10 +189,12 @@ def sent_set_dsrc_trx_config_requests():
     # kapsch_dll_loader_logger.info(f"[OPS1955] > Sending read-ui-status (1422)")
     # etc_write_message_choice_identifier_content_wrapper(choice_identifier='read-ui-status', msg_cont_val=0)
 
-def start_bst_wrapper(t_apdu_datagram:bytes, bst_type:int):
+def start_bst_wrapper(t_apdu_datagram:bytes):
     kapsch_dll_loader_logger.debug(f"[OPS1955] > We send set a BST config request...")
     # send_set_bst_config_requests(t_apdu_datagram)
-    etc_write_message_id_content_wrapper(message_id=2457, msg_cont_oer_val=bytes.fromhex('0000000001000000B70000000001000001'))
+
+    raw_obe_setup_lib_ops1955_bst_config = bytes.fromhex('0000000001000000B70000000001000001')
+    etc_write_message_id_content_wrapper(message_id=2457, msg_cont_oer_val=raw_obe_setup_lib_ops1955_bst_config)
 
     
     kapsch_dll_loader_logger.debug(f"[OPS1955] > We send DSRC & TRX set config requests...")
@@ -298,10 +300,10 @@ def etc_read_wrapper() -> tuple[int, bytes]:
     message_content = ctypes.create_string_buffer(MAX_MESSAGE_SIZE)
 
     result = ops1955_beacon_manager_dll.etc_Read(ctypes.byref(message_id), message_content)
+    message_id_val = message_id.value
+
     if message_id_val != 0:
         kapsch_dll_loader_logger.debug(f"[OPS1955] <<<<< Successfully read a message! ({result})")
-
-    message_id_val = message_id.value
 
     message_description = message_id_descriptions.get(message_id_val)
     if message_id_val != 0:

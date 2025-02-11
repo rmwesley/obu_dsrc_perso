@@ -1,9 +1,10 @@
 {
-  "default_beacon_name": "OPS1955",
+  "default_beacon_name": "TGBV",
   "TGBV":{
     "default_communication_mode": "serial",
     "beacon_alarm_state_polling_ms": 2000,
     "send_OK_state_alarms": false,
+    "change_beacon_id_internally_periodically" : true,
     "serial_config": {
       "beacon_serial_port": 10
     },
@@ -36,7 +37,7 @@
     "polling_instead_of_blocking": true,
     "messages_polling_seconds": 0.5,
     "message_waiting": 1,
-    "automatic_internal_beacon_bst": true
+    "automatic_internal_beacon_bst": false
   },
   "database_config": {
     "MongoDB":{
