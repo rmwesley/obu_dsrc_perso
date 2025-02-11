@@ -720,6 +720,53 @@ def tis_cip_cardme_transaction(eid, mand_applications=[1, 20, 29], accessCredent
     else:
         send_echo_action_request(eid=eid, close_transaction_bool=True)
 
+
+def ccc_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
+    initialize_transaction(mand_applications=mand_applications)
+    presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
+
+    # Getting CCC attributes...
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[53])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[99])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[100])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[101])
+
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[116])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[124])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[127])
+
+    # Close the transaction
+    if set_mmi == True:
+        send_close_transaction_setmmi(eid=eid)
+    else:
+        send_echo_action_request(eid=eid, close_transaction_bool=True)
+
+def test_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
+    initialize_transaction(mand_applications=mand_applications)
+    presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
+
+    # Getting CCC attributes...
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[53])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[99])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[100])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[101])
+
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[111, 115, 118])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[116])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[124])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[127])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[125, 126])
+
+    # Close the transaction
+    if set_mmi == True:
+        send_close_transaction_setmmi(eid=eid)
+    else:
+        send_echo_action_request(eid=eid, close_transaction_bool=True)
+
 def get_all_attributes(eid, mand_applications=[1, 20, 29]):
     attrIdList = list(range(0, 128))
     return get_attributes_in_list(eid, attrIdList, mand_applications=mand_applications)
