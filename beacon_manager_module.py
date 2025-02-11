@@ -150,7 +150,7 @@ def safe_set_beacon(chosen_beacon_name):
 
         bcm_logger.debug(f"Beacon ID (according to GEA Beacon) value: {beacon_l7_wrapper.last_beacon_id}")
         EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.from_uper(beacon_l7_wrapper.last_beacon_id)
-        bcm_logger.debug(f"Beacon ID (according to GEA Beacon) in ASN: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.to_asn()}")
+        bcm_logger.debug(f"Beacon ID (according to GEA Beacon) in ASN: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.to_asn1()}")
 
         # bcm_logger.debug(f"Beacon ID (according to GEA Beacon) encoded in JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.to_jer()}")
 
