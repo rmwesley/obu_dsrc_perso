@@ -296,7 +296,12 @@ def get_init_data():
 def find_eid_with_accepted_contract():
     eid = None
     return eid
+
 def get_efc_cm_for_eid(eid):
+    # Kapsch System Element: EID 0, no VST parameter
+    if eid == 0:
+        bcm_logger.info(f'Kapsch System Element has no Parameter in VST!!!')
+        return {}
     return get_parameter_bytes_from_eid_on_vst_value(eid=eid)
 
 def decode_t_apdu_response_uper(t_apdu_with_response_bytes):
@@ -381,10 +386,8 @@ def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close=Fals
 
 def decode_vst_parameter_from_eid(eid):
     bcm_logger.debug(f"Decoding VST parameter with EID {eid}...")
-    parameter_bytes = get_parameter_bytes_from_eid_on_vst_value(eid)
+    parameter_bytes = get_efc_cm_for_eid(eid)
 
-    if parameter_bytes is None:
-        return None
     decoded_parameter = custom_its_per_decoders.decode_vst_parameter_oct_str_bytes(parameter_bytes)
     return decoded_parameter
 
@@ -736,6 +739,26 @@ def ccc_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent
     send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[116])
     send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[124])
     send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[127])
+
+    # Close the transaction
+    if set_mmi == True:
+        send_close_transaction_setmmi(eid=eid)
+    else:
+        send_echo_action_request(eid=eid, close_transaction_bool=True)
+
+def kapsch_system_element_transaction(eid=0, mand_applications=[0], accessCredentialsPresent=True, set_mmi=True):
+    initialize_transaction(mand_applications=mand_applications)
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[1, 2, 3])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[6, 7])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[10])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[17])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[18])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[23])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[33])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[108])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[120])
 
     # Close the transaction
     if set_mmi == True:

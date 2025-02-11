@@ -29,6 +29,9 @@ def decode_vst_parameter_oct_str_bytes(parameter_bytes):
         decoded_vst_parameter = {
             "EFC-ContextMark": efc_cm_uper_bytes.hex(),
             }
+    # Kapsch System Element: EID 0, no VST parameter
+    elif parameter_size == 0:
+        return {}
     else:
         raise Exception(f"Invalid Parameter length {parameter_size} in VST!!")
     custom_per_decoders_logger.debug(f"Decoded VST Parameter value: {decoded_vst_parameter}")
