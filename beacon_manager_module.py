@@ -699,7 +699,13 @@ def cardme_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPres
     else:
         send_echo_action_request(eid=eid, close_transaction_bool=True)
 
-def tis_cip_cardme_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
+def tis_vl_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
+    """
+    Used in the context of TIS VL CIP CARDME/Liber-t transactions.
+    TIS: Télépéage Inter Sociétés
+    CIP: Commission Interautoroutes Péage
+    VL: Véhicule Léger
+    """
     initialize_transaction(mand_applications=mand_applications)
     presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 

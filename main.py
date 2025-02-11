@@ -10,7 +10,8 @@ except:
 
 import threading
 
-from ASN.compiled_DSRC_instances import LACv2_1 as EFC_CCC_LAC_asn1_objs
+from ASN.compiled_DSRC_instances import EN15509 as EFC_CCC_LAC_asn1_objs
+# from ASN.compiled_DSRC_instances import LACv2_1 as EFC_CCC_LAC_asn1_objs
 
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
@@ -22,7 +23,7 @@ import logging
 
 
 root_logger = logging.getLogger()
-root_logger.setLevel(logging.DEBUG)
+root_logger.setLevel(logging.INFO)
 
 # SETTING UP COLORED CONSOLE LOGGING
 console_handler = logging.StreamHandler()
@@ -60,7 +61,7 @@ def simple_bcm_transactions():
 
     beacon_manager_module.set_beeping_state(beep_state=False)
     beacon_manager_module.cardme_transaction(1, mand_applications=[1, 20, 29])
-    # beacon_manager_module.tis_cip_cardme_transaction(eid=1, mand_applications=[1])
+    # beacon_manager_module.tis_vl_transaction(eid=1, mand_applications=[1])
     # beacon_manager_module.ccc_transaction(eid=3)
 
     # beacon_manager_module.loop_transactions()
