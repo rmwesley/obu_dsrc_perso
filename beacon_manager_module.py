@@ -265,7 +265,7 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     bcm_logger.debug("We now instantiate a T_APDU object from the UPER response!")
     TApdu_container.from_uper(t_apdu_init_resp_datagram)
     bcm_logger.debug(f"T_APDU containing VST value: {TApdu_container._val}")
-    bcm_logger.debug(f"T_APDU containing VST in ASN:\n{TApdu_container.to_asn1()}")
+    bcm_logger.info(f"T_APDU containing VST in ASN:\n{TApdu_container.to_asn1()}")
 
     # bcm_logger.debug(f"T_APDU containing VST in JER:\n{TApdu_container.to_jer()}")
     last_response_t_apdu_json = TApdu_container._to_jval()
