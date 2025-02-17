@@ -548,6 +548,17 @@ def cb_error_handler(callback_code, error_code):
         gea_dll_wrapper_logger.error(f"Callback Error ({callback_code}), with BCM error code {error_code}")
         bcm_error_wrapper(error_code)
 
+available_baud_rate_enum_vals = {
+    1200: 0x00,
+    2400: 0x01,
+    4800: 0x02,
+    9600: 0x03,
+    19200: 0x04,
+    38400: 0x05,
+    57600: 0x06,
+    115200: 0x07
+}
+
 # Defining the actual BCM (Beacon Manager) GEA DLL Python module wrapper functions
 def initialize_gea_bcm_dll_wrapper(external_callback_param:callable = None, external_alarm_param:callable = None, serial_port=None):
     global beacon_state_ok_event
@@ -597,23 +608,32 @@ def initialize_gea_bcm_dll_wrapper(external_callback_param:callable = None, exte
     user_registration = 7
     user_params = None
 
-    gea_dll_wrapper_logger.debug(f"Current beacon manager settings in moment of initialization: {json.dumps(beacon_manager_settings, indent=2)}")
+    # gea_dll_wrapper_logger.debug(f"Current beacon manager settings in moment of initialization: {json.dumps(beacon_manager_settings, indent=2)}")
     tgbv_beacon_settings = beacon_manager_settings["TGBV"]
+    gea_dll_wrapper_logger.info(f"Current beacon manager config: {tgbv_beacon_settings}")
 
     send_event_polling_OK = tgbv_beacon_settings["send_OK_state_alarms"]
     beacon_alarm_state_polling_ms = tgbv_beacon_settings["beacon_alarm_state_polling_ms"]
 
     if tgbv_beacon_settings["default_communication_mode"] == "serial":
         if serial_port is None:
-            serial_port = tgbv_beacon_settings["serial_config"]["beacon_serial_port"]
+            serial_port = tgbv_beacon_settings["serial_config"]["port"]
+        baud_rate = tgbv_beacon_settings["serial_config"]["baud_rate"]
         gea_dll_wrapper_logger.info(f"Beacon serial port: {serial_port}")
-        serial_port_speed = BaudRate_Enum.BCM_CFG_115200
+
+        default_baud_rate = 115200
+        if baud_rate not in available_baud_rate_enum_vals:
+            gea_dll_wrapper_logger.error(f"Invalid Baud Rate!!! Setting it to a default value, {default_baud_rate}")
+            baud_rate_index = default_baud_rate
+        gea_dll_wrapper_logger.info(f"Beacon Baud Rate: {baud_rate}")
+        baud_rate_index = available_baud_rate_enum_vals[baud_rate]
+
         result = bcm_init_manager_fnc(
             ctypes.byref(reg_ptr),
             user_registration,
             user_params,
             serial_port,
-            serial_port_speed,
+            baud_rate_index,
             BCM_STATION_Enum.BCM_Secondary,
             beacon_alarm_state_polling_ms,
             send_event_polling_OK,
