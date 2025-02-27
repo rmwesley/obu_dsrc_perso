@@ -673,7 +673,6 @@ def initialize_gea_bcm_dll_wrapper(external_callback_param:callable = None, exte
 
     bcm_error_wrapper(result)
     handle_init_errors()
-    display_beacon_info()
 
 def start_bst_wrapper(t_apdu_bst_datagram:bytes):
     global reg_ptr
@@ -868,6 +867,8 @@ def handle_init_errors():
         wait_for_ok_alarm()
 
     if beacon_state.mode == BCM_MODE_Enum.BCM_MOD_Stopped:
+        gea_dll_wrapper_logger.debug("Beacon was stopped! We can display its info")
+        display_beacon_info()
         change_trx_mode(BCM_MODE_Enum.BCM_MOD_Transparent)
         gea_dll_wrapper_logger.debug("Changed operating mode to transparent!")
 
