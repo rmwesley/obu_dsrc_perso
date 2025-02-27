@@ -529,6 +529,8 @@ with open('settings/beacon_manager_config.json', 'r') as beacon_manager_settings
 
 class Layer7Exception(Exception):
     pass
+class TimeoutObeException(Layer7Exception):
+    pass
 def bcm_error_wrapper(bcm_error: BCMError):
     if not isinstance(bcm_error, int):
         raise TypeError(bcm_error)
@@ -538,6 +540,8 @@ def bcm_error_wrapper(bcm_error: BCMError):
         # Handle error case if needed
         if bcm_error == BCM_ERR_Enum.BCM_TrxInProgress:
             gea_dll_wrapper_logger.error(f"Cannot execute function because a transaction is in progress!")
+        if bcm_error == BCM_ERR_Enum.BCM_TmoOBE:
+            raise TimeoutObeException(f"{bcm_error}: {BCMError(bcm_error).get_error_description()}")
         raise Layer7Exception(f"{bcm_error}: {BCMError(bcm_error).get_error_description()}")
 
 def cb_error_handler(callback_code, error_code):
@@ -754,7 +758,7 @@ def get_vst():
     gea_dll_wrapper_logger.info(f"Received VST value (UPER hex): {t_apdu_containing_vst.hex().upper()}")
     return t_apdu_containing_vst
 
-def send_req_t_apdu_and_receive_resp_t_apdu(t_apdu_datagram: bytes, close_transaction_transaction=False):
+def send_req_t_apdu_and_receive_resp_t_apdu(t_apdu_datagram: bytes, close_transaction=False):
     global frag_header
 
     fragmented_t_apdu_datagram = frag_header + t_apdu_datagram
@@ -775,7 +779,7 @@ def send_req_t_apdu_and_receive_resp_t_apdu(t_apdu_datagram: bytes, close_transa
         lp_cmd_response_datagram,
         ctypes.byref(cmd_response_size),
         dword_cmd_resonse_max_size,
-        close_transaction_transaction
+        close_transaction
         )
     bcm_error_wrapper(result)
 
@@ -861,8 +865,11 @@ def handle_init_errors():
     # If a previous transaction was not closed, we forcefully reset the beacon
     if beacon_state.trxInProgress:
         gea_dll_wrapper_logger.error("Previously unclosed transaction in progress!")
-        gea_dll_wrapper_logger.info("We will forcefully reset the beacon...")
-        reset_beacon()
+        try:
+            send_close_transaction_to_obu()
+        except:
+            gea_dll_wrapper_logger.info("We will forcefully reset the beacon...")
+            reset_beacon()
         
         wait_for_ok_alarm()
 
@@ -1007,7 +1014,7 @@ def reset_beacon():
     result = bcm_reset(reg_ptr)
     bcm_error_wrapper(result)
 
-def set_mmi(close = False):
+def set_mmi(close_transaction = False):
     """
     Simple SetMMI request.
     This is used by the Layer 7 wrapper to close transactions.
@@ -1016,14 +1023,14 @@ def set_mmi(close = False):
     global frag_header
 
     # SetMMI ActionType is 0xA, or 10 in decimal
-    set_mmi_request = [frag_header, 0x05, 0x00, 0x0A, 0x00, 0x00]
+    set_mmi_request = frag_header + bytes([0x05, 0x00, 0x0A, 0x00, 0x00])
     set_mmi_datagram = bytes(set_mmi_request)
-    send_req_t_apdu_and_receive_resp_t_apdu(set_mmi_datagram, close)
+    send_req_t_apdu_and_receive_resp_t_apdu(t_apdu_datagram=set_mmi_datagram, close_transaction=close_transaction)
 def send_close_transaction_to_obu():
     """
     To close the transaction, we just send a SetMMI request...
     """
-    command_response = set_mmi(True)
+    command_response = set_mmi(close_transaction=True)
     return command_response
 def close():
     global beacon_state

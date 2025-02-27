@@ -59,7 +59,7 @@ root_logger.addHandler(console_handler)
 def simple_bcm_transactions():
     beacon_manager_module.init_bcm_and_set_transparent_mode()
 
-    beacon_manager_module.set_beeping_state(beep_state=False)
+    beacon_manager_module.set_beeping_state(beep_state=True)
     # beacon_manager_module.cardme_transaction(1, mand_applications=[1, 20, 29])
     # beacon_manager_module.tis_vl_transaction(eid=1, mand_applications=[1])
     # beacon_manager_module.ccc_transaction(eid=3)

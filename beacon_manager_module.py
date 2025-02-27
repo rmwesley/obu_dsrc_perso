@@ -52,9 +52,10 @@ def initialize_bcm(aid=20):
     safe_set_beacon(chosen_beacon_name = default_beacon_name)
     bcm_logger.info("Initialized BCM!!")
     
-    bcm_logger.debug("We now update/get the BeaconID (L7, so according to the beacon) before sending the BST")
-    bcm_logger.debug("Note: This is weird... We should be the ones to set the BeaconID freely in the BST")
-    bcm_logger.debug("The beacon should then just keep the last sent BeaconID in its memory")
+    bcm_logger.debug("""We now update/get the BeaconID (L7, so according to the beacon) before sending the BST
+Note: This is weird... We should be the ones to set the BeaconID freely in the BST
+The beacon should then just keep the last sent BeaconID in its memory"""
+    )
 
     last_beacon_id = beacon_l7_wrapper.get_beacon_id()
     bcm_logger.debug(f"Latest Beacon ID (according to GEA Beacon DLL) value: {last_beacon_id}")
@@ -331,7 +332,7 @@ def decode_t_apdu_response_uper(t_apdu_with_response_bytes):
         bcm_logger.info(f"No return code in T-APDU! (No errors)")
     return last_response_t_apdu_value
 
-def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close=False) -> dict:
+def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close_transaction=False) -> dict:
     global TApdu_container
 
     global current_transaction_id
@@ -348,7 +349,7 @@ def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close=Fals
     # Sending command!!!
     l7_transfer_kernel_lock.acquire()
     try:
-        fragmented_t_apdu_with_response_bytes = beacon_l7_wrapper.send_req_t_apdu_and_receive_resp_t_apdu(TApdu_container.to_uper(), close)
+        fragmented_t_apdu_with_response_bytes = beacon_l7_wrapper.send_req_t_apdu_and_receive_resp_t_apdu(TApdu_container.to_uper(), close_transaction)
     except gea_bcm_dll_wrapper.Layer7Exception as e:
         bcm_logger.error(f"L7 Error!", exc_info=True)
         return
@@ -450,7 +451,7 @@ def send_get_request(eid, accessCredentialsPresent:bool = False, attrIdList=None
     # bcm_logger.debug(f"Get.Request in JER:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.Get_Request.to_jer()}")
 
     t_apdu_with_get_request_value = ('getRequest', get_req_value)
-    response_t_apdu_value = send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_get_request_value, close=close_transaction)
+    response_t_apdu_value = send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_get_request_value, close_transaction=close_transaction)
 
     bcm_logger.debug("We now obtain the GET.response object from the T_APDU response!")
     bcm_logger.debug("GET.response is a parameterized type, so we cannot encode/decode it, only the T_APDU!")
@@ -522,7 +523,7 @@ def send_get_stamped_request(
         accessCredentialsPresent:int = True,
         attrIdList=[],
         operator_auk_ref=111,
-        close=False):
+        close_transaction=False):
     global last_response_t_apdu_value
 
     bcm_logger.debug("Preparing an ActionParameter for an Action-Request of type GET_STAMPED.request (Presentation request)...")
@@ -533,7 +534,7 @@ def send_get_stamped_request(
     bcm_logger.debug(f"Container with GetStampedRq value: {container_with_get_stamped_rq_value}")
 
     # ActionType is 0 for GET_STAMPED.request and Mode is True (Always expects a response)
-    response_t_apdu_json = send_action_request(True, eid, 0, accessCredentialsPresent, container_with_get_stamped_rq_value, close_transaction=close)
+    response_t_apdu_json = send_action_request(True, eid, 0, accessCredentialsPresent, container_with_get_stamped_rq_value, close_transaction=close_transaction)
 
     bcm_logger.debug("We now obtain the GET_STAMPED.response object from the T_APDU response!")
     bcm_logger.debug("GET_STAMPED.response is a parameterized type, so we cannot encode/decode it, only the T_APDU!")
@@ -637,7 +638,7 @@ def send_echo_action_request(eid=0, text='Hello, World!', close_transaction_bool
     response_t_apdu_json = send_action_request(True, eid, 15, accessCredentialsPresent=False, actionParameter=echo_rq_value, close_transaction=close_transaction_bool)
     return response_t_apdu_json
 
-def set_mmi(eid=0, close=False):
+def set_mmi(eid=0, close_transaction=False):
     bcm_logger.debug(f"Preparing a SET_MMI.request")
     bcm_logger.debug(f"The function to send ACTION.requests is defined to send a SET_MMI by default if no arguments are provided!")
 
@@ -659,14 +660,14 @@ def set_mmi(eid=0, close=False):
     t_apdu_with_set_mmi_action_req_value = ('actionRequest', set_mmi_action_request_val)
     bcm_logger.info(f"ACTION.request of Type 10 (SET_MMI) being now sent...")
 
-    t_apdu_with_action_response = send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_set_mmi_action_req_value, close)
+    t_apdu_with_action_response = send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_set_mmi_action_req_value, close_transaction)
     return t_apdu_with_action_response
 
 def send_close_transaction_echo(eid=0, text="Hello, World!"):
     return send_echo_action_request(eid=eid, close_transaction_bool=True)
 
 def send_close_transaction_setmmi(eid=0):
-    return set_mmi(eid, close=True)
+    return set_mmi(eid, close_transaction=True)
 
 def cardme_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
     initialize_transaction(mand_applications=mand_applications)
