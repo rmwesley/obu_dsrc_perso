@@ -1,27 +1,32 @@
 {
-  "default_beacon_name": "TGBV",
+  "default_beacon_name": "OPS1955",
+  "PERTEL":{
+    "modes_config": {
+      "Stopped": 0,
+      "Transparent": 1,
+      "Maintenance": 3
+    }
+  },
   "TGBV":{
-    "default_communication_mode": "serial",
+    "chosen_communication_mode": "serial",
     "beacon_alarm_state_polling_ms": 2000,
     "send_OK_state_alarms": false,
     "change_beacon_id_internally_periodically" : true,
     "serial_config": {
-      "port": 10,
+      "beacon_serial_port": 6,
       "baud_rate": 115200
     },
     "tcp_ip_config": {
       "ip_address": "133.38.40.152",
       "tcp_port": 10001
     },
-    "modes_config": {
-      "Stopped": 0,
-      "Transparent": 1,
-      "Maintenance": 3
-    },
     "automatic_internal_beacon_bst": false
   },
   "OPS1955":{
-    "default_communication_mode": "tcp",
+    "chosen_communication_mode": "serial",
+    "beacon_alarm_state_polling_ms": 2000,
+    "send_OK_state_alarms": false,
+    "change_beacon_id_internally_periodically" : true,
     "tcp_ip_config": {
       "ip_address": "127.0.0.1",
       "tx_port": 4993,
@@ -32,7 +37,8 @@
       "tcp_port": 10001
     },
     "serial_config": {
-      "beacon_serial_port": 7
+      "beacon_serial_port": 13,
+      "baud_rate": 115200
     },
     "max_message_size": 255,
     "polling_instead_of_blocking": true,

@@ -559,8 +559,18 @@ available_baud_rate_enum_vals = {
     115200: 0x07
 }
 
+def set_beacon_name(beacon_name:str):
+    """Sets the beacon name.
+    This is used to find its corresponding configuration in the beacon config file"""
+    global chosen_beacon_name
+
+    chosen_beacon_name = beacon_name
+
 # Defining the actual BCM (Beacon Manager) GEA DLL Python module wrapper functions
 def initialize_gea_bcm_dll_wrapper(external_callback_param:callable = None, external_alarm_param:callable = None, serial_port=None):
+    """Initialize PERTEL beacon manager.
+    Remember to set the beacon's name beforehand!"""
+    global chosen_beacon_name
     global beacon_state_ok_event
     global callback_received_event
 
@@ -577,14 +587,18 @@ def initialize_gea_bcm_dll_wrapper(external_callback_param:callable = None, exte
     global last_vst
     global last_vst_obj
 
+    print(chosen_beacon_name)
+    if "chosen_beacon_name" not in globals():
+        raise Exception("Beacon name was not set!!! We need that to get the correct configuration")
+    # This is the BCM structure pointer. It is managed by the DLL
+    reg_ptr = ST_BCM_REG_PTR()
+
     beacon_state_ok_event = threading.Event()
     callback_received_event = threading.Event()
 
     external_callback = external_callback_param
     external_alarm = external_alarm_param
 
-    # This is the BCM structure pointer. It is managed by the DLL
-    reg_ptr = ST_BCM_REG_PTR()
     # This is the BCM state pointer. It is managed by the DLL
     beacon_state = ST_BCM_STATE()
     # Last received VST
@@ -609,16 +623,16 @@ def initialize_gea_bcm_dll_wrapper(external_callback_param:callable = None, exte
     user_params = None
 
     # gea_dll_wrapper_logger.debug(f"Current beacon manager settings in moment of initialization: {json.dumps(beacon_manager_settings, indent=2)}")
-    tgbv_beacon_settings = beacon_manager_settings["TGBV"]
-    gea_dll_wrapper_logger.info(f"Current beacon manager config: {tgbv_beacon_settings}")
+    pertel_beacon_settings = beacon_manager_settings[chosen_beacon_name]
+    gea_dll_wrapper_logger.info(f"Current beacon manager config: {pertel_beacon_settings}")
 
-    send_event_polling_OK = tgbv_beacon_settings["send_OK_state_alarms"]
-    beacon_alarm_state_polling_ms = tgbv_beacon_settings["beacon_alarm_state_polling_ms"]
+    send_event_polling_OK = pertel_beacon_settings['send_OK_state_alarms']
+    beacon_alarm_state_polling_ms = pertel_beacon_settings['beacon_alarm_state_polling_ms']
 
-    if tgbv_beacon_settings["default_communication_mode"] == "serial":
+    if pertel_beacon_settings['chosen_communication_mode'] == "serial":
         if serial_port is None:
-            serial_port = tgbv_beacon_settings["serial_config"]["port"]
-        baud_rate = tgbv_beacon_settings["serial_config"]["baud_rate"]
+            serial_port = pertel_beacon_settings["serial_config"]["beacon_serial_port"]
+        baud_rate = pertel_beacon_settings["serial_config"]["baud_rate"]
         gea_dll_wrapper_logger.info(f"Beacon serial port: {serial_port}")
 
         default_baud_rate = 115200
@@ -641,8 +655,8 @@ def initialize_gea_bcm_dll_wrapper(external_callback_param:callable = None, exte
             c_alarm
         )
     else:
-        beacon_ip_address_bytes = tgbv_beacon_settings["tcp_ip_config"]["ip_address"].encode('utf-8')
-        beacon_tcp_port = tgbv_beacon_settings["tcp_ip_config"]["tcp_port"]
+        beacon_ip_address_bytes = pertel_beacon_settings["tcp_ip_config"]["ip_address"].encode('utf-8')
+        beacon_tcp_port = pertel_beacon_settings["tcp_ip_config"]["tcp_port"]
 
         result = bcm_init_manager_fnc_ip(
             ctypes.byref(reg_ptr),
@@ -658,11 +672,12 @@ def initialize_gea_bcm_dll_wrapper(external_callback_param:callable = None, exte
         )
 
     bcm_error_wrapper(result)
-    update_beacon_id()
     handle_init_errors()
-    
+    display_beacon_info()
+
 def start_bst_wrapper(t_apdu_bst_datagram:bytes):
     global reg_ptr
+    global chosen_beacon_name
     global frag_header
 
     fragmented_t_apdu_bst_datagram = frag_header + t_apdu_bst_datagram
@@ -674,7 +689,7 @@ def start_bst_wrapper(t_apdu_bst_datagram:bytes):
     lp_bst_datagram = ctypes.cast(bst_datagram_buffer, POINTER(BYTE))
     gea_dll_wrapper_logger.info(f"Fragmented T-APDU with BST to be sent (UPER hex): {fragmented_t_apdu_bst_datagram.hex().upper()}")
 
-    if beacon_manager_settings['TGBV']['change_beacon_id_internally_periodically']:
+    if beacon_manager_settings[chosen_beacon_name]['change_beacon_id_internally_periodically']:
         bst_type = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID
     else:
         bst_type = BCM_BST_TYPE_Enum.BCM_BST_Normal
@@ -818,16 +833,17 @@ def bcm_alarm(reg_ptr_param, alarm_type, alarm_state):
         beacon_state_ok_event.set()
     return
 def handle_init_errors():
-    """This function handles initialization issues, like:
+    """This function handles initialization issues if there are any, like:
         Unclosed transactions
         Beacon not in stopped mode
         etc."""
     global beacon_state
 
-    gea_dll_wrapper_logger.debug("Trying get the updated beacon's state...")
+    gea_dll_wrapper_logger.info("Handling initialization issues (if there are any)...")
+    gea_dll_wrapper_logger.debug("Trying to get the latest beacon state...")
     result = update_state()
 
-    gea_dll_wrapper_logger.debug(f"Beacon State iterator keys: {list(iter(beacon_state))}")
+    gea_dll_wrapper_logger.debug(f"Beacon state iterator keys: {list(iter(beacon_state))}")
     gea_dll_wrapper_logger.debug(beacon_state)
 
     if result == BCM_ERR_Enum.BCM_NoError:
@@ -851,9 +867,9 @@ def handle_init_errors():
         
         wait_for_ok_alarm()
 
-    if beacon_state.mode != BCM_MODE_Enum.BCM_MOD_Stopped:
-        change_trx_mode(BCM_MODE_Enum.BCM_MOD_Stopped)
-        gea_dll_wrapper_logger.debug("Changed operating mode to stopped!")
+    if beacon_state.mode == BCM_MODE_Enum.BCM_MOD_Stopped:
+        change_trx_mode(BCM_MODE_Enum.BCM_MOD_Transparent)
+        gea_dll_wrapper_logger.debug("Changed operating mode to transparent!")
 
     gea_dll_wrapper_logger.debug("Waiting 1 second and then updating the beacon's state...")
     time.sleep(1)
@@ -862,8 +878,10 @@ def handle_init_errors():
 
 def wait_for_ok_alarm():
     global beacon_state
+    global chosen_beacon_name
 
-    if beacon_manager_settings['TGBV']['send_OK_state_alarms'] == True and beacon_manager_settings['TGBV']['beacon_alarm_state_polling_ms'] > 0:
+    beacon_config = beacon_manager_settings[chosen_beacon_name]
+    if beacon_config['send_OK_state_alarms'] == True and beacon_config['beacon_alarm_state_polling_ms'] > 0:
         gea_dll_wrapper_logger.debug("Waiting for an OK state alarm...")
         beacon_state_ok_event.wait()
         gea_dll_wrapper_logger.debug("Beacon is OK!!!")
@@ -932,13 +950,38 @@ def get_last_beacon_state_description():
     gea_dll_wrapper_logger.debug(f"Beacon state description: {beacon_state.get_description()}")
     return beacon_state.get_description()
 
+def display_beacon_info():
+    """This function can only be called AFTER INITIALIZATION.
+    That is, reg_ptr must point to a initialized BCM structure"""
+    gea_dll_wrapper_logger.debug("Getting beacon configuration via DLL...")
+    bcm_config = get_config()
+    gea_dll_wrapper_logger.debug(f"Displaying config data...: {bcm_config}")
+
+    change_trx_mode(BCM_MODE_Enum.BCM_MOD_Transparent)
+    gea_dll_wrapper_logger.debug("Changed mode to transparent!")
+
+    gea_dll_wrapper_logger.debug("Getting beacon state...")
+    result = update_state()
+
+def get_beacon_id():
+    global last_beacon_id
+
+    if not "last_beacon_id" in globals():
+        update_beacon_id()
+
+    return last_beacon_id
+
 def get_config():
+    """This function can only be called AFTER INITIALIZATION.
+    That is, reg_ptr must point to a initialized BCM structure"""
     global reg_ptr
 
     bcm_config = ST_BCM_CONFIG()
-    
-    result = bcm_get_config(reg_ptr, ctypes.byref(bcm_config))
-    bcm_error_wrapper(result)
+    try:
+        result = bcm_get_config(reg_ptr, ctypes.byref(bcm_config))
+        bcm_error_wrapper(result)
+    except Layer7Exception:
+        gea_dll_wrapper_logger.error("This function can only be called AFTER INITIALIZATION!!")
 
     return bcm_config
 

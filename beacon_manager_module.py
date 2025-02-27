@@ -51,6 +51,16 @@ def initialize_bcm(aid=20):
     l7_transfer_kernel_lock = threading.Lock()
     safe_set_beacon(chosen_beacon_name = default_beacon_name)
     bcm_logger.info("Initialized BCM!!")
+    
+    bcm_logger.debug("We now update/get the BeaconID (L7, so according to the beacon) before sending the BST")
+    bcm_logger.debug("Note: This is weird... We should be the ones to set the BeaconID freely in the BST")
+    bcm_logger.debug("The beacon should then just keep the last sent BeaconID in its memory")
+
+    last_beacon_id = beacon_l7_wrapper.get_beacon_id()
+    bcm_logger.debug(f"Latest Beacon ID (according to GEA Beacon DLL) value: {last_beacon_id}")
+    
+    EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.from_uper(last_beacon_id)
+    bcm_logger.debug(f"Beacon ID (according to GEA Beacon) in ASN: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.to_asn1()}")
 
 def reset_beacon():
     global beacon_l7_wrapper
@@ -121,6 +131,7 @@ def update_rnd_rse():
     return rnd_rse_bytes_value
 
 def safe_set_beacon(chosen_beacon_name):
+    """Set the chosen beacon"""
     global current_beacon_name
     global beacon_l7_wrapper
 
@@ -128,36 +139,22 @@ def safe_set_beacon(chosen_beacon_name):
     if beacon_l7_wrapper is not None:
         beacon_l7_wrapper.close()
 
-    if chosen_beacon_name == "TGBV":
-        beacon_l7_wrapper = gea_bcm_dll_wrapper
+    if chosen_beacon_name == 'TGBV':
+        gea_bcm_dll_wrapper.set_beacon_name(beacon_name='TGBV')
         gea_bcm_dll_wrapper.initialize_gea_bcm_dll_wrapper()
+
+        beacon_l7_wrapper = gea_bcm_dll_wrapper
         current_beacon_name = chosen_beacon_name
 
-        bcm_logger.debug("Getting beacon configuration...")
-        bcm_config = beacon_l7_wrapper.get_config()
-        bcm_logger.debug(f"Displaying config data...: {bcm_config}")
-
-        beacon_l7_wrapper.change_trx_mode(gea_bcm_dll_wrapper.BCM_MODE_Enum.BCM_MOD_Transparent)
-        bcm_logger.debug("Changed mode to transparent!")
-
-        bcm_logger.debug("Getting beacon state...")
-        result = beacon_l7_wrapper.update_state()
-
-        bcm_logger.debug("We now update/get the BeaconID (L7, so according to the beacon) before sending the BST")
-        bcm_logger.debug("Note: This is weird... We should be the ones to set the BeaconID freely in the BST")
-        bcm_logger.debug("The beacon should then just keep the last sent BeaconID in its memory")
-        result = beacon_l7_wrapper.update_beacon_id()
-
-        bcm_logger.debug(f"Beacon ID (according to GEA Beacon) value: {beacon_l7_wrapper.last_beacon_id}")
-        EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.from_uper(beacon_l7_wrapper.last_beacon_id)
-        bcm_logger.debug(f"Beacon ID (according to GEA Beacon) in ASN: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.to_asn1()}")
-
-        # bcm_logger.debug(f"Beacon ID (according to GEA Beacon) encoded in JER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.to_jer()}")
-
-    if chosen_beacon_name == "OPS1955":
-        beacon_l7_wrapper = kapsch_ops1955_tcp_ip_dll_wrapper
-        current_beacon_name = chosen_beacon_name
-        kapsch_ops1955_tcp_ip_dll_wrapper.ops1955_init()
+    if chosen_beacon_name == 'OPS1955':
+        if beacon_manager_config[chosen_beacon_name]['chosen_communication_mode'] == 'serial':
+            gea_bcm_dll_wrapper.set_beacon_name(beacon_name='OPS1955')
+            gea_bcm_dll_wrapper.initialize_gea_bcm_dll_wrapper()
+            
+            beacon_l7_wrapper = gea_bcm_dll_wrapper
+        elif beacon_manager_config[chosen_beacon_name]['chosen_communication_mode'] == 'tcp':
+            beacon_l7_wrapper = kapsch_ops1955_tcp_ip_dll_wrapper
+            kapsch_ops1955_tcp_ip_dll_wrapper.ops1955_init()
         current_beacon_name = chosen_beacon_name
 
 class BeaconManagerException(Exception):
@@ -209,7 +206,7 @@ def start_bst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 2
 
     bcm_logger.debug("We now get the lastest BeaconID just after starting the BST")
     beacon_l7_wrapper.update_beacon_id()
-    bcm_logger.debug(f"Last BeaconID: {beacon_l7_wrapper.last_beacon_id.hex().upper()}")
+    bcm_logger.debug(f"Last BeaconID: {beacon_l7_wrapper.get_beacon_id().hex().upper()}")
 
     return initialization_request_jval
 
@@ -669,7 +666,7 @@ def send_close_transaction_echo(eid=0, text="Hello, World!"):
     return send_echo_action_request(eid=eid, close_transaction_bool=True)
 
 def send_close_transaction_setmmi(eid=0):
-    return set_mmi(eid, True)
+    return set_mmi(eid, close=True)
 
 def cardme_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
     initialize_transaction(mand_applications=mand_applications)

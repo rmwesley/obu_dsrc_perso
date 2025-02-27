@@ -23,7 +23,7 @@ import logging
 
 
 root_logger = logging.getLogger()
-root_logger.setLevel(logging.INFO)
+root_logger.setLevel(logging.DEBUG)
 
 # SETTING UP COLORED CONSOLE LOGGING
 console_handler = logging.StreamHandler()
@@ -60,13 +60,13 @@ def simple_bcm_transactions():
     beacon_manager_module.init_bcm_and_set_transparent_mode()
 
     beacon_manager_module.set_beeping_state(beep_state=False)
-    beacon_manager_module.cardme_transaction(1, mand_applications=[1, 20, 29])
+    # beacon_manager_module.cardme_transaction(1, mand_applications=[1, 20, 29])
     # beacon_manager_module.tis_vl_transaction(eid=1, mand_applications=[1])
     # beacon_manager_module.ccc_transaction(eid=3)
 
-    # beacon_manager_module.loop_transactions()
+    beacon_manager_module.loop_transactions()
 
-    # beacon_manager_module.test_transaction(eid=1, mand_applications=[1, 29], accessCredentialsPresent=True)
+    # beacon_manager_module.test_transaction(eid=4, mand_applications=[1, 29], accessCredentialsPresent=True)
     # beacon_manager_module.kapsch_system_element_transaction(accessCredentialsPresent=True)
 
 # Main execution
