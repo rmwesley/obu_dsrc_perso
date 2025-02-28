@@ -148,7 +148,7 @@ def safe_set_beacon(chosen_beacon_name):
         current_beacon_name = chosen_beacon_name
 
     if chosen_beacon_name == 'OPS1955':
-        if beacon_manager_config[chosen_beacon_name]['chosen_communication_mode'] == 'serial':
+        if beacon_manager_config[chosen_beacon_name]['chosen_communication_mode'] == 'serial-pertel':
             gea_bcm_dll_wrapper.set_beacon_name(beacon_name='OPS1955')
             gea_bcm_dll_wrapper.initialize_gea_bcm_dll_wrapper()
             

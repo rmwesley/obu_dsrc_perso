@@ -542,6 +542,7 @@ def bcm_error_wrapper(bcm_error: BCMError):
             gea_dll_wrapper_logger.error(f"Cannot execute function because a transaction is in progress!")
         if bcm_error == BCM_ERR_Enum.BCM_TmoOBE:
             raise TimeoutObeException(f"{bcm_error}: {BCMError(bcm_error).get_error_description()}")
+            # return
         raise Layer7Exception(f"{bcm_error}: {BCMError(bcm_error).get_error_description()}")
 
 def cb_error_handler(callback_code, error_code):
@@ -630,13 +631,17 @@ def initialize_gea_bcm_dll_wrapper(external_callback_param:callable = None, exte
     pertel_beacon_settings = beacon_manager_settings[chosen_beacon_name]
     gea_dll_wrapper_logger.info(f"Current beacon manager config: {pertel_beacon_settings}")
 
-    send_event_polling_OK = pertel_beacon_settings['send_OK_state_alarms']
-    beacon_alarm_state_polling_ms = pertel_beacon_settings['beacon_alarm_state_polling_ms']
-
-    if pertel_beacon_settings['chosen_communication_mode'] == "serial":
+    if pertel_beacon_settings['chosen_communication_mode'] == 'serial-pertel':
+        # Serial configuration
+        serial_config = pertel_beacon_settings['serial_config']
         if serial_port is None:
-            serial_port = pertel_beacon_settings["serial_config"]["beacon_serial_port"]
-        baud_rate = pertel_beacon_settings["serial_config"]["baud_rate"]
+            serial_port = serial_config["beacon_serial_port"]
+        baud_rate = serial_config["baud_rate"]
+
+        # Layer2 configuration/parameters
+        l2_config = serial_config['l2_config']
+        send_event_polling_OK = l2_config['send_OK_state_alarms']
+        beacon_alarm_state_polling_ms = l2_config['beacon_alarm_state_polling_ms']
         gea_dll_wrapper_logger.info(f"Beacon serial port: {serial_port}")
 
         default_baud_rate = 115200
@@ -658,7 +663,7 @@ def initialize_gea_bcm_dll_wrapper(external_callback_param:callable = None, exte
             c_callback,
             c_alarm
         )
-    else:
+    elif pertel_beacon_settings['chosen_communication_mode'] == 'kapsch_tcp_ip_config':
         beacon_ip_address_bytes = pertel_beacon_settings["tcp_ip_config"]["ip_address"].encode('utf-8')
         beacon_tcp_port = pertel_beacon_settings["tcp_ip_config"]["tcp_port"]
 
@@ -781,6 +786,7 @@ def send_req_t_apdu_and_receive_resp_t_apdu(t_apdu_datagram: bytes, close_transa
         dword_cmd_resonse_max_size,
         close_transaction
         )
+    gea_dll_wrapper_logger.debug("Raising transaction errors if there are any...")
     bcm_error_wrapper(result)
 
     # Iterating cmd response pointer to get its value/contents
@@ -829,11 +835,12 @@ def bcm_alarm(reg_ptr_param, alarm_type, alarm_state):
         external_alarm(alarm_type, alarm_state)
 
     if alarm_type == BCM_ALARMS_Enum.BCM_AlarmPeriph or alarm_type == BCM_ALARMS_Enum.BCM_AlarmBeacon:
-        gea_dll_wrapper_logger.error(f"Error in Alarm! Description: {BCM_Alarm.get_description(alarm_type)}") 
+        gea_dll_wrapper_logger.error(f"Error in Alarm ({alarm_type})! Description: {BCM_Alarm.get_description(alarm_type)}")
     gea_dll_wrapper_logger.debug(f"Alarm description: {BCM_Alarm.get_description(alarm_type)}")
     
     if alarm_type == BCM_ALARMS_Enum.BCM_EventPollingOK:
-        beacon_state_ok_event.set()
+        gea_dll_wrapper_logger.debug(f"AL: Beacon OK {alarm_type}. Description: {BCM_Alarm.get_description(alarm_type)}")
+    beacon_state_ok_event.set()
     return
 def handle_init_errors():
     """This function handles initialization issues if there are any, like:
