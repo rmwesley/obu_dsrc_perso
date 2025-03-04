@@ -2,7 +2,9 @@ import sys
 import time
 
 from ASN.compiled_DSRC_instances import AXXESv1_1
-from ASN.compiled_DSRC_instances import EFCv5
+# from ASN.compiled_DSRC_instances import EFCv5
+EFCv5 = AXXESv1_1
+from ASN.compiled_DSRC_instances import CCCv1
 # from ASN.compiled_DSRC_instances import LACv2_1 as EFC_CCC_LAC_asn1_objs
 
 EFC_CCC_LAC_asn1_objs = AXXESv1_1
@@ -13,8 +15,9 @@ import logging
 import threading
 import uuid
 
-import kapsch_ops1955_tcp_ip_dll_wrapper
+import bac_protocol_serial_wrapper
 import gea_bcm_dll_wrapper
+import kapsch_ops1955_tcp_ip_dll_wrapper
 
 import custom_its_per_decoders
 import dsrc_security
@@ -151,6 +154,8 @@ def safe_set_beacon(chosen_beacon_name):
         current_beacon_name = chosen_beacon_name
 
     if chosen_beacon_name == 'OPS1955':
+        bac_protocol_serial_wrapper._kapsch_set_config()
+        
         if beacon_manager_config[chosen_beacon_name]['chosen_communication_mode'] == 'serial-pertel':
             gea_bcm_dll_wrapper.set_beacon_name(beacon_name='OPS1955')
             gea_bcm_dll_wrapper.initialize_gea_bcm_dll_wrapper()
@@ -731,6 +736,69 @@ def tis_vl_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPres
     else:
         send_echo_action_request(eid=eid, close_transaction_bool=True)
 
+def test_ccc_2009_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
+    global EFC_CCC_LAC_asn1_objs
+    # Compiled CCC 2015 specs
+    EFC_CCC_LAC_asn1_objs = CCCv1
+
+    initialize_transaction(mand_applications=mand_applications)
+    presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
+
+    # OBU ID
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[24])
+
+    # Getting CCC 2009 attributes...
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[48])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[49])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[50])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[51])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[52])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[53])
+
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[116])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[124])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[127])
+
+    # Close the transaction
+    if set_mmi == True:
+        send_close_transaction_setmmi(eid=eid)
+    else:
+        send_echo_action_request(eid=eid, close_transaction_bool=True)
+    EFC_CCC_LAC_asn1_objs = AXXESv1_1
+
+def test_ccc_2009_transaction_old(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
+    global EFC_CCC_LAC_asn1_objs
+    # Compiled CCC 2015 specs
+    EFC_CCC_LAC_asn1_objs = CCCv1
+
+    initialize_transaction(mand_applications=mand_applications)
+    presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
+
+    # OBU ID
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[24])
+
+    # Getting CCC 2009 attributes...
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[37])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[38])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[39])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[40])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[41])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[42])
+
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[116])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[124])
+    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[127])
+
+    # Close the transaction
+    if set_mmi == True:
+        send_close_transaction_setmmi(eid=eid)
+    else:
+        send_echo_action_request(eid=eid, close_transaction_bool=True)
+    EFC_CCC_LAC_asn1_objs = AXXESv1_1
 
 def ccc_2015_status_history_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
     global EFC_CCC_LAC_asn1_objs
@@ -750,8 +818,6 @@ def ccc_2015_status_history_transaction(eid, mand_applications=[1, 20, 29], acce
     send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[61])
     send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[62])
     send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[63])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[64])
-
 
     # Close the transaction
     if set_mmi == True:
