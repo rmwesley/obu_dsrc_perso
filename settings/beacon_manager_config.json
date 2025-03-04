@@ -3,7 +3,7 @@
   "TGBV":{
     "chosen_communication_mode": "serial-pertel",
     "serial_config": {
-      "beacon_serial_port": 15,
+      "beacon_serial_port": 6,
       "baud_rate": 115200,
 	    "l2_config": {
         "beacon_type": "TGB",
@@ -27,6 +27,8 @@
     "serial_config": {
       "beacon_serial_port": 15,
       "baud_rate": 115200,
+      "parity": "E",
+      "stop_bits": 2,
       "l2_config": {
         "beacon_type": "OPS1955",
         "beacon_alarm_state_polling_ms": 2000,
