@@ -61,12 +61,13 @@ def simple_bcm_transactions():
 
     beacon_manager_module.set_beeping_state(beep_state=True)
     # beacon_manager_module.cardme_transaction(1, mand_applications=[1, 20, 29])
-    # beacon_manager_module.tis_vl_transaction(eid=1, mand_applications=[1])
-    # beacon_manager_module.ccc_transaction(eid=3)
+    # beacon_manager_module.cardme_transaction(4, mand_applications=[1, 20, 29], accessCredentialsPresent=True)
+    # beacon_manager_module.tis_vl_transaction(
+    # eid=1, mand_applications=[1])
+    beacon_manager_module.ccc_2015_status_history_transaction(eid=5, accessCredentialsPresent=True)
 
-    beacon_manager_module.loop_transactions()
+    # beacon_manager_module.loop_transactions()
 
-    # beacon_manager_module.test_transaction(eid=4, mand_applications=[1, 29], accessCredentialsPresent=True)
     # beacon_manager_module.kapsch_system_element_transaction(accessCredentialsPresent=True)
 
 # Main execution
