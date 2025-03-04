@@ -1,4 +1,5 @@
-from ASN.compiled_DSRC_instances import LACv2_1 as EFC_CCC_LAC_asn1_objs
+# from ASN.compiled_DSRC_instances import LACv2_1 as EFC_CCC_LAC_asn1_objs
+from ASN.compiled_DSRC_instances import AXXESv1_1 as EFC_CCC_LAC_asn1_objs
 
 import logging
 
