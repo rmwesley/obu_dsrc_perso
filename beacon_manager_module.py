@@ -633,7 +633,8 @@ def get_stamped_request_action_parameter_preparation(eid:int, attrIdList:list = 
     # bcm_logger.info(f"GetStampedRs in JER:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcApplication.GetStampedRq.to_jer()}")
     return get_stamped_rq_value
 
-def send_echo_action_request(eid=0, text='Hello, World!', close_transaction_bool=False):
+def send_echo_action_request(eid=0, text='Hello, World!', close_transaction=False):
+    """EID should always be 0 for ECHO.request!!!"""
     bcm_logger.debug(f"Preparing an ECHO.request")
 
     echo_rq_value = ('octetstring', text.encode('utf-8'))
@@ -642,8 +643,18 @@ def send_echo_action_request(eid=0, text='Hello, World!', close_transaction_bool
     bcm_logger.debug(f"EfcContainer of Type 02 (OCTET STRING) value decoded with JER:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_jer()}")
     bcm_logger.debug(f"EfcContainer of Type 69 (OCTET STRING) value decoded with PER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_uper()}")
 
-    # ActionType is 15 or 0xF for ECHO.request and Mode is True (Always expects a response)
-    response_t_apdu_json = send_action_request(True, eid, 15, accessCredentialsPresent=False, actionParameter=echo_rq_value, close_transaction=close_transaction_bool)
+    # ActionType is 15 or 0xF for ECHO.request
+    set_mmi_action_request_val = {
+        'mode': True,
+        'eid': 0,
+        'actionType': 0xF,
+        'actionParameter': echo_rq_value
+        }
+    t_apdu_with_echo_action_req_value = ('actionRequest', set_mmi_action_request_val)
+    bcm_logger.info(f"ACTION.request of Type 15 (ECHO) being now sent...")
+
+    response_t_apdu_json = send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_echo_action_req_value, close_transaction=close_transaction)
+    # response_t_apdu_json = send_action_request(mode=True, eid=eid, actionType=15, accessCredentialsPresent=False, actionParameter=echo_rq_value, close_transaction=close_transaction)
     return response_t_apdu_json
 
 def set_mmi(eid=0, close_transaction=False):
@@ -672,7 +683,7 @@ def set_mmi(eid=0, close_transaction=False):
     return t_apdu_with_action_response
 
 def send_close_transaction_echo(eid=0, text="Hello, World!"):
-    return send_echo_action_request(eid=eid, close_transaction_bool=True)
+    return send_echo_action_request(eid=eid, text=text, close_transaction=True)
 
 def send_close_transaction_setmmi(eid=0):
     return set_mmi(eid, close_transaction=True)
@@ -703,7 +714,7 @@ def cardme_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPres
     if set_mmi == True:
         send_close_transaction_setmmi(eid=eid)
     else:
-        send_echo_action_request(eid=eid, close_transaction_bool=True)
+        send_close_transaction_echo(eid=eid)
 
 def tis_vl_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
     """
@@ -734,7 +745,7 @@ def tis_vl_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPres
     if set_mmi == True:
         send_close_transaction_setmmi(eid=eid)
     else:
-        send_echo_action_request(eid=eid, close_transaction_bool=True)
+        send_close_transaction_echo(eid=eid)
 
 def test_ccc_2009_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
     global EFC_CCC_LAC_asn1_objs
@@ -765,7 +776,7 @@ def test_ccc_2009_transaction(eid, mand_applications=[1, 20, 29], accessCredenti
     if set_mmi == True:
         send_close_transaction_setmmi(eid=eid)
     else:
-        send_echo_action_request(eid=eid, close_transaction_bool=True)
+        send_close_transaction_echo(eid=eid)
     EFC_CCC_LAC_asn1_objs = AXXESv1_1
 
 def test_ccc_2009_transaction_old(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
@@ -797,7 +808,7 @@ def test_ccc_2009_transaction_old(eid, mand_applications=[1, 20, 29], accessCred
     if set_mmi == True:
         send_close_transaction_setmmi(eid=eid)
     else:
-        send_echo_action_request(eid=eid, close_transaction_bool=True)
+        send_close_transaction_echo(eid=eid)
     EFC_CCC_LAC_asn1_objs = AXXESv1_1
 
 def ccc_2015_status_history_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
@@ -823,7 +834,7 @@ def ccc_2015_status_history_transaction(eid, mand_applications=[1, 20, 29], acce
     if set_mmi == True:
         send_close_transaction_setmmi(eid=eid)
     else:
-        send_echo_action_request(eid=eid, close_transaction_bool=True)
+        send_close_transaction_echo(eid=eid)
     EFC_CCC_LAC_asn1_objs = AXXESv1_1
 
 def test_ccc_2015_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
@@ -862,7 +873,7 @@ def test_ccc_2015_transaction(eid, mand_applications=[1, 20, 29], accessCredenti
     if set_mmi == True:
         send_close_transaction_setmmi(eid=eid)
     else:
-        send_echo_action_request(eid=eid, close_transaction_bool=True)
+        send_close_transaction_echo(eid=eid)
     EFC_CCC_LAC_asn1_objs = AXXESv1_1
 
 def ccc_2023_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
@@ -885,7 +896,7 @@ def ccc_2023_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPr
     if set_mmi == True:
         send_close_transaction_setmmi(eid=eid)
     else:
-        send_echo_action_request(eid=eid, close_transaction_bool=True)
+        send_close_transaction_echo(eid=eid)
 
 def kapsch_system_element_transaction(eid=0, mand_applications=[0], accessCredentialsPresent=True, set_mmi=True):
     initialize_transaction(mand_applications=mand_applications)
@@ -905,7 +916,7 @@ def kapsch_system_element_transaction(eid=0, mand_applications=[0], accessCreden
     if set_mmi == True:
         send_close_transaction_setmmi(eid=eid)
     else:
-        send_echo_action_request(eid=eid, close_transaction_bool=True)
+        send_close_transaction_echo(eid=eid)
 
 def test_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
     initialize_transaction(mand_applications=mand_applications)
@@ -929,7 +940,7 @@ def test_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresen
     if set_mmi == True:
         send_close_transaction_setmmi(eid=eid)
     else:
-        send_echo_action_request(eid=eid, close_transaction_bool=True)
+        send_close_transaction_echo(eid=eid)
 
 def get_all_attributes(eid, mand_applications=[1, 20, 29]):
     attrIdList = list(range(0, 128))
@@ -967,7 +978,7 @@ def get_attributes_in_list(eid, accessCredentialsPresent=True, attrIdList=[32], 
     if set_mmi == True:
         send_close_transaction_setmmi(eid=eid)
     else:
-        send_echo_action_request(eid=eid, close_transaction_bool=True)
+        send_close_transaction_echo(eid=eid)
 
     return obtained_attrs, get_responses
 
