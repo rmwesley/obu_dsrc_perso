@@ -126,27 +126,33 @@ def send_command(message_content:bytes):
 
 def read_message() -> bytes:
     bac_serial_wrapper_logger.debug('Reading serial response from beacon')
-    response_content = bytearray()
+    beacon_msg_content = bytearray()
     current_char = serial_instance.read(1)
     print(current_char)
-    if current_char == DLE:
+    while current_char != DLE:
         current_char = serial_instance.read(1)
+        beacon_msg_content.append(current_char[0])
         if current_char == STX:
-            while current_char != DLE:
-                current_char = serial_instance.read(1)
-                response_content.append(current_char[0])
-            current_char = serial_instance.read(1)
-            if current_char == ETX:
-                response_content.append(current_char[0])
-            else:
-                raise Exception('Unexpected control character in response!!!')
-    else:
-        raise Exception('Unexpected control character in response!!!')
+            break
+
+    # if current_char == DLE:
+    #     current_char = serial_instance.read(1)
+    #     if current_char == STX:
+    #         while current_char != DLE:
+    #             current_char = serial_instance.read(1)
+    #             response_content.append(current_char[0])
+    #         current_char = serial_instance.read(1)
+    #         if current_char == ETX:
+    #             response_content.append(current_char[0])
+    #         else:
+    #             raise Exception('Unexpected control character in response!!!')
+    # else:
+    #     raise Exception('Unexpected control character in response!!!')
     bac_serial_wrapper_logger.debug('Reading over!! Sending ACK!')
     serial_instance.write(ACK)
     
-    bac_serial_wrapper_logger.debug(f"[BAC <<] Read 0x{response_content.hex().upper()}")
-    return response_content
+    bac_serial_wrapper_logger.debug(f"[BAC <<] Read 0x{beacon_msg_content.hex().upper()}")
+    return beacon_msg_content
     # response_content = bytearray()
     # first_char = serial_instance.read(1)
     # if first_char == DLE:
@@ -199,6 +205,8 @@ def _kapsch_set_config():
 
     _kapsch_cd_read_dsrc_config()
     _kapsch_cd_set_dsrc_config()
+    # We now set its mode to transparent and stop serial communication!
+    pertel_set_beacon_mode(0x01)
     close()
 
 def _kapsch_cd_set_dsrc_config() -> bytes:
