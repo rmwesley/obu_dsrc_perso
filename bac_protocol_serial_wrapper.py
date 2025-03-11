@@ -5,24 +5,16 @@ import time
 
 bac_serial_wrapper_logger = logging.getLogger(__name__)
 
-def crc16(data: bytes):
-    xor_in = 0x0000  # initial value
-    xor_out = 0x0000  # final XOR value
-    poly = 0x8005  # generator polinom (normal form)
-
-    reg = xor_in
-    for octet in data:
-        # reflect in
-        for i in range(8):
-            topbit = reg & 0x8000
-            if octet & (0x80 >> i):
-                topbit ^= 0x8000
-            reg <<= 1
-            if topbit:
-                reg ^= poly
-        reg &= 0xFFFF
-        # reflect out
-    return reg ^ xor_out
+def crc16_arc(data : bytearray):
+    crc = 0
+    for byte_val in data:
+        crc ^= byte_val
+        for j in range(8):
+            if ((crc & 0x1) == 1):
+                crc = int((crc / 2)) ^ 40961
+            else:
+                crc = int(crc / 2)
+    return crc & 0xFFFF
 
 with open('settings/beacon_manager_config.json', 'r') as beacon_manager_settings_file:
     beacon_manager_settings = json.load(beacon_manager_settings_file)
@@ -89,8 +81,10 @@ def check_and_wait_until_available() -> bool:
 def wrap_message(message_content:bytes) -> bytes:
     """Wrap message contents with control characters and append its CRC16 (Checksum) at the end"""
     message_frame = DLE + STX + message_content + DLE + ETX
-    msg_crc16 = crc16(message_frame)
-    return message_frame + int.to_bytes(msg_crc16, length=2)
+    # We skip the first 2 bytes (DLE and STX) to compute the CRC-16 of the message!!
+    crc16_int = crc16_arc(message_frame[2:])
+    crc16_bytes = int.to_bytes(crc16_int, length=2, byteorder='little')
+    return message_frame + crc16_bytes
 
 def send_command(message_content:bytes):
     global serial_instance
