@@ -57,7 +57,15 @@ DLE = bytes([0x10]) # Escape character, to discriminate between special characte
 STX = bytes([0x02]) # Start of message
 ETX = bytes([0x03]) # End of message
 
-def check_and_wait_until_available() -> bool:
+def wait_for_beacon_ack() -> bool:
+    bac_serial_wrapper_logger.debug('Waiting for an ACK to the last sent message...')
+    response_control_str = b''
+    while response_control_str != ACK:
+        time.sleep(0.1)
+        response_control_str = serial_instance.read(1)
+    return True
+
+def check_and_wait_until_available_to_write() -> bool:
     bac_serial_wrapper_logger.debug('Sending ENQ and waiting for beacon ACK (asking to transmit message)...')
     response_control_str = b''
     # no_ack_count = 0
@@ -78,6 +86,19 @@ def check_and_wait_until_available() -> bool:
             bac_serial_wrapper_logger.debug(f"ENQ (0x05) control char response: 0x{response_control_char:02x}")
     return True
 
+def check_and_wait_until_available_to_read() -> bool:
+    bac_serial_wrapper_logger.debug('Waiting for ENQ from beacon, so we can send an ACK (beacon asking to transmit message)...')
+    beacon_req_control_str = b''
+    while beacon_req_control_str != ENQ:
+        time.sleep(0.2)
+        beacon_req_control_str = serial_instance.read(1)
+        if beacon_req_control_str != b'':
+            beacon_req_control_char = beacon_req_control_str[0]
+            bac_serial_wrapper_logger.debug(f"Beacon request control char: 0x{beacon_req_control_char:02x}")
+    # Got an ENQ from beacon!
+    serial_instance.write(ACK)
+    return True
+
 def wrap_message(message_content:bytes) -> bytes:
     """Wrap message contents with control characters and append its CRC16 (Checksum) at the end"""
     message_frame = DLE + STX + message_content + DLE + ETX
@@ -90,21 +111,25 @@ def send_command(message_content:bytes):
     global serial_instance
     bac_serial_wrapper_logger.debug(f"[BAC >>] Sending message with content 0x{message_content.hex().upper()}")
 
-    check_and_wait_until_available()
+    check_and_wait_until_available_to_write()
 
     message_value = wrap_message(message_content)
     serial_instance.write(message_value)
     bac_serial_wrapper_logger.debug(f"[BAC >>] Wrote message 0x{message_value.hex().upper()}")
+    wait_for_beacon_ack()
 
+    serial_instance.write(EOT)
+    bac_serial_wrapper_logger.debug(f"[BAC >>] Wrote EOT, 0x05, to signal end of transmission")
+
+    check_and_wait_until_available_to_read()
     read_message()
 
 def read_message() -> bytes:
     bac_serial_wrapper_logger.debug('Reading serial response from beacon')
     response_content = bytearray()
     current_char = serial_instance.read(1)
-    if current_char == NAK:
-        bac_serial_wrapper_logger.error('Received a NAK!!')
-    elif current_char == DLE:
+    print(current_char)
+    if current_char == DLE:
         current_char = serial_instance.read(1)
         if current_char == STX:
             while current_char != DLE:
@@ -117,7 +142,8 @@ def read_message() -> bytes:
                 raise Exception('Unexpected control character in response!!!')
     else:
         raise Exception('Unexpected control character in response!!!')
-
+    bac_serial_wrapper_logger.debug('Reading over!! Sending ACK!')
+    serial_instance.write(ACK)
     
     bac_serial_wrapper_logger.debug(f"[BAC <<] Read 0x{response_content.hex().upper()}")
     return response_content
@@ -168,7 +194,7 @@ def _kapsch_set_config():
     initialize_serial_communication()
 
     # STOP the beacon first!!
-    pertel_set_beacon_mode(0)
+    pertel_set_beacon_mode(0x03)
     pertel_monitor_beacon()
 
     _kapsch_cd_read_dsrc_config()
