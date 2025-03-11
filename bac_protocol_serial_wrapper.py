@@ -66,18 +66,27 @@ STX = bytes([0x02]) # Start of message
 ETX = bytes([0x03]) # End of message
 
 def check_and_wait_until_available() -> bool:
-    response_control_char = 0
-    while response_control_char != 0x06:
+    bac_serial_wrapper_logger.debug('Sending ENQ and waiting for beacon ACK (asking to transmit message)...')
+    response_control_str = b''
+    # no_ack_count = 0
+    while response_control_str != ACK:
         serial_instance.write(ENQ)
-        response = serial_instance.read(1)
-        if response == b'':
+        response_control_str = serial_instance.read(1)
+        if response_control_str == b'':
+            # if no_ack_count >= 12:
+            #     # Trying to end transmissiong of any unfinished messages
+            #     serial_instance.write(ETX)
+            # no_ack_count+=1
             time.sleep(0.05)
             continue
-        response_control_char = response[0]
-        print(f"ENQ (0x05) control char response: 0x{response_control_char:02x}")
+        response_control_char = response_control_str[0]
+        if response_control_str == NAK:
+            bac_serial_wrapper_logger.error(f"ENQ (0x05) control char response: 0x{response_control_char:02x}")
+        else:
+            bac_serial_wrapper_logger.debug(f"ENQ (0x05) control char response: 0x{response_control_char:02x}")
     return True
 
-def wrap_message(message_content) -> bytes:
+def wrap_message(message_content:bytes) -> bytes:
     """Wrap message contents with control characters and append its CRC16 (Checksum) at the end"""
     message_frame = DLE + STX + message_content + DLE + ETX
     msg_crc16 = crc16(message_frame)
@@ -93,35 +102,59 @@ def send_command(message_content:bytes):
     serial_instance.write(message_value)
     bac_serial_wrapper_logger.debug(f"[BAC >>] Wrote message 0x{message_value.hex().upper()}")
 
+    read_message()
+
 def read_message() -> bytes:
+    bac_serial_wrapper_logger.debug('Reading serial response from beacon')
     response_content = bytearray()
-    first_char = serial_instance.read(1)
-    if first_char == DLE:
-        second_char = serial_instance.read(1)
-        if second_char == STX:
-            while character != ETX:
-                character = serial_instance.read(1)
-                response_content.append(character[0])
+    current_char = serial_instance.read(1)
+    if current_char == NAK:
+        bac_serial_wrapper_logger.error('Received a NAK!!')
+    elif current_char == DLE:
+        current_char = serial_instance.read(1)
+        if current_char == STX:
+            while current_char != DLE:
+                current_char = serial_instance.read(1)
+                response_content.append(current_char[0])
+            current_char = serial_instance.read(1)
+            if current_char == ETX:
+                response_content.append(current_char[0])
+            else:
+                raise Exception('Unexpected control character in response!!!')
+    else:
+        raise Exception('Unexpected control character in response!!!')
+
     
     bac_serial_wrapper_logger.debug(f"[BAC <<] Read 0x{response_content.hex().upper()}")
     return response_content
+    # response_content = bytearray()
+    # first_char = serial_instance.read(1)
+    # if first_char == DLE:
+    #     second_char = serial_instance.read(1)
+    #     if second_char == STX:
+    #         while character != ETX:
+    #             character = serial_instance.read(1)
+    #             response_content.append(character[0])
+    
+    # bac_serial_wrapper_logger.debug(f"[BAC <<] Read 0x{response_content.hex().upper()}")
+    # return response_content
 
-def send_command_and_receive_response(message_content:bytes) -> bytes:
-    global serial_instance
+# def send_command_and_receive_response(message_content:bytes) -> bytes:
+#     global serial_instance
 
-    send_command(message_content)
+#     send_command(message_content)
 
-    response_content = read_message()
+#     response_content = read_message()
 
-    response_code = response_content[0]
-    if command_code != response_code:
-        raise Exception('[BAC <<] Response code does not match command/request code!!')
-    error_code = response_content[1]
-    if error_code == 0:
-        response_body = serial_instance.read(response_size - 2)
-    else:
-        raise Exception(f'[BAC <<] Error {error_code}')
-    return response
+#     response_code = response_content[0]
+#     if command_code != response_code:
+#         raise Exception('[BAC <<] Response code does not match command/request code!!')
+#     error_code = response_content[1]
+#     if error_code == 0:
+#         response_body = serial_instance.read(response_size - 2)
+#     else:
+#         raise Exception(f'[BAC <<] Error {error_code}')
+#     return response
 
 def pertel_set_beacon_mode(mode_code=0) -> bytes:
     """
@@ -134,7 +167,7 @@ def pertel_set_beacon_mode(mode_code=0) -> bytes:
     return send_command(message_content)
 
 def pertel_monitor_beacon() -> bytes:
-    message_content = bytes([0x00])
+    message_content = bytes([0x01])
     return send_command(message_content)
 
 def _kapsch_set_config():
