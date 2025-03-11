@@ -134,36 +134,13 @@ def read_message() -> bytes:
         beacon_msg_content.append(current_char[0])
         if current_char == STX:
             break
+        time.sleep(0.1)
 
-    # if current_char == DLE:
-    #     current_char = serial_instance.read(1)
-    #     if current_char == STX:
-    #         while current_char != DLE:
-    #             current_char = serial_instance.read(1)
-    #             response_content.append(current_char[0])
-    #         current_char = serial_instance.read(1)
-    #         if current_char == ETX:
-    #             response_content.append(current_char[0])
-    #         else:
-    #             raise Exception('Unexpected control character in response!!!')
-    # else:
-    #     raise Exception('Unexpected control character in response!!!')
     bac_serial_wrapper_logger.debug('Reading over!! Sending ACK!')
     serial_instance.write(ACK)
     
     bac_serial_wrapper_logger.debug(f"[BAC <<] Read 0x{beacon_msg_content.hex().upper()}")
     return beacon_msg_content
-    # response_content = bytearray()
-    # first_char = serial_instance.read(1)
-    # if first_char == DLE:
-    #     second_char = serial_instance.read(1)
-    #     if second_char == STX:
-    #         while character != ETX:
-    #             character = serial_instance.read(1)
-    #             response_content.append(character[0])
-    
-    # bac_serial_wrapper_logger.debug(f"[BAC <<] Read 0x{response_content.hex().upper()}")
-    # return response_content
 
 # def send_command_and_receive_response(message_content:bytes) -> bytes:
 #     global serial_instance
