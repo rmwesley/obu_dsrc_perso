@@ -71,13 +71,10 @@ def check_and_wait_until_available_to_write() -> bool:
     # no_ack_count = 0
     while response_control_str != ACK:
         serial_instance.write(ENQ)
+        time.sleep(0.001)
         response_control_str = serial_instance.read(1)
         if response_control_str == b'':
-            # if no_ack_count >= 12:
-            #     # Trying to end transmissiong of any unfinished messages
-            #     serial_instance.write(ETX)
-            # no_ack_count+=1
-            time.sleep(0.05)
+            time.sleep(0.1)
             continue
         response_control_char = response_control_str[0]
         if response_control_str == NAK:
