@@ -29,12 +29,13 @@ def initialize_serial_communication() -> serial.Serial:
     serial_config = beacon_manager_settings[chosen_beacon_name]['serial_config']
     port_number = serial_config['beacon_serial_port']
 
+    # This is a byte reading timeout!
     serial_instance = serial.serial_for_url(
         url = f'COM{port_number}' ,
         baudrate = serial_config['baud_rate'],
         parity = serial_config['parity'],
-        stopbits = serial_config['stop_bits'],
-        timeout=0.2
+        stopbits = serial_config['stop_bits']
+        #timeout=0.2
     )
     bac_serial_wrapper_logger.info(f"Successfully initialized BAC protocol serial wrapper!")
 
@@ -58,7 +59,7 @@ STX = bytes([0x02]) # Start of message
 ETX = bytes([0x03]) # End of message
 
 def wait_for_beacon_ack() -> bool:
-    bac_serial_wrapper_logger.debug('Waiting for an ACK to the last sent message...')
+    # bac_serial_wrapper_logger.debug('Waiting for an ACK to the last sent message...')
     response_control_str = b''
     while response_control_str != ACK:
         time.sleep(0.1)
@@ -66,7 +67,7 @@ def wait_for_beacon_ack() -> bool:
     return True
 
 def check_and_wait_until_available_to_write() -> bool:
-    bac_serial_wrapper_logger.debug('Sending ENQ and waiting for beacon ACK (asking to transmit message)...')
+    # bac_serial_wrapper_logger.debug('Sending ENQ and waiting for beacon ACK (asking to transmit message)...')
     response_control_str = b''
     # no_ack_count = 0
     while response_control_str != ACK:
@@ -77,21 +78,21 @@ def check_and_wait_until_available_to_write() -> bool:
             time.sleep(0.1)
             continue
         response_control_char = response_control_str[0]
-        if response_control_str == NAK:
-            bac_serial_wrapper_logger.error(f"ENQ (0x05) control char response: 0x{response_control_char:02x}")
-        else:
-            bac_serial_wrapper_logger.debug(f"ENQ (0x05) control char response: 0x{response_control_char:02x}")
+        # if response_control_str == NAK:
+        #     bac_serial_wrapper_logger.error(f"ENQ (0x05) control char response: 0x{response_control_char:02x}")
+        # else:
+        #     bac_serial_wrapper_logger.debug(f"ENQ (0x05) control char response: 0x{response_control_char:02x}")
     return True
 
 def check_and_wait_until_available_to_read() -> bool:
-    bac_serial_wrapper_logger.debug('Waiting for ENQ from beacon, so we can send an ACK (beacon asking to transmit message)...')
+    # bac_serial_wrapper_logger.debug('Waiting for ENQ from beacon, so we can send an ACK (beacon asking to transmit message)...')
     beacon_req_control_str = b''
     while beacon_req_control_str != ENQ:
         time.sleep(0.2)
         beacon_req_control_str = serial_instance.read(1)
         if beacon_req_control_str != b'':
             beacon_req_control_char = beacon_req_control_str[0]
-            bac_serial_wrapper_logger.debug(f"Beacon request control char: 0x{beacon_req_control_char:02x}")
+            # bac_serial_wrapper_logger.debug(f"Beacon request control char: 0x{beacon_req_control_char:02x}")
     # Got an ENQ from beacon!
     serial_instance.write(ACK)
     return True
@@ -106,23 +107,23 @@ def wrap_message(message_content:bytes) -> bytes:
 
 def send_command(message_content:bytes):
     global serial_instance
-    bac_serial_wrapper_logger.debug(f"[BAC >>] Sending message with content 0x{message_content.hex().upper()}")
+    # bac_serial_wrapper_logger.debug(f"[BAC >>] Sending message with content 0x{message_content.hex().upper()}")
 
     check_and_wait_until_available_to_write()
 
     message_value = wrap_message(message_content)
     serial_instance.write(message_value)
-    bac_serial_wrapper_logger.debug(f"[BAC >>] Wrote message 0x{message_value.hex().upper()}")
+    # bac_serial_wrapper_logger.debug(f"[BAC >>] Wrote message 0x{message_value.hex().upper()}")
     wait_for_beacon_ack()
 
     serial_instance.write(EOT)
-    bac_serial_wrapper_logger.debug(f"[BAC >>] Wrote EOT, 0x05, to signal end of transmission")
+    # bac_serial_wrapper_logger.debug(f"[BAC >>] Wrote EOT, 0x05, to signal end of transmission")
 
     check_and_wait_until_available_to_read()
     read_message()
 
 def read_message() -> bytes:
-    bac_serial_wrapper_logger.debug('Reading serial response from beacon')
+    # bac_serial_wrapper_logger.debug('Reading serial response from beacon')
     beacon_msg_content = bytearray()
     current_char = serial_instance.read(1)
     print(current_char)
@@ -133,10 +134,10 @@ def read_message() -> bytes:
             break
         time.sleep(0.1)
 
-    bac_serial_wrapper_logger.debug('Reading over!! Sending ACK!')
+    # bac_serial_wrapper_logger.debug('Reading over!! Sending ACK!')
     serial_instance.write(ACK)
     
-    bac_serial_wrapper_logger.debug(f"[BAC <<] Read 0x{beacon_msg_content.hex().upper()}")
+    # bac_serial_wrapper_logger.debug(f"[BAC <<] Read 0x{beacon_msg_content.hex().upper()}")
     return beacon_msg_content
 
 # def send_command_and_receive_response(message_content:bytes) -> bytes:
