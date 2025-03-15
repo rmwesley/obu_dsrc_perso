@@ -38,8 +38,22 @@ class BACHost(io.RawIOBase):
         # T1 = 432.0 / baudrate
         T1 = 460.8 / baudrate
         TRANSFER_REQUEST_TIMEOUT = T1
+        self.sender = BACMsgTransfer(self)
+        self.receiver = BACMsgReceiver(self)
 
-    def request_to_transfer_msg_to_dest(self) -> bool:
+    def send_command(self, message_content:bytes) -> bytes:
+        self._transfer_message(message_content)
+        return self._receive_message()
+
+    # Host transfers a message
+    def _transfer_message(self, message_content:bytes):
+        return self.sender.transfer_message(message_content)
+
+    # Host receives a message
+    def _receive_message(self) -> bytes:
+        return self.receiver.receive_message()
+
+    def _request_to_transfer_msg_to_dest(self) -> bool:
         """Request sent from source to dest to transfer a message.
         It sends an ENQ and waits for an ACK (with a timeout)"""
         received_char = b''
@@ -55,7 +69,7 @@ class BACHost(io.RawIOBase):
             transfer_request_counter += 1
         return True
 
-    def wait_for_transfer_req_from_dest(self) -> bool:
+    def _wait_for_transfer_req_from_dest(self) -> bool:
         received_char = self.read(1)
         if received_char != ENQ:
             raise Exception('Received non-ENQ character before transaction started!!')
@@ -97,8 +111,8 @@ class BACMsgTransfer(io.RawIOBase):
     def transfer_and_receive_message(self, message_content:bytes) -> bytes:
         self.transfer_message(message_content)
         return self.read_message()
-        
-class BACMsgReceive(io.RawIOBase):
+
+class BACMsgReceiver(io.RawIOBase):
     def __init__(self, baudrate):
         T2 = 384 / baudrate
         MESSAGE_CHARACTER_READ_TIMEOUT = T2
@@ -141,10 +155,10 @@ class BACMsgReceive(io.RawIOBase):
             source_msg_content.append(current_char[0])
 
         self.write(ACK)
-        
+
         return source_msg_content
 
-    def read_message(self):
+    def receive_message(self):
         _wait_for_message_start_header()
         source_msg_content = read_message_content()
         return source_msg_content
