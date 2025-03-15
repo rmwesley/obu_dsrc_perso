@@ -29,8 +29,8 @@ DLE = bytes([0x10]) # Escape character, to discriminate between special characte
 STX = bytes([0x02]) # Start of message
 ETX = bytes([0x03]) # End of message
 
-MAX_TRANSFER_REQUEST_RETRIES = 255
-MAX_TRANSFER_RETRIES = 8
+MAX_TRANSFER_REQ_RETRIES = 255
+MAX_MSG_TRANSFER_RETRIES = 8
 
 class BACHost(io.RawIOBase):
     def __init__(self, baudrate):
@@ -47,7 +47,7 @@ class BACHost(io.RawIOBase):
         # no_ack_count = 0
         transfer_request_counter = 0
         while received_char != ACK:
-            if transfer_request_counter > MAX_TRANSFER_REQUEST_RETRIES:
+            if transfer_request_counter > MAX_TRANSFER_REQ_RETRIES:
                 raise Exception('Maximum transfer request retries exceeded!!')
             self.write(ENQ)
             # Wait for ACK, with a timeout
@@ -67,7 +67,7 @@ class BACMsgTransfer(io.RawIOBase):
     def __init__(self, baudrate):
         T1 = 460.8 / baudrate
         TRANSFER_REQUEST_TIMEOUT = T1
-    
+
     def _msg_ack_received_from_dest(self) -> bool:
         """Wait for an ACK from dest after sending a message (with a timeout)"""
         received_char = self.read(1, TRANSFER_REQUEST_TIMEOUT)
@@ -83,8 +83,14 @@ class BACMsgTransfer(io.RawIOBase):
     def transfer_message(self, message_content:bytes):
         message_value = wrap_message(message_content)
         self.write(message_value)
+
+        message_transfer_counter = 0
+        # Reemit message until ACK is received!
         while not self._msg_ack_received_from_dest():
+            if message_transfer_counter > MAX_MSG_TRANSFER_RETRIES:
+                raise Exception('Exceeded message transfer retry limit!!')
             self.write(message_value)
+            message_transfer_counter += 1
 
         self.write(EOT)
 
@@ -103,7 +109,7 @@ class BACMsgReceive(io.RawIOBase):
         transfer_request_counter = 0
         while received_char == ENQ:
             # ACK was lost by the source!!!
-            if transfer_request_counter > MAX_TRANSFER_REQUEST_RETRIES - 1:
+            if transfer_request_counter > MAX_TRANSFER_REQ_RETRIES - 1:
                 raise Exception('Maximum transfer request retries exceeded!!')
             self.write(ACK)
             received_char = self.read(1)
