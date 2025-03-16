@@ -1,7 +1,8 @@
-import time
 import json
 import io
 import serial
+import logging
+import threading
 
 bac_serial_wrapper_logger = logging.getLogger(__name__)
 
@@ -49,9 +50,13 @@ class BacHost(serial.SerialBase):
         Reminder:
         The serial port is opened here since we inherit from SerialBase!!
         The port SHOULD NOT be opened beforehand!
+
+        Also, we do not implement a BAC L2 beacon serial port listener!
+        As such, we only expect reading BAC L2 Rx in response to our commands!
         """
         bac_serial_wrapper_logger.info(f"Initializing BAC protocol L2 communication with beacon...!!")
 
+        self._bac_l2_lock = threading.Lock()
         # Opening the serial port
         bac_serial_wrapper_logger.info(f"Initializing serial communication with beacon (from config data)...!!")
         serial_config = bac_l2_config['beacon_host_serial_config']
@@ -71,14 +76,21 @@ class BacHost(serial.SerialBase):
 
     # Host transfers a message
     def _transfer_message(self, message_content:bytes):
-        return self.sender.transfer_message(message_content)
+        self._bac_l2_lock.acquire()
+        result = self.sender.transfer_message(message_content)
+        self._bac_l2_lock.release()
+        return result 
 
     # Host receives a message
     def _receive_message(self) -> bytes:
         self._wait_for_transfer_req_from_dest()
-        return self.receiver.receive_message()
 
-    def _request_to_transfer_msg_to_dest(self) -> bool:
+        self._bac_l2_lock.acquire()
+        response = self.receiver.receive_message()
+        self._bac_l2_lock.release()
+        return response
+
+    def _send_request_to_transfer_msg_to_dest(self) -> bool:
         """Request sent from host to beacon to transfer a message.
 
         That is, the Host asks to be the source and the beacon the destination of a message.
@@ -88,7 +100,7 @@ class BacHost(serial.SerialBase):
         # no_ack_count = 0
         transfer_request_counter = 0
         while received_char != ACK:
-            # Contention (ENQ conflict) resolution
+            # Contention (ENQ conflict) resolution for Host
             if received_char == ENQ:
                 self._receive_message()
                 return False
