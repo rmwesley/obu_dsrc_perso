@@ -31,6 +31,24 @@ def wrap_message(message_content:bytes) -> bytes:
     crc16_bytes = crc16_arc(message_frame[2:])
     return message_frame + crc16_bytes
 
+def unescape_message_control_characters(message_content:bytes) -> bytes:
+    unescaped_message_content = bytearray()
+    escape_next = False
+    for char in message_content:
+        if escape_next:
+            if char in CONTROL_SEQUENCE_CHARACTERS:
+                unescaped_message_content.append(char)
+            else:
+                raise Exception('Escaped a normal, non-control character!')
+        elif char == DLE:
+            escape_next = True
+        elif char in CONTROL_SEQUENCE_CHARACTERS:
+            raise Exception('Did not escape a control character!')
+        else:
+            unescaped_message_content.append(char)
+    return unescaped_message_content
+        
+
 ENQ = bytes([0x05]) # Request the transmission of a message
 ACK = bytes([0x06]) # Positive acknowledgement (message can be sent!!)
 NAK = bytes([0x15]) # Negative acknowledgement (message CANNOT be sent!)
@@ -38,6 +56,7 @@ EOT = bytes([0x04]) # End Of Transmission of message
 DLE = bytes([0x10]) # Escape character, to discriminate between special characters and message content
 STX = bytes([0x02]) # Start of message
 ETX = bytes([0x03]) # End of message
+CONTROL_SEQUENCE_CHARACTERS = set([ENQ, ACK, NAK, EOT, DLE, STX, ETX])
 
 MAX_TRANSFER_REQ_RETRIES = 255
 MAX_MSG_TRANSFER_RETRIES = 8
@@ -213,7 +232,7 @@ class BacMsgReceiver():
         return True
 
     def _check_received_msg_crc(self, message_content, crc_bytes) -> bool:
-        print(crc16_arc(message_content).hex())
+        # print(crc16_arc(message_content).hex())
         return crc_bytes == crc16_arc(message_content)
 
     def _read_message_content_and_acknowledge_it(self) -> bytes:
@@ -233,9 +252,7 @@ class BacMsgReceiver():
                 # End of message control sequence!!
                 if current_char == ETX:
                     break
-
-        print(source_msg_content_with_etx.hex().upper())
-
+        # print(source_msg_content_with_etx.hex().upper())
         crc_bytes = self.serial_instance.read(2)
 
         if self._check_received_msg_crc(source_msg_content_with_etx, crc_bytes):
@@ -257,9 +274,9 @@ class BacMsgReceiver():
     def receive_message(self):
         self._wait_for_message_start_header()
         source_msg_content_with_etx = self._read_message_content_and_acknowledge_it()
-        source_msg_content = source_msg_content_with_etx[:-2]
-        print(f'Received message content: {source_msg_content.hex().upper()}')
+        unescaped_source_msg_content = unescape_message_control_characters(source_msg_content_with_etx[:-2])
+        print(f'Received message content: {unescaped_source_msg_content.hex().upper()}')
 
         self._receive_eot_char()
 
-        return source_msg_content
+        return unescaped_source_msg_content
