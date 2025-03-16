@@ -42,6 +42,8 @@ ETX = bytes([0x03]) # End of message
 MAX_TRANSFER_REQ_RETRIES = 255
 MAX_MSG_TRANSFER_RETRIES = 8
 
+T1_FOR_1_BAUD = 20000
+T2_FOR_1_BAUD = 20000
 class BacHost(serial.Serial):
     def __init__(self, *args, **kwargs):
         """Initialize serial communication (inherited from SerialBase).
@@ -63,7 +65,8 @@ class BacHost(serial.Serial):
         super().__init__(*args, **serial_config, **kwargs)
 
         # T1 = 432.0 / self.baudrate
-        T1 = 460.8 / self.baudrate
+        # T1 = 460.8 / self.baudrate
+        T1 = T1_FOR_1_BAUD / self.baudrate
         self.TRANSFER_REQUEST_TIMEOUT = T1
         self.sender = BacMsgTransfer(serial_instance=self)
         self.receiver = BacMsgReceiver(serial_instance=self)
@@ -117,22 +120,26 @@ class BacHost(serial.Serial):
             if transfer_request_counter > MAX_TRANSFER_REQ_RETRIES:
                 raise Exception('Maximum transfer request retries exceeded!!')
             self.write(ENQ)
-            # Wait for ACK, with a timeout
+            # Wait for ACK, with the timeout TRANSFER_REQUEST_TIMEOUT
             received_char = self.read(1)
             transfer_request_counter += 1
         return True
 
     def _wait_for_transfer_req_from_dest(self) -> bool:
+        self.timeout = 1
         received_char = self.read(1)
-        if received_char != ENQ:
-            raise Exception('Received non-ENQ character before transaction started!!')
+        if received_char == EOT:
+            print('Received EOT instead of ENQ!! Message was lost')
+            return False
+        elif received_char != ENQ:
+            raise Exception(f'Received non-ENQ character ({received_char.hex().upper()}) before reception started!!')
         # Got an ENQ from destination!
         self.write(ACK)
         return True
 
 class BacMsgTransfer():
     def __init__(self, serial_instance: serial.Serial):
-        T1 = 460.8 / serial_instance.baudrate
+        T1 = T1_FOR_1_BAUD / serial_instance.baudrate
         self.TRANSFER_REQUEST_TIMEOUT = T1
         self.serial_instance = serial_instance
 
@@ -170,7 +177,10 @@ class BacMsgTransfer():
 
 class BacMsgReceiver():
     def __init__(self, serial_instance: serial.Serial):
-        T2 = 384 / serial_instance.baudrate
+        T1 = T1_FOR_1_BAUD / serial_instance.baudrate
+        T2 = T2_FOR_1_BAUD / serial_instance.baudrate
+
+        self.TRANSFER_REQUEST_TIMEOUT = T1
         self.MESSAGE_CHARACTER_READ_TIMEOUT = T2
         self.serial_instance = serial_instance
 
