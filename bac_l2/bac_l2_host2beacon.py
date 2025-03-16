@@ -208,20 +208,27 @@ class BacMsgReceiver():
         if second_char != STX:
             control_sequence = bytes.join(first_char, second_char)
             raise Exception(f'Message did not start with DLE/STX control sequence!!: 0x{control_sequence.hex().upper()}')
+        # print('Message start control sequence DLE/STX received!!')
         return True
 
     def _read_message_content_and_acknowledge_it(self) -> bytes:
         """Read message content and acknowledge it!
         We read bytes until we get to the control sequence DLE/ETX"""
         source_msg_content = bytearray()
-        current_char = b''
-        # Escaped character!!
-        while current_char != DLE:
-            current_char = self.serial_instance.read(1)
-            # End of message control sequence!!
-            if current_char == ETX:
-                break
-            source_msg_content.append(current_char[0])
+        current_char = self.serial_instance.read(1)
+        while current_char != DLE + ETX:
+            # Non-escaped character!
+            if current_char != DLE:
+                current_char = self.serial_instance.read(1)
+                source_msg_content.append(current_char[0])
+            # Escaped character!!
+            if current_char == DLE:
+                current_char = self.serial_instance.read(1)
+                # End of message control sequence!!
+                if current_char == ETX:
+                    break
+        print(source_msg_content.hex().upper())
+
 
         self.serial_instance.write(ACK)
 
