@@ -61,11 +61,13 @@ CONTROL_SEQUENCE_CHARACTERS = set([ENQ, ACK, NAK, EOT, DLE, STX, ETX])
 MAX_TRANSFER_REQ_RETRIES = 255
 MAX_MSG_TRANSFER_RETRIES = 8
 
-# T1_FOR_1_BAUD = 432.0
-# T1_FOR_1_BAUD = 460.8
-# T2_FOR_1_BAUD = 384
-T1_FOR_1_BAUD = 20000
-T2_FOR_1_BAUD = 20000
+T1_FOR_1_BAUD = 2000
+T2_FOR_1_BAUD = 1000
+
+# Remember to increase the timeouts if you are sniffing the serial line!!
+# Otherwise, use the values set above
+# T1_FOR_1_BAUD = 20000
+# T2_FOR_1_BAUD = 20000
 class BacHost(serial.Serial):
     def __init__(self, *args, **kwargs):
         """Initialize serial communication (inherited from SerialBase).
@@ -257,7 +259,7 @@ class BacMsgReceiver():
                 if current_char == ETX:
                     break
         # print(source_msg_content_with_etx.hex().upper())
-        crc_bytes = self.serial_instance.read(2)
+        crc_bytes = self.serial_instance.read(1) + self.serial_instance.read(1)
 
         if self._check_received_msg_crc(source_msg_content_with_etx, crc_bytes):
             self.serial_instance.write(ACK)
