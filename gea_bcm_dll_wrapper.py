@@ -632,23 +632,23 @@ def initialize_gea_bcm_dll_wrapper(external_callback_param:callable = None, exte
     gea_dll_wrapper_logger.info(f"Current beacon manager config: {pertel_beacon_settings}")
 
     if pertel_beacon_settings['chosen_communication_mode'] == 'serial-pertel':
-        # Serial configuration
-        serial_config = pertel_beacon_settings['serial_config']
-        if serial_port is None:
-            serial_port = serial_config["beacon_serial_port"]
-        baud_rate = serial_config["baud_rate"]
-
-        # Layer2 configuration/parameters
-        l2_config = serial_config['l2_config']
-        send_event_polling_OK = l2_config['send_OK_state_alarms']
-        beacon_alarm_state_polling_ms = l2_config['beacon_alarm_state_polling_ms']
+        # BAC Layer2 configuration/parameters
+        bac_l2_config = pertel_beacon_settings['bac_l2_config']
+        send_event_polling_OK = bac_l2_config['send_OK_state_alarms']
+        beacon_alarm_state_polling_ms = bac_l2_config['beacon_alarm_state_polling_ms']
         gea_dll_wrapper_logger.info(f"Beacon serial port: {serial_port}")
+
+        # Serial configuration
+        serial_config = bac_l2_config['beacon_host_serial_config']
+        if serial_port is None:
+            serial_port = int(serial_config['port'].split('COM')[1])
+        baud_rate = serial_config['baudrate']
 
         default_baud_rate = 115200
         if baud_rate not in available_baud_rate_enum_vals:
-            gea_dll_wrapper_logger.error(f"Invalid Baud Rate!!! Setting it to a default value, {default_baud_rate}")
+            gea_dll_wrapper_logger.error(f'Invalid Baud Rate!!! Setting it to a default value, {default_baud_rate}')
             baud_rate_index = default_baud_rate
-        gea_dll_wrapper_logger.info(f"Beacon Baud Rate: {baud_rate}")
+        gea_dll_wrapper_logger.info(f'Beacon Baud Rate: {baud_rate}')
         baud_rate_index = available_baud_rate_enum_vals[baud_rate]
 
         result = bcm_init_manager_fnc(

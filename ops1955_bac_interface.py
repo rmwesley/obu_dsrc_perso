@@ -29,10 +29,10 @@ class Ops1955BacL2(pertel_bac_interface.PertelBacL2):
         dsrc_channel = 0x01
         bst_repetition_time = 0x00
 
-        l2_config = beacon_manager_settings['OPS1955']['serial_config']['l2_config']
-        if l2_config['release_command_config'] == 'UI':
+        bac_l2_config = beacon_manager_settings['OPS1955']['bac_l2_config']
+        if bac_l2_config['release_command_config'] == 'UI':
             end_transceiver_behavior = 0x00
-        elif l2_config['release_command_config'] == 'ACn':
+        elif bac_l2_config['release_command_config'] == 'ACn':
             end_transceiver_behavior = 0x01
 
         message_content = bytes([msg_id, msg_data_struct_version, dsrc_channel, bst_repetition_time, end_transceiver_behavior])
