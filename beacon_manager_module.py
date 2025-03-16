@@ -18,8 +18,6 @@ import uuid
 from bac_l2 import gea_bcm_dll_wrapper, ops1955_bac_interface
 ops1955_bac_l2 = ops1955_bac_interface.Ops1955BacL2()
 
-import kapsch_ops1955_tcp_ip_dll_wrapper
-
 import custom_its_per_decoders
 import dsrc_security
 
@@ -162,9 +160,11 @@ def safe_set_beacon(chosen_beacon_name):
             gea_bcm_dll_wrapper.initialize_gea_bcm_dll_wrapper()
             
             beacon_l7_wrapper = gea_bcm_dll_wrapper
-        elif beacon_manager_config[chosen_beacon_name]['chosen_communication_mode'] == 'tcp':
-            beacon_l7_wrapper = kapsch_ops1955_tcp_ip_dll_wrapper
-            kapsch_ops1955_tcp_ip_dll_wrapper.ops1955_init()
+        # Custom Kapsch OPS1955 ASN.1 files are non-functional
+        # The OPS1955 L7 Ethernet data structures are not encoded with PER, OER or other valid ASN.1 encoding rules
+        # elif beacon_manager_config[chosen_beacon_name]['chosen_communication_mode'] == 'tcp':
+        #     beacon_l7_wrapper = kapsch_ops1955_tcp_ip_dll_wrapper
+        #     kapsch_ops1955_tcp_ip_dll_wrapper.ops1955_init()
         current_beacon_name = chosen_beacon_name
 
 class BeaconManagerException(Exception):
