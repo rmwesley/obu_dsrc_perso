@@ -145,10 +145,10 @@ class BacHost(serial.Serial):
         return True
 
     def _wait_for_transfer_req_from_dest(self) -> bool:
-        self.timeout = 1
+        self.timeout = 2.0
         received_char = self.read(1)
         if received_char == EOT:
-            print('Received EOT instead of ENQ!! Message was lost')
+            print('Received EOT instead of ENQ!! A message was lost!')
             return False
         elif received_char != ENQ:
             raise Exception(f'Received non-ENQ character ({received_char.hex().upper()}) before reception started!!')
