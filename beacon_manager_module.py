@@ -17,7 +17,7 @@ import uuid
 
 import ops1955_bac_interface
 ops1955_bac_l2 = ops1955_bac_l2.Ops1955BacL2()
-import gea_bcm_dll_wrapper
+import bac_l2.gea_bcm_dll_wrapper as gea_bcm_dll_wrapper
 import kapsch_ops1955_tcp_ip_dll_wrapper
 
 import custom_its_per_decoders
