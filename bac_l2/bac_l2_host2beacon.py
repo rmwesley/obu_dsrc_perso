@@ -61,6 +61,9 @@ CONTROL_SEQUENCE_CHARACTERS = set([ENQ, ACK, NAK, EOT, DLE, STX, ETX])
 MAX_TRANSFER_REQ_RETRIES = 255
 MAX_MSG_TRANSFER_RETRIES = 8
 
+# T1_FOR_1_BAUD = 432.0
+# T1_FOR_1_BAUD = 460.8
+# T2_FOR_1_BAUD = 384
 T1_FOR_1_BAUD = 20000
 T2_FOR_1_BAUD = 20000
 class BacHost(serial.Serial):
@@ -83,8 +86,6 @@ class BacHost(serial.Serial):
         serial_config = bac_l2_config['beacon_host_serial_config']
         super().__init__(*args, **serial_config, **kwargs)
 
-        # T1 = 432.0 / self.baudrate
-        # T1 = 460.8 / self.baudrate
         T1 = T1_FOR_1_BAUD / self.baudrate
         self.TRANSFER_REQUEST_TIMEOUT = T1
         self.sender = BacMsgTransfer(serial_instance=self)
@@ -168,10 +169,13 @@ class BacMsgTransfer():
         self.serial_instance.timeout = self.TRANSFER_REQUEST_TIMEOUT
 
         received_char = self.serial_instance.read(1)
-        if received_char == NAK:
-            return False
         if received_char == ACK:
             return True
+        if received_char == NAK:
+            return False
+        if received_char == b'':
+            # Read timed out after T1 seconds elapsed!!
+            return False
         else:
             raise Exception(f'Invalid control character ({received_char.hex().upper()}) received during message transfer!!!')
 
@@ -201,7 +205,7 @@ class BacMsgReceiver():
 
         self.TRANSFER_REQUEST_TIMEOUT = T1
         self.MESSAGE_CHARACTER_READ_TIMEOUT = T2
-        self.EOT_CHAR_TIMEOUT = 2*(T1 + T2)
+        self.EOT_CHAR_TIMEOUT = T1 + T2
 
         self.serial_instance = serial_instance
 
