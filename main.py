@@ -61,13 +61,17 @@ def simple_bcm_transactions():
 
     beacon_manager_module.set_beeping_state(beep_state=True)
     beacon_manager_module.cardme_transaction(1, mand_applications=[1, 20, 29])
-    # beacon_manager_module.cardme_transaction(4, mand_applications=[1, 20, 29], accessCredentialsPresent=True)
+    # beacon_manager_module.cardme_transaction(1, mand_applications=[1, 20, 29], accessCredentialsPresent=True)
+    # beacon_manager_module.cardme_transaction(4, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=False)
+    # beacon_manager_module.cardme_transaction(1, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True)
+    # beacon_manager_module.cardme_transaction(1, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=False)
     # beacon_manager_module.tis_vl_transaction(eid=1, mand_applications=[1])
 
-    # beacon_manager_module.ccc_2015_transaction(eid=2, accessCredentialsPresent=True)
-    # beacon_manager_module.test_ccc_2015_transaction(eid=2, accessCredentialsPresent=True)
+    # beacon_manager_module.ccc_2015_transaction(eid=5, accessCredentialsPresent=True)
+    # beacon_manager_module.test_ccc_2015_transaction(eid=5, accessCredentialsPresent=True)
     # beacon_manager_module.ccc_2015_status_history_transaction(eid=5, accessCredentialsPresent=True)
     # beacon_manager_module.test_ccc_2009_transaction(eid=2, accessCredentialsPresent=True)
+    # beacon_manager_module.ccc_2023_transaction(eid=2, accessCredentialsPresent=True)
 
     # beacon_manager_module.loop_transactions()
 
