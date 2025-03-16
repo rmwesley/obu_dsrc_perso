@@ -94,6 +94,7 @@ class BacHost(serial.Serial):
         self._send_request_to_transfer_msg_to_dest()
 
     def _host_resolve_enq_conflict(self):
+        self.write(ACK)
         self._receive_message()
 
     def _send_request_to_transfer_msg_to_dest(self) -> bool:
