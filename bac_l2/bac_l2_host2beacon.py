@@ -198,6 +198,7 @@ class BacMsgReceiver():
             received_char = self.serial_instance.read(1)
             transfer_request_counter += 1
         return received_char
+
     def _wait_for_message_start_header(self):
         received_char = self.serial_instance.read(1)
         first_char = self._handle_repeated_transfer_requests(received_char)
@@ -211,28 +212,39 @@ class BacMsgReceiver():
         # print('Message start control sequence DLE/STX received!!')
         return True
 
+    def _check_received_msg_crc(self, message_content, crc_bytes) -> bool:
+        print(crc16_arc(message_content).hex())
+        return crc_bytes == crc16_arc(message_content)
+
     def _read_message_content_and_acknowledge_it(self) -> bytes:
         """Read message content and acknowledge it!
         We read bytes until we get to the control sequence DLE/ETX"""
-        source_msg_content = bytearray()
-        current_char = self.serial_instance.read(1)
+        source_msg_content_with_etx = bytearray()
+        current_char = b''
         while current_char != DLE + ETX:
             # Non-escaped character!
             if current_char != DLE:
                 current_char = self.serial_instance.read(1)
-                source_msg_content.append(current_char[0])
+                source_msg_content_with_etx.append(current_char[0])
             # Escaped character!!
             if current_char == DLE:
                 current_char = self.serial_instance.read(1)
+                source_msg_content_with_etx.append(current_char[0])
                 # End of message control sequence!!
                 if current_char == ETX:
                     break
-        print(source_msg_content.hex().upper())
 
+        print(source_msg_content_with_etx.hex().upper())
 
-        self.serial_instance.write(ACK)
+        crc_bytes = self.serial_instance.read(2)
 
-        return source_msg_content
+        if self._check_received_msg_crc(source_msg_content_with_etx, crc_bytes):
+            self.serial_instance.write(ACK)
+        else:
+            self.serial_instance.write(NAK)
+            self.receive_message()
+
+        return source_msg_content_with_etx
 
     def _receive_eot_char(self):
         self.serial_instance.timeout = self.EOT_CHAR_TIMEOUT
@@ -244,7 +256,8 @@ class BacMsgReceiver():
 
     def receive_message(self):
         self._wait_for_message_start_header()
-        source_msg_content = self._read_message_content_and_acknowledge_it()
+        source_msg_content_with_etx = self._read_message_content_and_acknowledge_it()
+        source_msg_content = source_msg_content_with_etx[:-2]
         print(f'Received message content: {source_msg_content.hex().upper()}')
 
         self._receive_eot_char()
