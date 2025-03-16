@@ -1,8 +1,4 @@
-import logging
-import serial
-import json
-import bac_l2
-import pertel_bac_interface
+from bac_l2 import pertel_bac_interface
 
 class Ops1955BacL2(pertel_bac_interface.PertelBacL2):
     def _kapsch_set_config(self):

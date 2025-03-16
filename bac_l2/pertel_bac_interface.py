@@ -2,12 +2,12 @@ import logging
 import serial
 import json
 import time
-import bac_l2
+from bac_l2 import bac_l2_host2beacon
 
 bac_serial_wrapper_logger = logging.getLogger(__name__)
     
 MAXIMUM_DSRC_L7_COMMAND_SIZE = 118
-class PertelBacL2(bac_l2.BacHost):
+class PertelBacL2(bac_l2_host2beacon.BacHost):
     def set_mode(self, mode_code=0) -> bytes:
         return self._pertel_set_beacon_mode(mode_code)
 
