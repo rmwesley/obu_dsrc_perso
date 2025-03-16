@@ -198,7 +198,7 @@ class BacMsgReceiver():
             raise Exception(f'Message did not start with DLE/STX control sequence!!: 0x{control_sequence.hex().upper()}')
         return True
 
-    def read_message_content_and_acknowledge_it(self) -> bytes:
+    def _read_message_content_and_acknowledge_it(self) -> bytes:
         """Read message content and acknowledge it!
         We read bytes until we get to the control sequence DLE/ETX"""
         source_msg_content = bytearray()
@@ -217,5 +217,7 @@ class BacMsgReceiver():
 
     def receive_message(self):
         self._wait_for_message_start_header()
-        source_msg_content = self.read_message_content()
+        source_msg_content = self._read_message_content_and_acknowledge_it()
+        print(f'Received message content: {source_msg_content.hex().upper()}')
+
         return source_msg_content
