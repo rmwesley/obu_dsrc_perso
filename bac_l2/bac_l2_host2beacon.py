@@ -101,6 +101,9 @@ class BacHost(serial.Serial):
 
         That is, the Host asks to be the source and the beacon the destination of a message.
         The Host thus sends an ENQ and waits for an ACK (with a timeout)"""
+        # Setting timeout to T1!
+        self.timeout = self.TRANSFER_REQUEST_TIMEOUT
+
         received_char = b''
 
         # no_ack_count = 0
@@ -114,7 +117,7 @@ class BacHost(serial.Serial):
                 raise Exception('Maximum transfer request retries exceeded!!')
             self.write(ENQ)
             # Wait for ACK, with a timeout
-            received_char = self.read(1, timeout=self.TRANSFER_REQUEST_TIMEOUT)
+            received_char = self.read(1)
             transfer_request_counter += 1
         return True
 
@@ -134,7 +137,10 @@ class BacMsgTransfer():
 
     def _msg_ack_received_from_dest(self) -> bool:
         """Wait for an ACK from dest after sending a message (with a timeout)"""
-        received_char = self.serial_instance.read(1, self.TRANSFER_REQUEST_TIMEOUT)
+        # Setting timeout to T1!
+        self.serial_instance.timeout = self.TRANSFER_REQUEST_TIMEOUT
+
+        received_char = self.serial_instance.read(1)
         if received_char == NAK:
             return False
         elif received_char != ACK:
