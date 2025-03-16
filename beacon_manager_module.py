@@ -15,9 +15,9 @@ import logging
 import threading
 import uuid
 
-import ops1955_bac_interface
-ops1955_bac_l2 = ops1955_bac_l2.Ops1955BacL2()
-import bac_l2.gea_bcm_dll_wrapper as gea_bcm_dll_wrapper
+from bac_l2 import gea_bcm_dll_wrapper, ops1955_bac_interface
+ops1955_bac_l2 = ops1955_bac_interface.Ops1955BacL2()
+
 import kapsch_ops1955_tcp_ip_dll_wrapper
 
 import custom_its_per_decoders
@@ -399,16 +399,16 @@ def decode_vst_parameter_from_eid(eid):
     decoded_parameter = custom_its_per_decoders.decode_vst_parameter_oct_str_bytes(parameter_bytes)
     return decoded_parameter
 
-def get_parameter_hex_str_from_eid_on_vst_json(eid:int, vst_json=None) -> str:
-    if vst_json is None:
-        vst_json = last_vst_json
-    bcm_logger.debug(f"Getting hex VST parameter for EID {eid} from JSON VST {vst_json}")
-    for application in vst_json['applications']:
-        bcm_logger.debug(f"Application details: {application}")
-        if application['eid'] == eid:
-            return application['parameter']['octetstring']
-    bcm_logger.error(f"EID {eid} is not present!")
-    raise EIDNotFoundException('L7: EID not present!')
+# def get_parameter_hex_str_from_eid_on_vst_json(eid:int, vst_json=None) -> str:
+#     if vst_json is None:
+#         vst_json = last_vst_json
+#     bcm_logger.debug(f"Getting hex VST parameter for EID {eid} from JSON VST {vst_json}")
+#     for application in vst_json['applications']:
+#         bcm_logger.debug(f"Application details: {application}")
+#         if application['eid'] == eid:
+#             return application['parameter']['octetstring']
+#     bcm_logger.error(f"EID {eid} is not present!")
+#     raise EIDNotFoundException('L7: EID not present!')
 
 def get_parameter_bytes_from_eid_on_vst_value(eid:int, vst_value=None) -> bytes:
     if vst_value is None:
@@ -438,7 +438,7 @@ def compute_access_credentials(eid:int) -> bytes:
     except KeyError:
         return None
 
-def send_get_request(eid, accessCredentialsPresent:bool = False, attrIdList=None, close_transaction = False) -> EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.Get_Response:
+def send_get_request(eid, accessCredentialsPresent:bool = False, attrIdList=None, close_transaction = False) -> AXXESv1_1.SEQ:
     if accessCredentialsPresent:
         accessCredentials = compute_access_credentials(eid)
     else:
@@ -572,10 +572,8 @@ def verify_obe_authenticity(get_stamped_action_response_value=None, efc_cm=None)
         bcm_logger.error('No responseParameter in GET_STAMPED.response!!!')
         return
 
-    if get_stamped_rs is None:
-        get_stamped_rs = get_stamped_response_value
-    if get_stamped_response_value is None:
-        bcm_logger.error("No GET_STAMPED.response to verify!!")
+    # if 'get_stamped_response_value' not in locals():
+    #     bcm_logger.error("No GET_STAMPED.response to verify!!")
     if efc_cm is None:
         eid = get_stamped_action_response_value['eid']
         decoded_vst_param = decode_vst_parameter_from_eid(eid)
