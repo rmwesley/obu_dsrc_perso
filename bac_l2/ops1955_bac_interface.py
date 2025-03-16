@@ -1,18 +1,24 @@
+import json
 from bac_l2 import pertel_bac_interface
+
+with open('settings/beacon_manager_config.json', 'r') as beacon_manager_settings_file:
+    beacon_manager_settings = json.load(beacon_manager_settings_file)
+    chosen_beacon_name = beacon_manager_settings['default_beacon_name']
+    bac_l2_config = beacon_manager_settings[chosen_beacon_name]['bac_l2_config']
 
 class Ops1955BacL2(pertel_bac_interface.PertelBacL2):
     def _kapsch_set_config(self):
         self.initialize_bac_serial_communication()
 
         # STOP the beacon first!!
-        _pertel_set_beacon_mode(0x03)
-        _pertel_monitor_beacon()
+        self._pertel_set_beacon_mode(0x03)
+        self._pertel_monitor_beacon()
 
-        _kapsch_cd_read_dsrc_config()
-        _kapsch_cd_set_dsrc_config()
+        self._kapsch_cd_read_dsrc_config()
+        self._kapsch_cd_set_dsrc_config()
         # We now set its mode to transparent and stop serial communication!
-        _pertel_set_beacon_mode(0x01)
-        close()
+        self._pertel_set_beacon_mode(0x01)
+        self.close()
 
     def _kapsch_cd_set_dsrc_config(self) -> bytes:
         """
@@ -34,7 +40,7 @@ class Ops1955BacL2(pertel_bac_interface.PertelBacL2):
         message_content = bytes([msg_id, msg_data_struct_version, dsrc_channel, bst_repetition_time, end_transceiver_behavior])
         return self.send_command(message_content=message_content)
 
-    def _kapsch_cd_read_dsrc_config() -> bytes:
+    def _kapsch_cd_read_dsrc_config(self) -> bytes:
         """
         Kapsch-specific.
         CD_READ_DSRC_CONFIG
