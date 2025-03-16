@@ -71,23 +71,23 @@ class BacHost(serial.SerialBase):
         bac_serial_wrapper_logger.info(f"Successfully initialized BAC protocol serial wrapper!")
 
     def send_command(self, message_content:bytes) -> bytes:
-        self._transfer_message(message_content)
-        return self._receive_message()
+        reponse = b''
+        self._bac_l2_lock.acquire()
+        if self._send_request_to_transfer_msg_to_dest():
+            self._transfer_message(message_content)
+            if self._wait_for_transfer_req_from_dest():
+                response = self._receive_message()
+        self._bac_l2_lock.release()
+        return response
 
     # Host transfers a message
     def _transfer_message(self, message_content:bytes):
-        self._bac_l2_lock.acquire()
         result = self.sender.transfer_message(message_content)
-        self._bac_l2_lock.release()
-        return result 
+        return result
 
     # Host receives a message
     def _receive_message(self) -> bytes:
-        self._wait_for_transfer_req_from_dest()
-
-        self._bac_l2_lock.acquire()
         response = self.receiver.receive_message()
-        self._bac_l2_lock.release()
         return response
 
     def _beacon_resolve_enq_conflict(self):
