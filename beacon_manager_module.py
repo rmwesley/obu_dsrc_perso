@@ -15,7 +15,8 @@ import logging
 import threading
 import uuid
 
-import bac_protocol_serial_wrapper
+import ops1955_bac_interface
+ops1955_bac_l2 = ops1955_bac_l2.Ops1955BacL2()
 import gea_bcm_dll_wrapper
 import kapsch_ops1955_tcp_ip_dll_wrapper
 
@@ -154,7 +155,7 @@ def safe_set_beacon(chosen_beacon_name):
         current_beacon_name = chosen_beacon_name
 
     if chosen_beacon_name == 'OPS1955':
-        bac_protocol_serial_wrapper._kapsch_set_config()
+        ops1955_bac_l2._kapsch_set_config()
         
         if beacon_manager_config[chosen_beacon_name]['chosen_communication_mode'] == 'serial-pertel':
             gea_bcm_dll_wrapper.set_beacon_name(beacon_name='OPS1955')
