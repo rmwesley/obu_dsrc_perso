@@ -1,5 +1,11 @@
 import time
 import io
+import serial
+
+with open('settings/beacon_manager_config.json', 'r') as beacon_manager_settings_file:
+    beacon_manager_settings = json.load(beacon_manager_settings_file)
+    chosen_beacon_name = beacon_manager_settings['default_beacon_name']
+    bac_l2_config = beacon_manager_settings[chosen_beacon_name]['bac_l2_config']
 
 def crc16_arc(data : bytearray) -> bytes:
     crc = 0
@@ -10,7 +16,7 @@ def crc16_arc(data : bytearray) -> bytes:
                 crc = int((crc / 2)) ^ 40961
             else:
                 crc = int(crc / 2)
-    crc_int = crc & 0xFFFF
+    crc16_int = crc & 0xFFFF
     crc_2_bytes = int.to_bytes(crc16_int, length=2, byteorder='little')
     return crc_2_bytes
 
@@ -32,14 +38,30 @@ ETX = bytes([0x03]) # End of message
 MAX_TRANSFER_REQ_RETRIES = 255
 MAX_MSG_TRANSFER_RETRIES = 8
 
-class BacHost(io.RawIOBase):
-    def __init__(self, baudrate):
-        super().__init__()
-        # T1 = 432.0 / baudrate
-        T1 = 460.8 / baudrate
-        TRANSFER_REQUEST_TIMEOUT = T1
+class BacHost(serial.SerialBase):
+    def __init__(self, *args, **kwargs):
+        """Initialize serial communication (inherited from SerialBase).
+        We also initialized the message sender and receiver.
+
+        Reminder:
+        The serial port is opened here since we inherit from SerialBase!!
+        The port SHOULD NOT be opened beforehand!
+        """
+        # Opening the serial port
+        bac_serial_wrapper_logger.info(f"Initializing serial communication with beacon (from config data)...!!")
+        serial_config = bac_l2_config['beacon_host_serial_config']
+        super().__init__(*args, **serial_config, **kwargs)
+
+        # T1 = 432.0 / self.baudrate
+        T1 = 460.8 / self.baudrate
+        self.TRANSFER_REQUEST_TIMEOUT = T1
         self.sender = BacMsgTransfer(self)
         self.receiver = BacMsgReceiver(self)
+
+        bac_serial_wrapper_logger.info(f"Initializing BAC protocol serial communication with beacon...!!")
+        self = bac_l2.BacHost(serial_instance)
+
+        bac_serial_wrapper_logger.info(f"Successfully initialized BAC protocol serial wrapper!")
 
     def send_command(self, message_content:bytes) -> bytes:
         self._transfer_message(message_content)
@@ -65,7 +87,7 @@ class BacHost(io.RawIOBase):
                 raise Exception('Maximum transfer request retries exceeded!!')
             self.write(ENQ)
             # Wait for ACK, with a timeout
-            received_char = self.read(1, timeout=TRANSFER_REQUEST_TIMEOUT)
+            received_char = self.read(1, timeout=self.TRANSFER_REQUEST_TIMEOUT)
             transfer_request_counter += 1
         return True
 
@@ -78,13 +100,14 @@ class BacHost(io.RawIOBase):
         return True
 
 class BacMsgTransfer(io.RawIOBase):
-    def __init__(self, baudrate):
-        T1 = 460.8 / baudrate
-        TRANSFER_REQUEST_TIMEOUT = T1
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        T1 = 460.8 / self.baudrate
+        self.TRANSFER_REQUEST_TIMEOUT = T1
 
     def _msg_ack_received_from_dest(self) -> bool:
         """Wait for an ACK from dest after sending a message (with a timeout)"""
-        received_char = self.read(1, TRANSFER_REQUEST_TIMEOUT)
+        received_char = self.read(1, self.TRANSFER_REQUEST_TIMEOUT)
         if received_char == NAK:
             return False
         elif received_char != ACK:
@@ -113,9 +136,10 @@ class BacMsgTransfer(io.RawIOBase):
         return self.read_message()
 
 class BacMsgReceiver(io.RawIOBase):
-    def __init__(self, baudrate):
-        T2 = 384 / baudrate
-        MESSAGE_CHARACTER_READ_TIMEOUT = T2
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        T2 = 384 / self.baudrate
+        self.MESSAGE_CHARACTER_READ_TIMEOUT = T2
 
     def _handle_repeated_transfer_requests(self, received_char):
         """Handles cases in which ACK for message transfer request was lost by source.
@@ -131,7 +155,7 @@ class BacMsgReceiver(io.RawIOBase):
         return received_char
     def _wait_for_message_start_header(self):
         received_char = self.read(1)
-        first_char = _handle_repeated_transfer_requests(received_char)
+        first_char = self._handle_repeated_transfer_requests(received_char)
 
         if first_char != DLE:
             raise Exception(f'Message did not start with DLE/STX control sequence!!: 0x{first_char.hex().upper()}')
@@ -159,6 +183,6 @@ class BacMsgReceiver(io.RawIOBase):
         return source_msg_content
 
     def receive_message(self):
-        _wait_for_message_start_header()
-        source_msg_content = read_message_content()
+        self._wait_for_message_start_header()
+        source_msg_content = self.read_message_content()
         return source_msg_content
