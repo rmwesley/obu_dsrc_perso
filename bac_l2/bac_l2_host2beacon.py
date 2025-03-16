@@ -90,6 +90,12 @@ class BacHost(serial.SerialBase):
         self._bac_l2_lock.release()
         return response
 
+    def _beacon_resolve_enq_conflict(self):
+        self._send_request_to_transfer_msg_to_dest()
+
+    def _host_resolve_enq_conflict(self):
+        self._receive_message()
+
     def _send_request_to_transfer_msg_to_dest(self) -> bool:
         """Request sent from host to beacon to transfer a message.
 
@@ -102,7 +108,7 @@ class BacHost(serial.SerialBase):
         while received_char != ACK:
             # Contention (ENQ conflict) resolution for Host
             if received_char == ENQ:
-                self._receive_message()
+                self._host_resolve_enq_conflict()
                 return False
             if transfer_request_counter > MAX_TRANSFER_REQ_RETRIES:
                 raise Exception('Maximum transfer request retries exceeded!!')
