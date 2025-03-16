@@ -144,11 +144,10 @@ class BacMsgTransfer():
         received_char = self.serial_instance.read(1)
         if received_char == NAK:
             return False
-        elif received_char != ACK:
-            return False
+        if received_char == ACK:
+            return True
         else:
-            raise Exception('Invalid control character received during message transfer!!!')
-        return True
+            raise Exception(f'Invalid control character ({received_char.hex().upper()}) received during message transfer!!!')
 
     # Source transfers a message to destination
     def transfer_message(self, message_content:bytes):
