@@ -182,6 +182,8 @@ class BacMsgReceiver():
 
         self.TRANSFER_REQUEST_TIMEOUT = T1
         self.MESSAGE_CHARACTER_READ_TIMEOUT = T2
+        self.EOT_CHAR_TIMEOUT = 2*(T1 + T2)
+
         self.serial_instance = serial_instance
 
     def _handle_repeated_transfer_requests(self, received_char):
@@ -225,9 +227,19 @@ class BacMsgReceiver():
 
         return source_msg_content
 
+    def _receive_eot_char(self):
+        self.serial_instance.timeout = self.EOT_CHAR_TIMEOUT
+
+        received_char = self.serial_instance.read(1)
+        if received_char == EOT:
+            return True
+        raise Exception(f'Received non-EOT char ({received_char}) after end of message reception!!')
+
     def receive_message(self):
         self._wait_for_message_start_header()
         source_msg_content = self._read_message_content_and_acknowledge_it()
         print(f'Received message content: {source_msg_content.hex().upper()}')
+
+        self._receive_eot_char()
 
         return source_msg_content
