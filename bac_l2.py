@@ -32,14 +32,14 @@ ETX = bytes([0x03]) # End of message
 MAX_TRANSFER_REQ_RETRIES = 255
 MAX_MSG_TRANSFER_RETRIES = 8
 
-class BACHost(io.RawIOBase):
+class BacHost(io.RawIOBase):
     def __init__(self, baudrate):
         super().__init__()
         # T1 = 432.0 / baudrate
         T1 = 460.8 / baudrate
         TRANSFER_REQUEST_TIMEOUT = T1
-        self.sender = BACMsgTransfer(self)
-        self.receiver = BACMsgReceiver(self)
+        self.sender = BacMsgTransfer(self)
+        self.receiver = BacMsgReceiver(self)
 
     def send_command(self, message_content:bytes) -> bytes:
         self._transfer_message(message_content)
@@ -77,7 +77,7 @@ class BACHost(io.RawIOBase):
         self.write(ACK)
         return True
 
-class BACMsgTransfer(io.RawIOBase):
+class BacMsgTransfer(io.RawIOBase):
     def __init__(self, baudrate):
         T1 = 460.8 / baudrate
         TRANSFER_REQUEST_TIMEOUT = T1
@@ -112,7 +112,7 @@ class BACMsgTransfer(io.RawIOBase):
         self.transfer_message(message_content)
         return self.read_message()
 
-class BACMsgReceiver(io.RawIOBase):
+class BacMsgReceiver(io.RawIOBase):
     def __init__(self, baudrate):
         T2 = 384 / baudrate
         MESSAGE_CHARACTER_READ_TIMEOUT = T2
