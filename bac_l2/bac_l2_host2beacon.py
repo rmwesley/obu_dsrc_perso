@@ -1,6 +1,9 @@
 import time
+import json
 import io
 import serial
+
+bac_serial_wrapper_logger = logging.getLogger(__name__)
 
 with open('settings/beacon_manager_config.json', 'r') as beacon_manager_settings_file:
     beacon_manager_settings = json.load(beacon_manager_settings_file)
@@ -47,6 +50,8 @@ class BacHost(serial.SerialBase):
         The serial port is opened here since we inherit from SerialBase!!
         The port SHOULD NOT be opened beforehand!
         """
+        bac_serial_wrapper_logger.info(f"Initializing BAC protocol L2 communication with beacon...!!")
+
         # Opening the serial port
         bac_serial_wrapper_logger.info(f"Initializing serial communication with beacon (from config data)...!!")
         serial_config = bac_l2_config['beacon_host_serial_config']
@@ -57,9 +62,6 @@ class BacHost(serial.SerialBase):
         self.TRANSFER_REQUEST_TIMEOUT = T1
         self.sender = BacMsgTransfer(self)
         self.receiver = BacMsgReceiver(self)
-
-        bac_serial_wrapper_logger.info(f"Initializing BAC protocol serial communication with beacon...!!")
-        self = bac_l2.BacHost(serial_instance)
 
         bac_serial_wrapper_logger.info(f"Successfully initialized BAC protocol serial wrapper!")
 
@@ -73,16 +75,23 @@ class BacHost(serial.SerialBase):
 
     # Host receives a message
     def _receive_message(self) -> bytes:
+        self._wait_for_transfer_req_from_dest()
         return self.receiver.receive_message()
 
     def _request_to_transfer_msg_to_dest(self) -> bool:
-        """Request sent from source to dest to transfer a message.
-        It sends an ENQ and waits for an ACK (with a timeout)"""
+        """Request sent from host to beacon to transfer a message.
+
+        That is, the Host asks to be the source and the beacon the destination of a message.
+        The Host thus sends an ENQ and waits for an ACK (with a timeout)"""
         received_char = b''
 
         # no_ack_count = 0
         transfer_request_counter = 0
         while received_char != ACK:
+            # Contention (ENQ conflict) resolution
+            if received_char == ENQ:
+                self._receive_message()
+                return False
             if transfer_request_counter > MAX_TRANSFER_REQ_RETRIES:
                 raise Exception('Maximum transfer request retries exceeded!!')
             self.write(ENQ)
