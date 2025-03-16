@@ -8,6 +8,8 @@ bac_serial_wrapper_logger = logging.getLogger(__name__)
     
 MAXIMUM_DSRC_L7_COMMAND_SIZE = 118
 class PertelBacL2(bac_l2_host2beacon.BacHost):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
     def set_mode(self, mode_code=0) -> bytes:
         return self._pertel_set_beacon_mode(mode_code)
 

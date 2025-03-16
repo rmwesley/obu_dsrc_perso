@@ -7,9 +7,10 @@ with open('settings/beacon_manager_config.json', 'r') as beacon_manager_settings
     bac_l2_config = beacon_manager_settings[chosen_beacon_name]['bac_l2_config']
 
 class Ops1955BacL2(pertel_bac_interface.PertelBacL2):
-    def _kapsch_set_config(self):
-        self.initialize_bac_serial_communication()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
+    def _kapsch_set_config(self):
         # STOP the beacon first!!
         self._pertel_set_beacon_mode(0x03)
         self._pertel_monitor_beacon()
@@ -18,7 +19,6 @@ class Ops1955BacL2(pertel_bac_interface.PertelBacL2):
         self._kapsch_cd_set_dsrc_config()
         # We now set its mode to transparent and stop serial communication!
         self._pertel_set_beacon_mode(0x01)
-        self.close()
 
     def _kapsch_cd_set_dsrc_config(self) -> bytes:
         """

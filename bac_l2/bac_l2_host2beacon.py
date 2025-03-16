@@ -65,8 +65,8 @@ class BacHost(serial.Serial):
         # T1 = 432.0 / self.baudrate
         T1 = 460.8 / self.baudrate
         self.TRANSFER_REQUEST_TIMEOUT = T1
-        self.sender = BacMsgTransfer(self)
-        self.receiver = BacMsgReceiver(self)
+        self.sender = BacMsgTransfer(serial_instance=self)
+        self.receiver = BacMsgReceiver(serial_instance=self)
 
         bac_serial_wrapper_logger.info(f"Successfully initialized BAC protocol serial wrapper!")
 
@@ -126,11 +126,11 @@ class BacHost(serial.Serial):
         self.write(ACK)
         return True
 
-class BacMsgTransfer(io.RawIOBase):
+class BacMsgTransfer():
     def __init__(self, serial_instance: serial.Serial):
-        self.serial_instance = serial_instance
-        T1 = 460.8 / self.serial_instance.baudrate
+        T1 = 460.8 / serial_instance.baudrate
         self.TRANSFER_REQUEST_TIMEOUT = T1
+        self.serial_instance = serial_instance
 
     def _msg_ack_received_from_dest(self) -> bool:
         """Wait for an ACK from dest after sending a message (with a timeout)"""
@@ -162,11 +162,11 @@ class BacMsgTransfer(io.RawIOBase):
         self.transfer_message(message_content)
         return self.read_message()
 
-class BacMsgReceiver(io.RawIOBase):
+class BacMsgReceiver():
     def __init__(self, serial_instance: serial.Serial):
-        self.serial_instance = serial_instance
-        T2 = 384 / self.serial_instance.baudrate
+        T2 = 384 / serial_instance.baudrate
         self.MESSAGE_CHARACTER_READ_TIMEOUT = T2
+        self.serial_instance = serial_instance
 
     def _handle_repeated_transfer_requests(self, received_char):
         """Handles cases in which ACK for message transfer request was lost by source.
