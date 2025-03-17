@@ -1,5 +1,4 @@
 import json
-import io
 import serial
 import logging
 import threading
@@ -96,14 +95,14 @@ class BacHost(serial.Serial):
         bac_serial_wrapper_logger.info(f"Successfully initialized BAC protocol serial wrapper!")
 
     def send_command(self, message_content:bytes) -> bytes:
-        response = b''
+        response_content = b''
         self._bac_l2_lock.acquire()
         if self._send_request_to_transfer_msg_to_dest():
             self._transfer_message(message_content)
             if self._wait_for_transfer_req_from_dest():
-                response = self._receive_message()
+                response_content = self._receive_message()
         self._bac_l2_lock.release()
-        return response
+        return response_content
 
     # Host transfers a message
     def _transfer_message(self, message_content:bytes):
@@ -112,8 +111,8 @@ class BacHost(serial.Serial):
 
     # Host receives a message
     def _receive_message(self) -> bytes:
-        response = self.receiver.receive_message()
-        return response
+        unescaped_response_content = self.receiver.receive_message()
+        return unescaped_response_content
 
     def _beacon_resolve_enq_conflict(self):
         self._send_request_to_transfer_msg_to_dest()
