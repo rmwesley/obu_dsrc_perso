@@ -15,7 +15,7 @@ import logging
 import threading
 import uuid
 
-from bac_l2 import gea_bcm_dll_wrapper, ops1955_bac_interface
+from bac_l7 import gea_bcm_dll_wrapper, ops1955_bac_interface
 ops1955_bac_l2 = ops1955_bac_interface.Ops1955BacL2()
 
 import custom_its_per_decoders

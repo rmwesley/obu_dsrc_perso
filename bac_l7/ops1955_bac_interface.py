@@ -1,5 +1,5 @@
 import json
-from bac_l2 import pertel_bac_interface
+from bac_l7 import pertel_bac_interface
 
 with open('settings/beacon_manager_config.json', 'r') as beacon_manager_settings_file:
     beacon_manager_settings = json.load(beacon_manager_settings_file)

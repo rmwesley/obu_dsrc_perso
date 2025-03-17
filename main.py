@@ -15,7 +15,7 @@ from ASN.compiled_DSRC_instances import EN15509 as EFC_CCC_LAC_asn1_objs
 
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
-from bac_l2.gea_bcm_dll_wrapper import *
+from bac_l7.gea_bcm_dll_wrapper import *
 import dsrc_security
 import beacon_manager_module
 
