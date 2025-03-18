@@ -60,8 +60,8 @@ CONTROL_SEQUENCE_CHARACTERS = set([ENQ, ACK, NAK, EOT, DLE, STX, ETX])
 MAX_TRANSFER_REQ_RETRIES = 255
 MAX_MSG_TRANSFER_RETRIES = 8
 
-T1_FOR_1_BAUD = 2000
-T2_FOR_1_BAUD = 1000
+T1_FOR_1_BAUD = 20000
+T2_FOR_1_BAUD = 20000
 
 # Remember to increase the timeouts if you are sniffing the serial line!!
 # Otherwise, use the values set above
