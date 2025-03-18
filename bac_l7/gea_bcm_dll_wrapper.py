@@ -636,13 +636,13 @@ def initialize_gea_bcm_dll_wrapper(external_callback_param:callable = None, exte
         bac_l2_config = pertel_beacon_settings['bac_l2_config']
         send_event_polling_OK = bac_l2_config['send_OK_state_alarms']
         beacon_alarm_state_polling_ms = bac_l2_config['beacon_alarm_state_polling_ms']
-        gea_dll_wrapper_logger.info(f"Beacon serial port: {serial_port}")
 
         # Serial configuration
         serial_config = bac_l2_config['beacon_host_serial_config']
         if serial_port is None:
             serial_port = int(serial_config['port'].split('COM')[1])
         baud_rate = serial_config['baudrate']
+        gea_dll_wrapper_logger.info(f"Beacon serial port: {serial_port}")
 
         default_baud_rate = 115200
         if baud_rate not in available_baud_rate_enum_vals:
