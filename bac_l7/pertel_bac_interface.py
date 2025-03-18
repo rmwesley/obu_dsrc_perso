@@ -112,6 +112,9 @@ class PertelBacL2(bac_l2_host2beacon.BacHost):
 
     def _pertel_emit_bst_and_get_vst(self, t_apdu_containing_bst:bytes) -> bytes:
         """
+        Least significant 3 bits (modulo 8) of BeaconID (individualId) are incremented:
+            Every 128 emissions, or
+            Every new BST emission request from HOST to Beacon
         Request:
             Command ID, 1 byte:
                 0x03
@@ -121,13 +124,19 @@ class PertelBacL2(bac_l2_host2beacon.BacHost):
                 0x03
             Error, 1 byte:
             VST, variable size:
-            """
+        """
         message_content = bytes([0x03]) + t_apdu_containing_bst
         response_content = self.send_command(message_content)
 
         # Removing Command ID 0x03
         self.t_apdu_containing_vst = response_content[1:]
         return response_content
+
+    def pertel_start_bst_emission_and_get_vst(self, t_apdu_containing_bst: bytes, change_beacon_id_periodically:bool = True) -> bytes:
+        """Emits BST using helper methods, based on the choice of BeaconID behavior (Normal or Periodically changed)"""
+        if not change_beacon_id_periodically:
+            return self._pertel_emit_bst_and_get_vst_without_changing_beacon_id(t_apdu_containing_bst)
+        return self._pertel_emit_bst_and_get_vst(t_apdu_containing_bst)
 
     def _pertel_stop_bst_emission(self, t_apdu_bst_datagram:bytes) -> bytes:
         """

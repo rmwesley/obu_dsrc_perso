@@ -204,7 +204,7 @@ def start_bst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 2
     l7_transfer_kernel_lock.acquire()
     l7_initialization_phase_lock.acquire()
 
-    beacon_l7_wrapper.start_bst_wrapper(last_sent_t_apdu_containing_bst)
+    beacon_l7_wrapper.pertel_start_bst_emission_and_get_vst(last_sent_t_apdu_containing_bst)
 
     bcm_logger.debug("We now get the lastest BeaconID just after starting the BST")
     beacon_l7_wrapper.update_beacon_id()
