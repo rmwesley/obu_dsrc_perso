@@ -15,7 +15,7 @@ import logging
 import threading
 import uuid
 
-from bac_l7 import ops1955_bac_interface, tgbv_bac_interface
+from bac_l7 import ops1955_bac_interface, tgbv_bac_interface, pertel_bac_interface
 
 import custom_its_per_decoders
 import dsrc_security
@@ -229,8 +229,8 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     global initialization_data
     global current_transaction_id
 
-    beacon_l7_wrapper.update_state()
-    if beacon_l7_wrapper.is_mode(mode_code=tgbv_bac_interface.BCM_MODE_Enum.BCM_MOD_Stopped):
+    beacon_state = beacon_l7_wrapper.update_state()
+    if beacon_state[1] == pertel_bac_interface.BCM_MODE_Enum.PERTEL_MODE_Stopped:
         raise BeaconManagerException("Beacon is in Stopped mode, not Transparent!!")
 
     if beacon_l7_wrapper.check_if_transaction_in_progress():

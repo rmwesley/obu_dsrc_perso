@@ -3,6 +3,7 @@ import serial
 import json
 import time
 from bac_l2 import bac_l2_host2beacon
+from enum import Enum
 
 bac_serial_wrapper_logger = logging.getLogger(__name__)
 
@@ -18,16 +19,16 @@ MODE_CHANGE_ERROR_DESCRIPTIONS = {
     0x1D: 'Configuration not applied'
 }
 
-MODE_CODE_DESCRIPTIONS = {
-    0x00: 'STOPPED',
-    0x01: 'MAINTENANCE',
-    0x03: 'TRANSPARENT'
-}
+class BCM_MODE_Enum(Enum):
+    PERTEL_MODE_Stopped = 0x00
+    PERTEL_MODE_Transparent = 0x01
+    PERTEL_MODE_Maintenance = 0x03
 
 class PertelBacL2(bac_l2_host2beacon.BacHost):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.t_apdu_containing_vst = None
+        self.beacon_state = bytes(3)
     def set_mode(self, mode_code=0) -> bytes:
         return self._pertel_set_beacon_mode(mode_code)
 
@@ -95,6 +96,12 @@ class PertelBacL2(bac_l2_host2beacon.BacHost):
         """
         message_content = bytes([0x01])
         return self.send_command(message_content)
+    def update_state(self) -> bytes:
+        response_content = self._pertel_monitor_beacon()
+        self.beacon_state = bytes(response_content[1:])
+        return self.beacon_state
+    def get_beacon_state(self) -> bytes:
+        return self.beacon_state
 
     def _pertel_communication_count(self) -> bytes:
         message_content = bytes([0x02])
