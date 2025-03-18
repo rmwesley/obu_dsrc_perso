@@ -233,7 +233,7 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     if beacon_state[1] == pertel_bac_interface.BCM_MODE_Enum.PERTEL_MODE_Stopped:
         raise BeaconManagerException("Beacon is in Stopped mode, not Transparent!!")
 
-    if beacon_l7_wrapper.check_if_transaction_in_progress():
+    if beacon_l7_wrapper._is_transaction_in_progress():
         bcm_logger.error("Do not try to initilize a transaction! One is already in progress!")
         # bcm_logger.debug("We lock the thread until the opened transaction is closed!")
         raise BeaconManagerException("Transaction already in progress!!")

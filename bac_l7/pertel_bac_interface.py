@@ -168,8 +168,13 @@ class PertelBacL2(bac_l2_host2beacon.BacHost):
         """
         message_content = bytes([0x05]) + t_apdu_containing_request
         response_content = self.send_command(message_content)
+
         # Removing Command ID 0x05
         self.t_apdu_containing_response = response_content[1:]
+
+        # Transaction is over!! Setting VST to None!
+        self.t_apdu_containing_vst = None
+
         return response_content
 
     def _pertel_send_dsrc_l7_command_and_close_transaction(self, t_apdu_containing_request:bytes) -> bytes:
