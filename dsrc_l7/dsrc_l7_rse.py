@@ -15,8 +15,7 @@ import logging
 import threading
 import uuid
 
-from bac_l7 import gea_bcm_dll_wrapper, ops1955_bac_interface
-ops1955_bac_l2 = ops1955_bac_interface.Ops1955BacL2()
+from bac_l7 import ops1955_bac_interface, tgbv_bac_interface
 
 import custom_its_per_decoders
 import dsrc_security
@@ -37,6 +36,7 @@ keep_looping = False
 ## Beacon L7 necessary values
 beacon_l7_wrapper = None
 
+# RSE <> OBE = Host <> Host BAC L2 <> Beacon BAC L2 <> Beacon DSRC L7 <> OBE DSRC L7
 def initialize_bcm(aid=20):
     """Initialize the beacon manager wrapper"""
     global beacon_manager_config
@@ -63,7 +63,7 @@ The beacon should then just keep the last sent BeaconID in its memory"""
     )
 
     last_beacon_id = beacon_l7_wrapper.get_beacon_id()
-    bcm_logger.debug(f"Latest Beacon ID (according to GEA Beacon DLL) value: {last_beacon_id}")
+    bcm_logger.debug(f"Latest Beacon ID (according to GEA Beacon DLL) value: 0x{last_beacon_id.hex().upper()}")
     
     EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.from_uper(last_beacon_id)
     bcm_logger.debug(f"Beacon ID (according to GEA Beacon) in ASN: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.to_asn1()}")
@@ -129,7 +129,6 @@ def update_rnd_rse():
     })
 
     bcm_logger.debug(f"RndRSE or SessionTime value (of type DateAndTime) in ASN:\n{EFC_CCC_LAC_asn1_objs.EfcDataDictionary.DateAndTime.to_asn1()}")
-    # bcm_logger.debug(f"RndRSE or SessionTime value (of type DateAndTime) in JER:\n{EFC_CCC_LAC_asn1_objs.EfcDataDictionary.DateAndTime.to_jer()}")
     rnd_rse_bytes_value = EFC_CCC_LAC_asn1_objs.EfcDataDictionary.DateAndTime.to_uper()
     setattr(sys.modules[__name__], "rnd_rse_bytes_value", rnd_rse_bytes_value)
 
@@ -146,25 +145,18 @@ def safe_set_beacon(chosen_beacon_name):
         beacon_l7_wrapper.close()
 
     if chosen_beacon_name == 'TGBV':
-        gea_bcm_dll_wrapper.set_beacon_name(beacon_name='TGBV')
-        gea_bcm_dll_wrapper.initialize_gea_bcm_dll_wrapper()
-
-        beacon_l7_wrapper = gea_bcm_dll_wrapper
+        beacon_l7_wrapper = tgbv_bac_interface.TgbvBacL2()
         current_beacon_name = chosen_beacon_name
 
     if chosen_beacon_name == 'OPS1955':
+        ops1955_bac_l2 = ops1955_bac_interface.Ops1955BacL2()
         ops1955_bac_l2._kapsch_set_config()
         
         if beacon_manager_config[chosen_beacon_name]['chosen_communication_mode'] == 'serial-pertel':
-            gea_bcm_dll_wrapper.set_beacon_name(beacon_name='OPS1955')
-            gea_bcm_dll_wrapper.initialize_gea_bcm_dll_wrapper()
+            tgbv_bac_interface.set_beacon_name(beacon_name='OPS1955')
+            tgbv_bac_interface.initialize_gea_bcm_dll_wrapper()
             
-            beacon_l7_wrapper = gea_bcm_dll_wrapper
-        # Custom Kapsch OPS1955 ASN.1 files are non-functional
-        # The OPS1955 L7 Ethernet data structures are not encoded with PER, OER or other valid ASN.1 encoding rules
-        # elif beacon_manager_config[chosen_beacon_name]['chosen_communication_mode'] == 'tcp':
-        #     beacon_l7_wrapper = kapsch_ops1955_tcp_ip_dll_wrapper
-        #     kapsch_ops1955_tcp_ip_dll_wrapper.ops1955_init()
+            beacon_l7_wrapper = tgbv_bac_interface
         current_beacon_name = chosen_beacon_name
 
 class BeaconManagerException(Exception):
@@ -238,7 +230,7 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     global current_transaction_id
 
     beacon_l7_wrapper.update_state()
-    if beacon_l7_wrapper.is_mode(mode_code=gea_bcm_dll_wrapper.BCM_MODE_Enum.BCM_MOD_Stopped):
+    if beacon_l7_wrapper.is_mode(mode_code=tgbv_bac_interface.BCM_MODE_Enum.BCM_MOD_Stopped):
         raise BeaconManagerException("Beacon is in Stopped mode, not Transparent!!")
 
     if beacon_l7_wrapper.check_if_transaction_in_progress():
@@ -349,7 +341,6 @@ def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close_tran
     bcm_logger.debug(f"Preparing request T-APDU to be sent...")
     TApdu_container.set_val(asn1_request_t_apdu_value)
     bcm_logger.info(f"Request T-APDU value: {TApdu_container._val}")
-    # bcm_logger.debug(f"T-APDU in JER:\n{TApdu_container.to_jer()}")
 
     current_exchanged_data_json = {}
     # Adding T-APDU with request data to dict
@@ -359,7 +350,7 @@ def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close_tran
     l7_transfer_kernel_lock.acquire()
     try:
         fragmented_t_apdu_with_response_bytes = beacon_l7_wrapper.send_req_t_apdu_and_receive_resp_t_apdu(TApdu_container.to_uper(), close_transaction)
-    except gea_bcm_dll_wrapper.Layer7Exception as e:
+    except tgbv_bac_interface.Layer7Exception as e:
         bcm_logger.error(f"L7 Error!", exc_info=True)
         return
     l7_transfer_kernel_lock.release()
@@ -398,17 +389,6 @@ def decode_vst_parameter_from_eid(eid):
 
     decoded_parameter = custom_its_per_decoders.decode_vst_parameter_oct_str_bytes(parameter_bytes)
     return decoded_parameter
-
-# def get_parameter_hex_str_from_eid_on_vst_json(eid:int, vst_json=None) -> str:
-#     if vst_json is None:
-#         vst_json = last_vst_json
-#     bcm_logger.debug(f"Getting hex VST parameter for EID {eid} from JSON VST {vst_json}")
-#     for application in vst_json['applications']:
-#         bcm_logger.debug(f"Application details: {application}")
-#         if application['eid'] == eid:
-#             return application['parameter']['octetstring']
-#     bcm_logger.error(f"EID {eid} is not present!")
-#     raise EIDNotFoundException('L7: EID not present!')
 
 def get_parameter_bytes_from_eid_on_vst_value(eid:int, vst_value=None) -> bytes:
     if vst_value is None:
@@ -457,7 +437,6 @@ def send_get_request(eid, accessCredentialsPresent:bool = False, attrIdList=None
 
     EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.Get_Request.set_val(get_req_value)
     bcm_logger.debug(f"Get.Request value: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.Get_Request._val}")
-    # bcm_logger.debug(f"Get.Request in JER:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.Get_Request.to_jer()}")
 
     t_apdu_with_get_request_value = ('getRequest', get_req_value)
     response_t_apdu_value = send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_get_request_value, close_transaction=close_transaction)
@@ -511,9 +490,7 @@ def send_action_request(
     bcm_logger.debug(f"T-APDU with ACTION.request value: {t_apdu_with_action_req_value}")
 
     TApdu_container.set_val(t_apdu_with_action_req_value)
-    # bcm_logger.info(f"T-APDU with ACTION.request value:\n{TApdu_container._val}")
     bcm_logger.info(f"T-APDU with ACTION.request in ASN:\n{TApdu_container.to_asn1()}")
-    # bcm_logger.debug(f"T-APDU with ACTION.request in JER:\n{TApdu_container.to_jer()}")
     bcm_logger.debug(f"ACTION.request with ActionType {actionType} and actionParameter of type {actionParameter[0]} being now sent...")
 
     response_t_apdu_value = send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_action_req_value, close_transaction)
@@ -1021,11 +998,3 @@ def loop_transactions():
             keep_looping = False
             bcm_logger.error("Transaction error occurred during loop!", exc_info=True)
             time.sleep(1)
-        # except gea_bcm_dll_wrapper.Layer7Exception:
-        #     bcm_logger.error("L7 Error!", exc_info=True)
-        #     send_close_transaction_echo()
-        #     time.sleep(2)
-            # shutdown_beacon()
-            # time.sleep(3)
-            # set_transparent_mode()
-            # time.sleep(1)
