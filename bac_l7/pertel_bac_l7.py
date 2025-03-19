@@ -7,7 +7,7 @@ from enum import Enum
 
 bac_serial_wrapper_logger = logging.getLogger(__name__)
 
-class PertelResponseDecodingException(Exception):
+class PertelBacL7Exception(Exception):
     pass
 MAXIMUM_DSRC_L7_COMMAND_SIZE = 118
 
@@ -40,7 +40,7 @@ class PertelBacL7(bac_l2_host2beacon.BacHost):
             'error_message': MODE_CHANGE_ERROR_DESCRIPTIONS[error_code]
         }
         if command_id != 0x00:
-            raise PertelResponseDecodingException()
+            raise PertelBacL7Exception('Decoding error!')
         return
 
     # def _pertel_set_beacon_mode(self, mode_code=0) -> tuple[bytes, dict]:
@@ -135,7 +135,7 @@ class PertelBacL7(bac_l2_host2beacon.BacHost):
             self.t_apdu_containing_vst = response_content[1:]
             return response_content
         else:
-            raise Exception(f'Error response when requesting for BST!! Response message: 0x{response_content.hex().upper()}')
+            raise PertelBacL7Exception(f'Error response when requesting for BST!! Response message: 0x{response_content.hex().upper()}')
 
     def pertel_start_bst_emission_and_get_vst(self, t_apdu_containing_bst: bytes, change_beacon_id_periodically:bool = True) -> bytes:
         """Emits BST using helper methods, based on the choice of BeaconID behavior (Normal or Periodically changed)"""
