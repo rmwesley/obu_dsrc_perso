@@ -130,9 +130,12 @@ class PertelBacL7(bac_l2_host2beacon.BacHost):
         message_content = bytes([0x03]) + t_apdu_containing_bst
         response_content = self.send_command(message_content)
 
-        # Removing Command ID 0x03
-        self.t_apdu_containing_vst = response_content[1:]
-        return response_content
+        if response_content[1] == 0:
+            # Removing Command ID 0x03
+            self.t_apdu_containing_vst = response_content[1:]
+            return response_content
+        else:
+            raise Exception(f'Error response when requesting for BST!! Response message: 0x{response_content.hex().upper()}')
 
     def pertel_start_bst_emission_and_get_vst(self, t_apdu_containing_bst: bytes, change_beacon_id_periodically:bool = True) -> bytes:
         """Emits BST using helper methods, based on the choice of BeaconID behavior (Normal or Periodically changed)"""
