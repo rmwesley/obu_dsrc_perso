@@ -1,7 +1,6 @@
 import json
 import serial
 import logging
-import threading
 import asyncio
 
 bac_serial_wrapper_logger = logging.getLogger(__name__)
@@ -208,7 +207,7 @@ class BacHost(serial.Serial):
         if received_char == b'':
             raise Exception('Received null byte! Set timeout to None!!!')
         elif received_char == EOT:
-            print('Received EOT instead of ENQ!! A message was lost!')
+            print('[BAC L2] Received EOT instead of ENQ!! A message was lost!')
             return False
         elif received_char != ENQ:
             raise Exception(f'Received non-ENQ character ({received_char.hex().upper()}) before reception started!!')
@@ -294,40 +293,40 @@ class BacMsgReceiver():
         if second_char != STX:
             control_sequence = bytes.join(first_char, second_char)
             raise Exception(f'Message did not start with DLE/STX control sequence!!: 0x{control_sequence.hex().upper()}')
-        # print('Message start control sequence DLE/STX received!!')
+        # print('[BAC L2] Message start control sequence DLE/STX received!!')
         return True
 
     def _check_received_msg_crc(self, message_content, crc_bytes) -> bool:
-        # print(crc16_arc(message_content).hex())
+        # print(f'[BAC L2] CRC-16: 0x{crc16_arc(message_content).hex()}')
         return crc_bytes == crc16_arc(message_content)
 
     def _read_message_content_and_acknowledge_it(self) -> bytes:
         """Read message content and acknowledge it!
         We read bytes until we get to the control sequence DLE/ETX"""
-        source_msg_content_with_etx = bytearray()
+        received_msg_content_with_etx = bytearray()
         current_char = b''
         while current_char != DLE + ETX:
             # Non-escaped character!
             if current_char != DLE:
                 current_char = self.serial_instance.read(1)
-                source_msg_content_with_etx.append(current_char[0])
+                received_msg_content_with_etx.append(current_char[0])
             # Escaped character!!
             if current_char == DLE:
                 current_char = self.serial_instance.read(1)
-                source_msg_content_with_etx.append(current_char[0])
+                received_msg_content_with_etx.append(current_char[0])
                 # End of message control sequence!!
                 if current_char == ETX:
                     break
-        # print(source_msg_content_with_etx.hex().upper())
+        print(f"[BAC L2] Response from beacon: 0x{received_msg_content_with_etx.hex().upper()}")
         crc_bytes = self.serial_instance.read(1) + self.serial_instance.read(1)
 
-        if self._check_received_msg_crc(source_msg_content_with_etx, crc_bytes):
+        if self._check_received_msg_crc(received_msg_content_with_etx, crc_bytes):
             self.serial_instance.write(ACK)
         else:
             self.serial_instance.write(NAK)
             self.receive_message()
 
-        return source_msg_content_with_etx
+        return received_msg_content_with_etx
 
     def _receive_eot_char(self):
         self.serial_instance.timeout = self.EOT_CHAR_TIMEOUT
@@ -341,7 +340,7 @@ class BacMsgReceiver():
         self._wait_for_message_start_header()
         source_msg_content_with_etx = self._read_message_content_and_acknowledge_it()
         unescaped_source_msg_content = unescape_message_control_characters(source_msg_content_with_etx[:-2])
-        # print(f'Received message content: {unescaped_source_msg_content.hex().upper()}')
+        # print(f'[BAC L2] Received message content: {unescaped_source_msg_content.hex().upper()}')
 
         self._receive_eot_char()
 
