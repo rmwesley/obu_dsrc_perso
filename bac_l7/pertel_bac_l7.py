@@ -107,6 +107,8 @@ class PertelBacL7(bac_l2_host2beacon.BacHost):
         message_content = bytes([0x02])
         return self.send_command(message_content)
 
+    def get_vst(self) -> bytes:
+        return self.t_apdu_containing_vst
     def _is_transaction_in_progress(self) -> bool:
         return self.t_apdu_containing_vst != None
 

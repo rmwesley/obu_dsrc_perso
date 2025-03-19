@@ -12,7 +12,7 @@ class TgbvBacL7(pertel_bac_l7.PertelBacL7):
     def _tgb_read_beacon_id(self) -> bytes:
         """Command ID 0x54"""
         message_content = bytes([0x54])
-        return self.send_command(message_content)
+        return self._send_request_message(message_content)
 
     def update_beacon_id(self) -> bytes:
         response_content = self._tgb_read_beacon_id()

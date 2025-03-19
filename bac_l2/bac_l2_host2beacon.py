@@ -2,6 +2,7 @@ import json
 import serial
 import logging
 import threading
+import asyncio
 
 bac_serial_wrapper_logger = logging.getLogger(__name__)
 
@@ -46,7 +47,14 @@ def unescape_message_control_characters(message_content:bytes) -> bytes:
         else:
             unescaped_message_content.append(char)
     return unescaped_message_content
-        
+
+# Default values are empty Queues instead of None!!
+# We will use this to get one response queue per Command ID
+class MessageQueuesDict(dict):
+    def __getitem__(self, key) -> asyncio.Queue:
+        if key not in self:
+            dict.__setitem__(self, key, asyncio.Queue())
+        return dict.__getitem__(self, key)
 
 ENQ = bytes([0x05]) # Request the transmission of a message
 ACK = bytes([0x06]) # Positive acknowledgement (message can be sent!!)
@@ -81,7 +89,6 @@ class BacHost(serial.Serial):
         """
         bac_serial_wrapper_logger.info(f"Initializing BAC protocol L2 communication with beacon...!!")
 
-        self._bac_l2_lock = threading.Lock()
         # Opening the serial port
         bac_serial_wrapper_logger.info(f"Initializing serial communication with beacon (from config data)...!!")
         serial_config = bac_l2_config['beacon_host_serial_config']
@@ -94,15 +101,76 @@ class BacHost(serial.Serial):
 
         bac_serial_wrapper_logger.info(f"Successfully initialized BAC protocol serial wrapper!")
 
+        self.async_message_loop = asyncio.new_event_loop()
+        # Queue of responses awaiting to be gotten by the respective callers.
+        # I made this a queue so requests can await for their respective response to arrive.
+        self.async_response_queue_dict_by_command_id = MessageQueuesDict()
+
+        # THIS THREADING LOCK IS DEPRECATED!!!
+        self._bac_l2_lock = threading.Lock()
+
     def send_command(self, message_content:bytes) -> bytes:
+        return self.send_command_and_block_until_response(message_content)
+    def send_command_and_block_until_response(self, message_content:bytes) -> bytes:
+        future = self.send_command_and_await_response(message_content)
+        response_content = self.async_message_loop.run_until_complete(future)
+        return response_content
+
+    async def send_command_and_await_response(self, message_content:bytes) -> None:
+        """Send message and await a response from Beacon"""
+        command_id = message_content[0]
+        command_queue = self.async_response_queue_dict_by_command_id[command_id]
+
+        self._send_request_message(message_content)
+        await self._receive_response_message(command_id)
+
+        response_content = await command_queue.get()
+        return response_content
+
+    def _send_request_message(self, message_content:bytes) -> asyncio.Queue:
+        """Send a message to beacon.
+        That is, a request from Host to Beacon."""
+        command_id = message_content[0]
+
+        if self._send_request_to_transfer_msg_to_dest():
+            self._transfer_message(message_content)
+
+    async def _receive_response_message(self, command_id:int):
+        response_queue = self.async_response_queue_dict_by_command_id[command_id]
+
+        response_content = b''
+        if self.__block_and_wait_for_transfer_req_from_dest():
+            response_content = self._receive_message()
+
+        await response_queue.put(response_content)
+
+    # DEPRECATED
+    def __send_command_with_response_timeout(self, message_content:bytes, timeout=2.0) -> bytes:
+        """Synchronous method with a timeout.
+
+        Timeout is passed to ._wait_for_transfer_req_from_dest_with_timeout() helper method"""
         response_content = b''
         self._bac_l2_lock.acquire()
         if self._send_request_to_transfer_msg_to_dest():
             self._transfer_message(message_content)
-            if self._wait_for_transfer_req_from_dest():
+            if self.__wait_for_transfer_req_from_dest_with_timeout(timeout=2.0):
                 response_content = self._receive_message()
         self._bac_l2_lock.release()
         return response_content
+
+    # DEPRECATED
+    def __send_blocking_command_and_await_response(self, message_content:bytes) -> bytes:
+        """Blocking method, no timeout is defined.
+
+        This is useful for the initialisation phase of a DSRC L7 transaction (BST/VST)!
+        It seems to be safer than .send_command(), since there is no timeout for the obtention of a reponse,
+        and we cannot mix requests if we block until a response is received.
+
+        But in actuality, the beacon can be reset and a number of other events can occur.
+        So blocking behavior is not ideal!
+        We need to handle the asynchronous I/O behavior of the BAC L2 communication properly!!
+        """
+        return self._send_request_message(message_content, timeout=0)
 
     # Host transfers a message
     def _transfer_message(self, message_content:bytes):
@@ -146,9 +214,17 @@ class BacHost(serial.Serial):
             transfer_request_counter += 1
         return True
 
-    def _wait_for_transfer_req_from_dest(self) -> bool:
-        self.timeout = 2.0
-        received_char = self.read(1)
+    def read_with_timeout(self, size:int, timeout:float):
+        previous_timeout_value = self.timeout
+        self.timeout = timeout
+        received_char = self.read(size)
+        self.timeout = previous_timeout_value
+        return received_char
+
+    def __wait_for_transfer_req_from_dest_with_timeout(self, timeout) -> bool:
+        """Wait function to read 1 byte (with a timeout).
+        If timeout=None, we have a blocking read!"""
+        received_char = self.read_with_timeout(1, timeout)
         if received_char == EOT:
             print('Received EOT instead of ENQ!! A message was lost!')
             return False
@@ -157,6 +233,28 @@ class BacHost(serial.Serial):
         # Got an ENQ from destination!
         self.write(ACK)
         return True
+
+    def __block_and_wait_for_transfer_req_from_dest(self):
+        """Blocking wait function to read 1 byte.
+        That is, no timeout is defined!
+
+        This is never to be used!
+        BAC L2 is an asynchronous protocol.
+        We can send multiple commands at once (Async I/O)."""
+        received_char = self.read_with_timeout(1, timeout=None)
+        if received_char == b'':
+            raise Exception('Received null byte! Set timeout to None!!!')
+        elif received_char == EOT:
+            print('Received EOT instead of ENQ!! A message was lost!')
+            return False
+        elif received_char != ENQ:
+            raise Exception(f'Received non-ENQ character ({received_char.hex().upper()}) before reception started!!')
+        # Got an ENQ from destination!
+        self.write(ACK)
+        return True
+    def close(self):
+        super().close()
+        async_message_loop.close()
 
 class BacMsgTransfer():
     def __init__(self, serial_instance: serial.Serial):
