@@ -106,9 +106,6 @@ class BacHost(serial.Serial):
         # I made this a queue so requests can await for their respective response to arrive.
         self.async_response_queue_dict_by_command_id = MessageQueuesDict()
 
-        # THIS THREADING LOCK IS DEPRECATED!!!
-        self._bac_l2_lock = threading.Lock()
-
     def send_command(self, message_content:bytes) -> bytes:
         return self.send_command_and_block_until_response(message_content)
     def send_command_and_block_until_response(self, message_content:bytes) -> bytes:
@@ -122,7 +119,7 @@ class BacHost(serial.Serial):
         command_queue = self.async_response_queue_dict_by_command_id[command_id]
 
         self._send_request_message(message_content)
-        await self._receive_response_message(command_id)
+        await self.__block_and_receive_response_message(command_id)
 
         response_content = await command_queue.get()
         return response_content
@@ -135,7 +132,17 @@ class BacHost(serial.Serial):
         if self._send_request_to_transfer_msg_to_dest():
             self._transfer_message(message_content)
 
-    async def _receive_response_message(self, command_id:int):
+    # DEPRECATION WARNING
+    async def __block_and_receive_response_message(self, command_id:int):
+        """Default is no timeout.
+
+        timeout=0 is immediate.
+        timeout=None is blocking behavior!
+
+        BAC L2 is an asynchronous protocol.
+        We can send multiple commands at once (Async I/O).
+        Using a blocking function is not ideal.
+        We should do periodic response polling instead and resolve a Future-like object"""
         response_queue = self.async_response_queue_dict_by_command_id[command_id]
 
         response_content = b''
@@ -143,34 +150,6 @@ class BacHost(serial.Serial):
             response_content = self._receive_message()
 
         await response_queue.put(response_content)
-
-    # DEPRECATED
-    def __send_command_with_response_timeout(self, message_content:bytes, timeout=2.0) -> bytes:
-        """Synchronous method with a timeout.
-
-        Timeout is passed to ._wait_for_transfer_req_from_dest_with_timeout() helper method"""
-        response_content = b''
-        self._bac_l2_lock.acquire()
-        if self._send_request_to_transfer_msg_to_dest():
-            self._transfer_message(message_content)
-            if self.__wait_for_transfer_req_from_dest_with_timeout(timeout=2.0):
-                response_content = self._receive_message()
-        self._bac_l2_lock.release()
-        return response_content
-
-    # DEPRECATED
-    def __send_blocking_command_and_await_response(self, message_content:bytes) -> bytes:
-        """Blocking method, no timeout is defined.
-
-        This is useful for the initialisation phase of a DSRC L7 transaction (BST/VST)!
-        It seems to be safer than .send_command(), since there is no timeout for the obtention of a reponse,
-        and we cannot mix requests if we block until a response is received.
-
-        But in actuality, the beacon can be reset and a number of other events can occur.
-        So blocking behavior is not ideal!
-        We need to handle the asynchronous I/O behavior of the BAC L2 communication properly!!
-        """
-        return self._send_request_message(message_content, timeout=0)
 
     # Host transfers a message
     def _transfer_message(self, message_content:bytes):
@@ -221,26 +200,10 @@ class BacHost(serial.Serial):
         self.timeout = previous_timeout_value
         return received_char
 
-    def __wait_for_transfer_req_from_dest_with_timeout(self, timeout) -> bool:
-        """Wait function to read 1 byte (with a timeout).
-        If timeout=None, we have a blocking read!"""
-        received_char = self.read_with_timeout(1, timeout)
-        if received_char == EOT:
-            print('Received EOT instead of ENQ!! A message was lost!')
-            return False
-        elif received_char != ENQ:
-            raise Exception(f'Received non-ENQ character ({received_char.hex().upper()}) before reception started!!')
-        # Got an ENQ from destination!
-        self.write(ACK)
-        return True
-
+    # DEPRECATION WARNING
     def __block_and_wait_for_transfer_req_from_dest(self):
         """Blocking wait function to read 1 byte.
-        That is, no timeout is defined!
-
-        This is never to be used!
-        BAC L2 is an asynchronous protocol.
-        We can send multiple commands at once (Async I/O)."""
+        That is, no timeout=None!"""
         received_char = self.read_with_timeout(1, timeout=None)
         if received_char == b'':
             raise Exception('Received null byte! Set timeout to None!!!')
@@ -378,7 +341,7 @@ class BacMsgReceiver():
         self._wait_for_message_start_header()
         source_msg_content_with_etx = self._read_message_content_and_acknowledge_it()
         unescaped_source_msg_content = unescape_message_control_characters(source_msg_content_with_etx[:-2])
-        print(f'Received message content: {unescaped_source_msg_content.hex().upper()}')
+        # print(f'Received message content: {unescaped_source_msg_content.hex().upper()}')
 
         self._receive_eot_char()
 
