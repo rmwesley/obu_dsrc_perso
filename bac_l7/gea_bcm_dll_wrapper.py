@@ -697,7 +697,7 @@ def start_bst_wrapper(t_apdu_bst_datagram:bytes):
     lp_bst_datagram = ctypes.cast(bst_datagram_buffer, POINTER(BYTE))
     gea_dll_wrapper_logger.info(f"Fragmented T-APDU with BST to be sent (UPER hex): {fragmented_t_apdu_bst_datagram.hex().upper()}")
 
-    beacon_l2_config = beacon_manager_settings[chosen_beacon_name]['serial_config']['l2_config']
+    beacon_l2_config = beacon_manager_settings[chosen_beacon_name]['bac_l2_config']
     if beacon_l2_config['change_beacon_id_internally_periodically']:
         bst_type = BCM_BST_TYPE_Enum.BCM_BST_ChangeBID
     else:
@@ -896,7 +896,7 @@ def wait_for_ok_alarm():
     global beacon_state
     global chosen_beacon_name
 
-    beacon_l2_config = beacon_manager_settings[chosen_beacon_name]['serial_config']['l2_config']
+    beacon_l2_config = beacon_manager_settings[chosen_beacon_name]['bac_l2_config']
     if beacon_l2_config['send_OK_state_alarms'] == True and beacon_l2_config['beacon_alarm_state_polling_ms'] > 0:
         gea_dll_wrapper_logger.debug("Waiting for an OK state alarm...")
         beacon_state_ok_event.wait()
