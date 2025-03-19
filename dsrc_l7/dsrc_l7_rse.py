@@ -62,11 +62,11 @@ Note: This is weird... We should be the ones to set the BeaconID freely in the B
 The beacon should then just keep the last sent BeaconID in its memory"""
     )
 
-    last_beacon_id = beacon_bac_l7_wrapper.get_beacon_id()
-    bcm_logger.debug(f"Latest Beacon ID (according to GEA Beacon DLL) value: 0x{last_beacon_id.hex().upper()}")
+    # last_beacon_id = beacon_bac_l7_wrapper.get_beacon_id()
+    # bcm_logger.debug(f"Latest Beacon ID (according to GEA Beacon DLL) value: 0x{last_beacon_id.hex().upper()}")
     
-    EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.from_uper(last_beacon_id)
-    bcm_logger.debug(f"Beacon ID (according to GEA Beacon) in ASN: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.to_asn1()}")
+    # EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.from_uper(last_beacon_id)
+    # bcm_logger.debug(f"Beacon ID (according to GEA Beacon) in ASN: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.to_asn1()}")
 
 def reset_beacon():
     global beacon_bac_l7_wrapper
@@ -149,14 +149,9 @@ def safe_set_beacon(chosen_beacon_name):
         current_beacon_name = chosen_beacon_name
 
     if chosen_beacon_name == 'OPS1955':
-        ops1955_bac_l2 = ops1955_bac_l7.Ops1955BacL7()
-        ops1955_bac_l2._kapsch_set_config()
-        
-        if beacon_manager_config[chosen_beacon_name]['chosen_communication_mode'] == 'serial-pertel':
-            tgbv_bac_l7.set_beacon_name(beacon_name='OPS1955')
-            tgbv_bac_l7.initialize_gea_bcm_dll_wrapper()
-            
-            beacon_bac_l7_wrapper = tgbv_bac_l7
+        beacon_bac_l7_wrapper = ops1955_bac_l7.Ops1955BacL7()
+        beacon_bac_l7_wrapper._kapsch_set_config()
+
         current_beacon_name = chosen_beacon_name
 
 class BeaconManagerException(Exception):
@@ -207,8 +202,6 @@ def start_bst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 2
     beacon_bac_l7_wrapper.pertel_start_bst_emission_and_get_vst(last_sent_t_apdu_containing_bst)
 
     bcm_logger.debug("We now get the lastest BeaconID just after starting the BST")
-    beacon_bac_l7_wrapper.update_beacon_id()
-    bcm_logger.debug(f"Last BeaconID: {beacon_bac_l7_wrapper.get_beacon_id().hex().upper()}")
 
     return initialization_request_jval
 
@@ -229,9 +222,6 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     global initialization_data
     global current_transaction_id
 
-    beacon_state = beacon_bac_l7_wrapper.update_state()
-    if beacon_state[1] == pertel_bac_l7.BCM_MODE_Enum.PERTEL_MODE_Stopped:
-        raise BeaconManagerException("Beacon is in Stopped mode, not Transparent!!")
 
     if beacon_bac_l7_wrapper._is_transaction_in_progress():
         bcm_logger.error("Do not try to initilize a transaction! One is already in progress!")
@@ -245,16 +235,8 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     # Adding initialisationRequest json to initialization_data dict
     initialization_request_jval = start_bst(manufacturer_id=manufacturer_id, individual_id=individual_id, mand_applications=mand_applications, profile=profile, profile_list=profile_list, non_mand_applications=non_mand_applications)
     initialization_data |= initialization_request_jval
-    bcm_logger.debug("No errors occurred when starting BST!")
 
-    bcm_logger.info("We now wait on the main thread until we a VST is received...")
-    beacon_bac_l7_wrapper.wait_for_vst_event()
-    bcm_logger.info("A VST was received! Releasing locks!")
-    l7_initialization_phase_lock.release()
-    l7_transfer_kernel_lock.release()
-    #no_transaction_in_progress.set()
-
-    bcm_logger.debug("Locks released! We now get the VST")
+    bcm_logger.info("A VST was received!")
     fragmented_t_apdu_init_resp_datagram = beacon_bac_l7_wrapper.get_vst()
     bcm_logger.debug(f"Fragmented T_APDU containing VST (UPER hex): {fragmented_t_apdu_init_resp_datagram.hex().upper()}")
 
