@@ -1,6 +1,6 @@
-from bac_l7 import pertel_bac_interface
+from bac_l7 import pertel_bac_l7
 
-class TgbvBacL2(pertel_bac_interface.PertelBacL2):
+class TgbvBacL7(pertel_bac_l7.PertelBacL7):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.beacon_id = bytes(6)

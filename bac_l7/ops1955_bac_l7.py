@@ -1,12 +1,12 @@
 import json
-from bac_l7 import pertel_bac_interface
+from bac_l7 import pertel_bac_l7
 
 with open('settings/beacon_manager_config.json', 'r') as beacon_manager_settings_file:
     beacon_manager_settings = json.load(beacon_manager_settings_file)
     chosen_beacon_name = beacon_manager_settings['default_beacon_name']
     bac_l2_config = beacon_manager_settings[chosen_beacon_name]['bac_l2_config']
 
-class Ops1955BacL2(pertel_bac_interface.PertelBacL2):
+class Ops1955BacL7(pertel_bac_l7.PertelBacL7):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

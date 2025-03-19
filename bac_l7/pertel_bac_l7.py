@@ -24,7 +24,7 @@ class BCM_MODE_Enum(Enum):
     PERTEL_MODE_Transparent = 0x01
     PERTEL_MODE_Maintenance = 0x03
 
-class PertelBacL2(bac_l2_host2beacon.BacHost):
+class PertelBacL7(bac_l2_host2beacon.BacHost):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.t_apdu_containing_vst = None
