@@ -5,6 +5,9 @@ import asyncio
 
 bac_serial_wrapper_logger = logging.getLogger(__name__)
 
+class BacL2Exception(Exception):
+    pass
+
 with open('settings/beacon_manager_config.json', 'r') as beacon_manager_settings_file:
     beacon_manager_settings = json.load(beacon_manager_settings_file)
     chosen_beacon_name = beacon_manager_settings['default_beacon_name']
@@ -38,11 +41,11 @@ def unescape_message_control_characters(message_content:bytes) -> bytes:
             if char in CONTROL_SEQUENCE_CHARACTERS:
                 unescaped_message_content.append(char)
             else:
-                raise Exception('Escaped a normal, non-control character!')
+                raise BacL2Exception('Escaped a normal, non-control character!')
         elif char == DLE:
             escape_next = True
         elif char in CONTROL_SEQUENCE_CHARACTERS:
-            raise Exception('Did not escape a control character!')
+            raise BacL2Exception('Did not escape a control character!')
         else:
             unescaped_message_content.append(char)
     return unescaped_message_content
@@ -185,7 +188,7 @@ class BacHost(serial.Serial):
                 self._host_resolve_enq_conflict()
                 return False
             if transfer_request_counter > MAX_TRANSFER_REQ_RETRIES:
-                raise Exception('Maximum transfer request retries exceeded!!')
+                raise BacL2Exception('Maximum transfer request retries exceeded!!')
             self.write(ENQ)
             # Wait for ACK, with the timeout TRANSFER_REQUEST_TIMEOUT
             received_char = self.read(1)
@@ -205,12 +208,12 @@ class BacHost(serial.Serial):
         That is, no timeout=None!"""
         received_char = self.read_with_timeout(1, timeout=None)
         if received_char == b'':
-            raise Exception('Received null byte! Set timeout to None!!!')
+            raise BacL2Exception('Received null byte! Set timeout to None!!!')
         elif received_char == EOT:
             print('[BAC L2] Received EOT instead of ENQ!! A message was lost!')
             return False
         elif received_char != ENQ:
-            raise Exception(f'Received non-ENQ character ({received_char.hex().upper()}) before reception started!!')
+            raise BacL2Exception(f'Received non-ENQ character ({received_char.hex().upper()}) before reception started!!')
         # Got an ENQ from destination!
         self.write(ACK)
         return True
@@ -238,7 +241,7 @@ class BacMsgTransfer():
             # Read timed out after T1 seconds elapsed!!
             return False
         else:
-            raise Exception(f'Invalid control character ({received_char.hex().upper()}) received during message transfer!!!')
+            raise BacL2Exception(f'Invalid control character ({received_char.hex().upper()}) received during message transfer!!!')
 
     # Source transfers a message to destination
     def transfer_message(self, message_content:bytes):
@@ -249,7 +252,7 @@ class BacMsgTransfer():
         # Reemit message until ACK is received!
         while not self._msg_ack_received_from_dest():
             if message_transfer_counter > MAX_MSG_TRANSFER_RETRIES:
-                raise Exception('Exceeded message transfer retry limit!!')
+                raise BacL2Exception('Exceeded message transfer retry limit!!')
             self.serial_instance.write(message_value)
             message_transfer_counter += 1
 
@@ -277,7 +280,7 @@ class BacMsgReceiver():
         while received_char == ENQ:
             # ACK was lost by the source!!!
             if transfer_request_counter > MAX_TRANSFER_REQ_RETRIES - 1:
-                raise Exception('Maximum transfer request retries exceeded!!')
+                raise BacL2Exception('Maximum transfer request retries exceeded!!')
             self.serial_instance.write(ACK)
             received_char = self.serial_instance.read(1)
             transfer_request_counter += 1
@@ -288,11 +291,11 @@ class BacMsgReceiver():
         first_char = self._handle_repeated_transfer_requests(received_char)
 
         if first_char != DLE:
-            raise Exception(f'Message did not start with DLE/STX control sequence!!: 0x{first_char.hex().upper()}')
+            raise BacL2Exception(f'Message did not start with DLE/STX control sequence!!: 0x{first_char.hex().upper()}')
         second_char = self.serial_instance.read(1)
         if second_char != STX:
             control_sequence = bytes.join(first_char, second_char)
-            raise Exception(f'Message did not start with DLE/STX control sequence!!: 0x{control_sequence.hex().upper()}')
+            raise BacL2Exception(f'Message did not start with DLE/STX control sequence!!: 0x{control_sequence.hex().upper()}')
         # print('[BAC L2] Message start control sequence DLE/STX received!!')
         return True
 
@@ -334,7 +337,7 @@ class BacMsgReceiver():
         received_char = self.serial_instance.read(1)
         if received_char == EOT:
             return True
-        raise Exception(f'Received non-EOT char ({received_char}) after end of message reception!!')
+        raise BacL2Exception(f'Received non-EOT char ({received_char}) after end of message reception!!')
 
     def receive_message(self):
         self._wait_for_message_start_header()
