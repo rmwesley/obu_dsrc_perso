@@ -202,6 +202,7 @@ def start_bst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 2
     beacon_bac_l7_wrapper.pertel_start_bst_emission_and_get_vst(last_sent_t_apdu_containing_bst)
 
     bcm_logger.debug("We now get the lastest BeaconID just after starting the BST")
+    update_beacon_state()
 
     return initialization_request_jval
 
@@ -222,6 +223,7 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     global initialization_data
     global current_transaction_id
 
+    update_beacon_state()
 
     if beacon_bac_l7_wrapper._is_transaction_in_progress():
         bcm_logger.error("Do not try to initilize a transaction! One is already in progress!")
@@ -266,6 +268,18 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
         json.dump(initialization_data, json_file, indent=2)
         
     return initialization_data
+
+def update_beacon_state():
+    global current_beacon_name
+
+    if current_beacon_name == 'TGBV':
+        beacon_state = beacon_bac_l7_wrapper.update_state()
+        if beacon_state[1] == pertel_bac_l7.BCM_MODE_Enum.PERTEL_MODE_Stopped:
+            raise BeaconManagerException("Beacon is in Stopped mode, not Transparent!!")
+        bcm_logger.debug(f"Last BeaconID: {beacon_bac_l7_wrapper.get_beacon_id().hex().upper()}")
+        return beacon_state
+    elif current_beacon_name == 'OPS1955':
+        pass
 
 def get_init_data():
     global initialization_data
