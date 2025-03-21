@@ -26,6 +26,30 @@ with open(mk_path) as json_file:
         for efc_cm, keyset_name in efc_cm_to_keyset_name_mapping.items():
             master_keys[efc_cm] = master_keys_config['keysets'][keyset_name]
 
+def triple_des_decryption(ciphertext_hex:str, key_hex: str) -> str:
+    key_bytes = bytes.fromhex(key_hex)
+    cipher = DES3.new(key_bytes, DES3.MODE_ECB)
+
+    # We convert the ciphertext from hex to bytes
+    ciphertext_bytes = bytes.fromhex(ciphertext_hex)
+
+    # Decrypt the ciphertext to plaintext
+    plaintext_bytes = cipher.decrypt(ciphertext_bytes)
+    plaintext_hex = plaintext_bytes.hex().upper()
+    return plaintext_hex
+
+def triple_des_encryption(plaintext_hex:str, key_hex: str) -> str:
+    key_bytes = bytes.fromhex(key_hex)
+    cipher = DES3.new(key_bytes, DES3.MODE_ECB)
+
+    # We convert the plaintext from hex to bytes
+    plaintext_bytes = bytes.fromhex(plaintext_hex)
+
+    # Encrypt the plaintext to ciphertext
+    ciphertext_bytes = cipher.encrypt(plaintext_bytes)
+    ciphertext_hex = ciphertext_bytes.hex().upper()
+    return ciphertext_hex
+
 def compute_master_key_kcv(master_key: bytes) -> dict[int, str]:
     return DES3.new(master_key, DES3.MODE_ECB).encrypt(bytearray(8))[:3]
 
