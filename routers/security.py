@@ -28,6 +28,44 @@ def home(request: Request):
 async def favicon():
     return FileResponse('static/security_interface/security.svg')
 
+class TripleDesDecryptionReq(BaseModel):
+    ciphertext: str
+    key: str
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "ciphertext": "8B1300F0E421D5DB",
+                    "key": "A6B57FC2D327F348F6E258428E94DCE0"
+                }
+            ]
+        }
+    }
+
+@router.post("/triple_des_decryt")
+def triple_des_decryt(req_body: TripleDesDecryptionReq):
+    return dsrc_security.triple_des_decryption(req_body.ciphertext, req_body.key)
+
+class TripleDesEncryptionReq(BaseModel):
+    plaintext: str
+    key: str
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "plaintext": "35557965b2803100",
+                    "key": "A6B57FC2D327F348F6E258428E94DCE0"
+                }
+            ]
+        }
+    }
+
+@router.post("/triple_des_encryt")
+def triple_des_encryt(req_body: TripleDesEncryptionReq):
+    return dsrc_security.triple_des_encryption(req_body.plaintext, req_body.key)
+
 class ComputeKCVsReq(BaseModel):
     efc_cm: str
 
