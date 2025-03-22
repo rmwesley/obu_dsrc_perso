@@ -120,8 +120,8 @@ def compute_access_credentials_with_access_key(rnd_obe:int, access_key):
     key_derivation_logger.debug(f"Access Credentials in hex: {ac_cr:08X}")
     return ac_cr
 
-def compute_authenticator_with_auk_ref(pan_id, efc_cm, attribute_list_bytes, rnd_rse, auk_ref=115) -> bytes:
-    authenticator_key = compute_auth_key_with_mauk_ref(pan_id, efc_cm, auk_ref)
+def compute_authenticator_with_auk_ref(pan_8_msb:bytes, efc_cm, attribute_list_bytes, rnd_rse, auk_ref=115) -> bytes:
+    authenticator_key = compute_auth_key_with_mauk_ref(pan_8_msb, efc_cm, auk_ref)
 
     # Prepare the DES cipher with the MAuK
     cipher = DES.new(authenticator_key, DES.MODE_ECB)
@@ -157,21 +157,21 @@ def compute_pan_8_msb_tis(pan_bytes:bytes) -> bytes:
     pan_8_msb_tis = int(pan_bytes[0:4].hex()).to_bytes(4) + int(pan_bytes[4:8].hex()).to_bytes(4)
     return pan_8_msb_tis
 
-def compact_pan_type1(pan_str: str):
-    PAN_8 = pan_str[:16]
+def compute_compact_pan_from_pan_8_msb(pan_8_msb:bytes) -> bytes:
+    if type(pan_8_msb) != bytes:
+        raise ValueError('pan_8_msb should be a bytes object!!!')
+    if len(pan_8_msb) < 8:
+        raise ValueError('pan_8_msb should be at least 8 bytes in length!!!')
 
-    most_sbytes = int(PAN_8[:8], 16)
-    least_sbytes = int(PAN_8[8:], 16)
-    int_compact_pan = most_sbytes ^ least_sbytes
+    compact_pan_bytes = bytearray()
+    for i in range(0,4):
+        current_byte = pan_8_msb[i] ^ pan_8_msb[i+4]
+        compact_pan_bytes.append(current_byte)
+    return compact_pan_bytes
 
-    # Length is 4 bytes, byte ordering is 'big'
-    bytes_compact_pan = int_compact_pan.to_bytes(length=4, byteorder="big")
-    return bytes_compact_pan
-
-
-def compute_auk_plaintext(pan_id, contract_provider) -> bytes:
+def compute_auk_plaintext(pan_8_msb:bytes, contract_provider) -> bytes:
     # Prepare the compact PAN
-    bytes_compact_pan = compact_pan_type1(pan_id)
+    bytes_compact_pan = compute_compact_pan_from_pan_8_msb(pan_8_msb)
     key_derivation_logger.debug(f'Compact PAN in hex: {bytes_compact_pan.hex().upper()}')
     if len(bytes_compact_pan) != 4:
         key_derivation_logger.error("Compact PAN should be encoded in 4 bytes!")
@@ -203,11 +203,11 @@ def compute_auk_with_mauk_value_and_plaintext(plaintext_bytes:bytes, master_key:
     key_derivation_logger.debug(f'Computed Auth key: {auth_key.hex().upper()}')
     return auth_key
 
-def compute_auth_key_with_mauk_ref(pan_id: str, efc_cm: str, key_ref: int) -> bytes:
-    key_derivation_logger.debug(f'Computing Authentication Key with KeyRef {key_ref} for PAN {pan_id}...')
+def compute_auth_key_with_mauk_ref(pan_8_msb: bytes, efc_cm: str, key_ref: int) -> bytes:
+    key_derivation_logger.debug(f'Computing Authentication Key with KeyRef {key_ref} for PAN {pan_8_msb}...')
     key_derivation_logger.debug(f'Getting the Contract Provider. It is encodeed in the first 3 bytes of the EFC-CM...')
     contract_provider = efc_cm[0:6]
-    plaintext_bytes = compute_auk_plaintext(pan_id, contract_provider)
+    plaintext_bytes = compute_auk_plaintext(pan_8_msb, contract_provider)
     
     if key_ref not in range(111, 119):
         raise ValueError("Invalid master authentication key (MAuK) reference!")
@@ -216,11 +216,11 @@ def compute_auth_key_with_mauk_ref(pan_id: str, efc_cm: str, key_ref: int) -> by
     print(mauk)
     return compute_auk_with_mauk_value_and_plaintext(plaintext_bytes, mauk)
 
-def compute_all_auth_keys(pan_id: str, efc_cm: str) -> dict[int, bytes]:
-    key_derivation_logger.debug(f'Computing all 8 Authentication Keys for PAN {pan_id}')
+def compute_all_auth_keys(pan_8_msb: bytes, efc_cm: str) -> dict[int, bytes]:
+    key_derivation_logger.debug(f'Computing all 8 Authentication Keys for PAN {pan_8_msb}')
     key_derivation_logger.debug(f'Getting the Contract Provider. It is encodeed in the first 3 bytes of the EFC-CM...')
     contract_provider = efc_cm[0:6]
-    plaintext_bytes = compute_auk_plaintext(pan_id, contract_provider)
+    plaintext_bytes = compute_auk_plaintext(pan_8_msb, contract_provider)
     
     auth_keys = {}
     for key_ref in range(111, 119):
@@ -229,28 +229,28 @@ def compute_all_auth_keys(pan_id: str, efc_cm: str) -> dict[int, bytes]:
         auth_keys[key_ref] = compute_auk_with_mauk_value_and_plaintext(plaintext_bytes, mauk)
     return auth_keys
 
-def compute_all_auth_keys_and_return_hex_dict(pan_id:str, efc_cm:str):
-    auth_keys_dict = compute_all_auth_keys(pan_id, efc_cm)
+def compute_all_auth_keys_and_return_hex_dict(pan_8_msb:bytes, efc_cm:str):
+    auth_keys_dict = compute_all_auth_keys(pan_8_msb, efc_cm)
     return {key_ref: computed_auk.hex().upper() for (key_ref, computed_auk) in auth_keys_dict.items()}
 
-def compute_all_derived_keys_and_return_hex_dict(pan_id:str, efc_cm:str, ac_cr_key_ref:int):
-    derived_keys_dict = compute_all_auth_keys(pan_id, efc_cm)
+def compute_all_derived_keys_and_return_hex_dict(pan_8_msb:bytes, efc_cm:str, ac_cr_key_ref:int):
+    derived_keys_dict = compute_all_auth_keys(pan_8_msb, efc_cm)
     derived_keys_dict[120] = compute_access_key(efc_cm, ac_cr_key_ref)
     return {key_ref: computed_auk.hex().upper() for (key_ref, computed_auk) in derived_keys_dict.items()}
 
-def compute_all_derived_keys_for_device_type_and_return_hex_dict(pan_id:str, device_type:str, ac_cr_key_ref:int):
+def compute_all_derived_keys_for_device_type_and_return_hex_dict(pan_8_msb:bytes, device_type:str, ac_cr_key_ref:int):
     efc_cm_to_derived_keys = {}
     for efc_cm, keyset_name in device_type_to_keyset_mapping[device_type].items():
-        derived_keys_dict = compute_all_auth_keys(pan_id, efc_cm)
+        derived_keys_dict = compute_all_auth_keys(pan_8_msb, efc_cm)
         derived_keys_dict[120] = compute_access_key(efc_cm, ac_cr_key_ref)
         efc_cm_to_derived_keys[efc_cm] = {key_ref: computed_auk.hex().upper() for (key_ref, computed_auk) in derived_keys_dict.items()}
     return efc_cm_to_derived_keys
 
 
-def compute_all_derived_keys_for_available_keysets_and_return_hex_dict(pan_id:str, ac_cr_key_ref:int):
+def compute_all_derived_keys_for_available_keysets_and_return_hex_dict(pan_8_msb:bytes, ac_cr_key_ref:int):
     efc_cm_to_derived_keys = {}
     for efc_cm in master_keys:
-        derived_keys_dict = compute_all_auth_keys(pan_id, efc_cm)
+        derived_keys_dict = compute_all_auth_keys(pan_8_msb, efc_cm)
         derived_keys_dict[120] = compute_access_key(efc_cm, ac_cr_key_ref)
         efc_cm_to_derived_keys[efc_cm] = {key_ref: computed_auk.hex().upper() for (key_ref, computed_auk) in derived_keys_dict.items()}
     return efc_cm_to_derived_keys
