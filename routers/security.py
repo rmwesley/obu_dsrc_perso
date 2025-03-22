@@ -100,7 +100,8 @@ class ComputeAllDerivedKeysForAllKeySetsReq(BaseModel):
 @router.post("/compute_all_derived_keys_for_all_keysets")
 def compute_all_derived_keys_for_all_keysets(req_body: ComputeAllDerivedKeysForAllKeySetsReq):
     ac_cr_key_ref = int(req_body.ac_cr_key_ref, 16)
-    return dsrc_security.compute_all_derived_keys_for_available_keysets_and_return_hex_dict(req_body.pan_id, ac_cr_key_ref)
+    pan_bytes = bytes.fromhex(req_body.pan_id)
+    return dsrc_security.compute_all_derived_keys_for_available_keysets_and_return_hex_dict(pan_bytes, ac_cr_key_ref)
 
 class ComputeAllDerivedKeysForDeviceTypeReq(BaseModel):
     pan_id: str = Field(min_length=16, max_length=20)
@@ -121,7 +122,8 @@ class ComputeAllDerivedKeysForDeviceTypeReq(BaseModel):
 @router.post("/compute_all_derived_keys_for_device_type")
 def compute_all_derived_keys_for_device_type(req_body: ComputeAllDerivedKeysForDeviceTypeReq):
     ac_cr_key_ref = int(req_body.ac_cr_key_ref, 16)
-    return dsrc_security.compute_all_derived_keys_for_device_type_and_return_hex_dict(req_body.pan_id, req_body.device_type, ac_cr_key_ref)
+    pan_bytes = bytes.fromhex(req_body.pan_id)
+    return dsrc_security.compute_all_derived_keys_for_device_type_and_return_hex_dict(pan_bytes, req_body.device_type, ac_cr_key_ref)
 
 class ComputeAccessKeyReq(BaseModel):
     efc_cm: str = Field(min_length=12, max_length=12, examples=["B28031000665", "B2803100066F", "B28031000A72"])
@@ -157,12 +159,14 @@ class ComputeAllDerivedKeysReq(BaseModel):
 @router.post("/compute_all_derived_keys")
 def compute_key_checksum_values(req_body: ComputeAllDerivedKeysReq):
     ac_cr_key_ref = int(req_body.ac_cr_key_ref, 16)
-    return dsrc_security.compute_all_derived_keys_and_return_hex_dict(req_body.pan_id, req_body.efc_cm, ac_cr_key_ref)
+    pan_bytes = bytes.fromhex(req_body.pan_id)
+    return dsrc_security.compute_all_derived_keys_and_return_hex_dict(pan_bytes, req_body.efc_cm, ac_cr_key_ref)
 
 @router.post("/compute_all_derived_keys_in_jer_format")
 def compute_key_checksum_values(req_body: ComputeAllDerivedKeysReq):
     ac_cr_key_ref = int(req_body.ac_cr_key_ref, 16)
-    derived_keys_hex_dict = dsrc_security.compute_all_derived_keys_and_return_hex_dict(req_body.pan_id, req_body.efc_cm, ac_cr_key_ref)
+    pan_bytes = bytes.fromhex(req_body.pan_id)
+    derived_keys_hex_dict = dsrc_security.compute_all_derived_keys_and_return_hex_dict(pan_bytes, req_body.efc_cm, ac_cr_key_ref)
     return [{
         "attributeId": key_ref,
         "attributeValue": {
@@ -173,7 +177,8 @@ def compute_key_checksum_values(req_body: ComputeAllDerivedKeysReq):
 @router.post("/compute_all_derived_keys_in_proxy_format")
 def compute_key_checksum_values(req_body: ComputeAllDerivedKeysReq):
     ac_cr_key_ref = int(req_body.ac_cr_key_ref, 16)
-    derived_keys_hex_dict = dsrc_security.compute_all_derived_keys_and_return_hex_dict(req_body.pan_id, req_body.efc_cm, ac_cr_key_ref)
+    pan_bytes = bytes.fromhex(req_body.pan_id)
+    derived_keys_hex_dict = dsrc_security.compute_all_derived_keys_and_return_hex_dict(pan_bytes, req_body.efc_cm, ac_cr_key_ref)
     return [{
         "attribute": key_ref,
         "value": "0208" + derived_key_value
@@ -227,12 +232,14 @@ def compute_auth_keys(req_body: ComputeAuthKeyReq) -> dict[int, str]:
     efc_cm = req_body.efc_cm
     key_ref = req_body.key_ref
 
+    pan_bytes = bytes.fromhex(req_body.pan_id)
+
     if not key_ref:
-        return dsrc_security.compute_all_auth_keys_and_return_hex_dict(pan_id, efc_cm)
+        return dsrc_security.compute_all_auth_keys_and_return_hex_dict(pan_bytes, efc_cm)
     if key_ref < 111:
         key_ref += 110
 
-    auth_key = dsrc_security.compute_auth_key_with_mauk_ref(pan_id, efc_cm, key_ref).hex().upper()
+    auth_key = dsrc_security.compute_auth_key_with_mauk_ref(pan_bytes, efc_cm, key_ref).hex().upper()
     return {key_ref: auth_key}
 
 
