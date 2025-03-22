@@ -149,7 +149,14 @@ def decrypt_auth_key(efc_cm, auth_key:bytes, auk_ref=115):
     key_derivation_logger.info(f"Plaintext (decrypted authentication key) in hex: {decrypted_auth_key.hex().upper()}")
     return decrypted_auth_key
 
+# Compact_PAN is defined in EN 15509
 # CODE FOR DERIVED AUTHENTICATION KEYS (Uses MasterKeys with ref 111 through 118)
+def compute_pan_8_msb_tis(pan_bytes:bytes) -> bytes:
+    pan_bytes_hex = pan_bytes.hex().upper()
+    # Weird TIS 8 PAN MSB
+    pan_8_msb_tis = int(pan_bytes[0:4].hex()).to_bytes(4) + int(pan_bytes[4:8].hex()).to_bytes(4)
+    return pan_8_msb_tis
+
 def compact_pan_type1(pan_str: str):
     PAN_8 = pan_str[:16]
 
