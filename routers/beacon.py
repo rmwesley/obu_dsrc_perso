@@ -7,7 +7,6 @@ from pydantic import BaseModel, Field
 from typing import Literal, Optional
 from enum import IntEnum
 
-import beacon_manager_module
 import dsrc_security
 
 router = APIRouter(
