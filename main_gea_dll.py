@@ -8,7 +8,7 @@ import threading
 
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
-import beacon_manager_module
+from deprecated import beacon_manager_module
 
 import logging
 
@@ -51,7 +51,7 @@ def simple_bcm_transactions():
     beacon_manager_module.init_bcm_and_set_transparent_mode()
 
     beacon_manager_module.set_beeping_state(beep_state=True)
-    beacon_manager_module.cardme_transaction(1, mand_applications=[1, 20, 29])
+    beacon_manager_module.cardme_transaction(4, mand_applications=[1, 20, 29])
 
 # Main execution
 if __name__ == "__main__":
