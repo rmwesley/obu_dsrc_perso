@@ -591,6 +591,8 @@ def verify_obe_authenticity(get_stamped_action_response_value=None, efc_cm=None)
     attribute_list_bytes = EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_uper()[1:]
 
     provided_authenticator = get_stamped_rs['authenticator']
+    bcm_logger.debug(f"[OBE AUTH] Authenticator provided by OBE (UPER hex): {provided_authenticator.hex().upper()}")
+
     rnd_rse_bytes = rnd_rse_bytes_value
     bcm_logger.debug(f"[OBE AUTH] RndRSE value in hex: {rnd_rse_bytes.hex().upper()}")
     rnd_rse_int = int.from_bytes(rnd_rse_bytes, 'big')
@@ -598,15 +600,24 @@ def verify_obe_authenticity(get_stamped_action_response_value=None, efc_cm=None)
     pan_bytes = get_stamped_rs['attributeList'][0]['attributeValue'][1]['personalAccountNumber']
     bcm_logger.info(f"[OBE AUTH] PAN bytes in hex (PAN ID): {pan_bytes.hex().upper()}")
 
-    authenticator = dsrc_security.compute_authenticator_with_auk_ref(pan_bytes, efc_cm, attribute_list_bytes, rnd_rse_int, 115)
+    try:
+        pan_8_msb = pan_bytes[0:8]
+        authenticator = dsrc_security.compute_authenticator_with_auk_ref(pan_8_msb, efc_cm, attribute_list_bytes, rnd_rse_int, 115)
 
-    bcm_logger.debug(f"[OBE AUTH] Authenticator provided by OBE (UPER hex): {provided_authenticator.hex().upper()}")
-    bcm_logger.debug(f"[OBE AUTH] Authenticator computed by RSE (UPER hex): {authenticator.hex().upper()}")
+        bcm_logger.debug(f"[OBE AUTH] EN15509 Authenticator computed by RSE (UPER hex): {authenticator.hex().upper()}")
+        if provided_authenticator != authenticator:
+            raise Exception('[OBE AUTH] Invalid EN15509 OBE Auth!!')
+    except:
+        try:
+            pan_8_msb = dsrc_security.compute_pan_8_msb_tis(pan_bytes)
+            authenticator = dsrc_security.compute_authenticator_with_auk_ref(pan_8_msb, efc_cm, attribute_list_bytes, rnd_rse_int, 115)
 
-    if provided_authenticator != authenticator:
-        bcm_logger.error(f"[OBE AUTH] The device/OBE is fraudulent!!")
-    else:
-        bcm_logger.error(f"[OBE AUTH] The device/OBE is authentic!!!")
+            bcm_logger.debug(f"[OBE AUTH] TIS Authenticator computed by RSE (UPER hex): {authenticator.hex().upper()}")
+            if provided_authenticator != authenticator:
+                raise Exception('[OBE AUTH] Invalid TIS OBE Auth!!')
+        except:
+            bcm_logger.error(f"[OBE AUTH] The device/OBE is fraudulent!!")
+    bcm_logger.error(f"[OBE AUTH] The device/OBE is authentic!!!")
 
 def get_stamped_request_action_parameter_preparation(eid:int, attrIdList:list = [], operator_auk_ref=111):
     """
@@ -1021,11 +1032,3 @@ def loop_transactions():
             keep_looping = False
             bcm_logger.error("Transaction error occurred during loop!", exc_info=True)
             time.sleep(1)
-        # except gea_bcm_dll_wrapper.Layer7Exception:
-        #     bcm_logger.error("L7 Error!", exc_info=True)
-        #     send_close_transaction_echo()
-        #     time.sleep(2)
-            # shutdown_beacon()
-            # time.sleep(3)
-            # set_transparent_mode()
-            # time.sleep(1)
