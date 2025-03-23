@@ -14,6 +14,7 @@ import json
 import logging
 import threading
 import uuid
+import asyncio
 
 from bac_l7 import ops1955_bac_l7, pertel_bac_l7, tgbv_bac_l7
 
@@ -37,7 +38,7 @@ keep_looping = False
 beacon_bac_l7_wrapper = None
 
 # RSE <> OBE = Host <> Host BAC L2 <> Beacon BAC L2 <> Beacon DSRC L7 <> OBE DSRC L7
-def initialize_bcm(aid=20):
+async def initialize_bcm(aid=20):
     """Initialize the beacon manager wrapper"""
     global beacon_manager_config
     global TApdu_container
@@ -54,7 +55,7 @@ def initialize_bcm(aid=20):
     default_beacon_name = beacon_manager_config["default_beacon_name"]
     l7_initialization_phase_lock = threading.Lock()
     l7_transfer_kernel_lock = threading.Lock()
-    safe_set_beacon(chosen_beacon_name = default_beacon_name)
+    await safe_set_beacon(chosen_beacon_name = default_beacon_name)
     bcm_logger.info("Initialized BCM!!")
     
     bcm_logger.debug("""We now update/get the BeaconID (L7, so according to the beacon) before sending the BST
@@ -62,11 +63,8 @@ Note: This is weird... We should be the ones to set the BeaconID freely in the B
 The beacon should then just keep the last sent BeaconID in its memory"""
     )
 
-    # last_beacon_id = beacon_bac_l7_wrapper.get_beacon_id()
-    # bcm_logger.debug(f"Latest Beacon ID (according to GEA Beacon DLL) value: 0x{last_beacon_id.hex().upper()}")
-    
-    # EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.from_uper(last_beacon_id)
-    # bcm_logger.debug(f"Beacon ID (according to GEA Beacon) in ASN: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BeaconID.to_asn1()}")
+    # SETTING BEACON TO TRANSPARENT MODE!!
+    await beacon_bac_l7_wrapper.set_mode(1)
 
 def reset_beacon():
     global beacon_bac_l7_wrapper
@@ -89,11 +87,11 @@ def change_trx_mode(mode_name='Stopped'):
         mode_code = tgbv_gea_bcm_operating_modes_enum_values[mode_name]
         beacon_bac_l7_wrapper.change_trx_mode(operating_mode_code=mode_code)
 
-def init_bcm_and_set_transparent_mode():
+async def init_bcm_and_set_transparent_mode():
     global beacon_bac_l7_wrapper
 
     bcm_logger.debug("Instantiating/Initializing BeaconManager class...")
-    initialize_bcm()
+    await initialize_bcm()
 
 def shutdown_beacon():
     global beacon_bac_l7_wrapper
@@ -135,10 +133,13 @@ def update_rnd_rse():
     bcm_logger.debug(f"RndRSE value (UPER hex): {rnd_rse_bytes_value.hex().upper()}")
     return rnd_rse_bytes_value
 
-def safe_set_beacon(chosen_beacon_name):
+async def safe_set_beacon(chosen_beacon_name):
     """Set the chosen beacon"""
     global current_beacon_name
     global beacon_bac_l7_wrapper
+    global rse_event_loop
+
+    rse_event_loop = asyncio.new_event_loop()
 
     bcm_logger.info(f'Setting beacon to ({chosen_beacon_name})')
     if beacon_bac_l7_wrapper is not None:
@@ -150,7 +151,7 @@ def safe_set_beacon(chosen_beacon_name):
 
     if chosen_beacon_name == 'OPS1955':
         beacon_bac_l7_wrapper = ops1955_bac_l7.Ops1955BacL7()
-        beacon_bac_l7_wrapper._kapsch_set_config()
+        await beacon_bac_l7_wrapper._kapsch_set_config()
 
         current_beacon_name = chosen_beacon_name
 
@@ -162,7 +163,7 @@ class EIDNotFoundException(Exception):
     pass
 
 # Start sending a BST
-def start_bst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = []):
+async def start_bst_emission_and_await_vst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = []):
     global TApdu_container
     global l7_transfer_kernel_lock
     global current_beacon_name
@@ -199,14 +200,15 @@ def start_bst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 2
     l7_transfer_kernel_lock.acquire()
     l7_initialization_phase_lock.acquire()
 
-    beacon_bac_l7_wrapper.pertel_start_bst_emission_and_get_vst(last_sent_t_apdu_containing_bst)
+    await beacon_bac_l7_wrapper._pertel_start_bst_emission_and_await_vst(last_sent_t_apdu_containing_bst)
 
     bcm_logger.debug("We now get the lastest BeaconID just after starting the BST")
+
     update_beacon_state()
 
     return initialization_request_jval
 
-def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = []):
+async def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = []):
     """
     The initialization phase comprises 2 steps for the beacon:
     Start of a BST, and
@@ -235,7 +237,7 @@ def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_appli
     initialization_data['_id'] = current_transaction_id.hex
 
     # Adding initialisationRequest json to initialization_data dict
-    initialization_request_jval = start_bst(manufacturer_id=manufacturer_id, individual_id=individual_id, mand_applications=mand_applications, profile=profile, profile_list=profile_list, non_mand_applications=non_mand_applications)
+    initialization_request_jval = await start_bst_emission_and_await_vst(manufacturer_id=manufacturer_id, individual_id=individual_id, mand_applications=mand_applications, profile=profile, profile_list=profile_list, non_mand_applications=non_mand_applications)
     initialization_data |= initialization_request_jval
 
     bcm_logger.info("A VST was received!")
@@ -329,7 +331,7 @@ def decode_t_apdu_response_uper(t_apdu_with_response_bytes):
         bcm_logger.info(f"No return code in T-APDU! (No errors)")
     return last_response_t_apdu_value
 
-def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close_transaction=False) -> dict:
+async def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close_transaction=False) -> dict:
     global TApdu_container
 
     global current_transaction_id
@@ -345,7 +347,9 @@ def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close_tran
     # Sending command!!!
     l7_transfer_kernel_lock.acquire()
     try:
-        fragmented_t_apdu_with_response_bytes = beacon_bac_l7_wrapper.send_req_t_apdu_and_receive_resp_t_apdu(TApdu_container.to_uper(), close_transaction)
+        fragmented_t_apdu_with_response_bytes = (
+            await beacon_bac_l7_wrapper._pertel_send_dsrc_l7_command_with_close_transaction_option(TApdu_container.to_uper(), close_transaction)
+        )
     except tgbv_bac_l7.Layer7Exception as e:
         bcm_logger.error(f"L7 Error!", exc_info=True)
         return
@@ -377,7 +381,7 @@ def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close_tran
         bcm_logger.info("Transaction Exception: We simply send an ECHO.request to close the transaction...")
 
         eid = asn1_request_t_apdu_value[1]['eid']
-        send_close_transaction_echo(eid=eid)
+        await send_close_transaction_echo(eid=eid)
 
 def decode_vst_parameter_from_eid(eid):
     bcm_logger.debug(f"Decoding VST parameter with EID {eid}...")
@@ -442,7 +446,7 @@ def send_get_request(eid, accessCredentialsPresent:bool = False, attrIdList=None
 
     return response_t_apdu_value
 
-def send_action_request(
+async def send_action_request(
         mode=True,
         eid=0,
         actionType=0xA,
@@ -489,18 +493,18 @@ def send_action_request(
     bcm_logger.info(f"T-APDU with ACTION.request in ASN:\n{TApdu_container.to_asn1()}")
     bcm_logger.debug(f"ACTION.request with ActionType {actionType} and actionParameter of type {actionParameter[0]} being now sent...")
 
-    response_t_apdu_value = send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_action_req_value, close_transaction)
+    response_t_apdu_value = await send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_action_req_value, close_transaction)
     return response_t_apdu_value
 
-def presentation_request(
+async def presentation_request(
         eid:int,
         accessCredentialsPresent:bool = True,
         attrIdList=[],
         operator_auk_ref=111,
         close_transaction=False):
-    return send_get_stamped_request(eid, accessCredentialsPresent, attrIdList, operator_auk_ref, close_transaction)
+    return await send_get_stamped_request(eid, accessCredentialsPresent, attrIdList, operator_auk_ref, close_transaction)
 
-def send_get_stamped_request(
+async def send_get_stamped_request(
         eid:int,
         accessCredentialsPresent:int = True,
         attrIdList=[],
@@ -654,16 +658,16 @@ def set_mmi(eid=0, close_transaction=False):
     t_apdu_with_action_response = send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_set_mmi_action_req_value, close_transaction)
     return t_apdu_with_action_response
 
-def send_close_transaction_echo(eid=0, text="Hello, World!"):
-    return send_echo_action_request(eid=eid, text=text, close_transaction=True)
+async def send_close_transaction_echo(eid=0, text="Hello, World!"):
+    return await send_echo_action_request(eid=eid, text=text, close_transaction=True)
 
-def send_close_transaction_setmmi(eid=0):
-    return set_mmi(eid, close_transaction=True)
+async def send_close_transaction_setmmi(eid=0):
+    return await set_mmi(eid, close_transaction=True)
 
-def cardme_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
-    initialize_transaction(mand_applications=mand_applications)
+async def cardme_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
+    await initialize_transaction(mand_applications=mand_applications)
     # Getting payment info!! (Core part)
-    presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+    await presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
     # Getting Receipt data...
     # send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[33, 34])
