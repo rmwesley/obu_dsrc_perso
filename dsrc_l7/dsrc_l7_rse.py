@@ -25,7 +25,7 @@ bcm_logger = logging.getLogger(__name__)
 
 # SETTING UP LOGGER FILE HANDLER
 date_prefix = datetime.now().strftime('%y%m%d')
-file_handler = logging.FileHandler(f'beacon_logs/{date_prefix}_beacon_manager.log')
+file_handler = logging.FileHandler(f'beacon_logs/{date_prefix}_rse_dsrc_l7.log')
 file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
 file_handler.setFormatter(file_formatter)
 bcm_logger.addHandler(file_handler)
@@ -56,7 +56,7 @@ async def initialize_bcm(aid=20):
     l7_initialization_phase_lock = threading.Lock()
     l7_transfer_kernel_lock = threading.Lock()
     await safe_set_beacon(chosen_beacon_name = default_beacon_name)
-    bcm_logger.info("Initialized BCM!!")
+    bcm_logger.info("Initialized RSE DSRC L7!!")
     
     bcm_logger.debug("""We now update/get the BeaconID (L7, so according to the beacon) before sending the BST
 Note: This is weird... We should be the ones to set the BeaconID freely in the BST
@@ -181,10 +181,10 @@ async def start_bst_emission_and_await_vst(manufacturer_id=0x31, individual_id=0
         'profileList': profile_list
         }
 
-    bcm_logger.info(f"BST value:\n{bst_value}")
     EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BST.set_val(bst_value)
+    bcm_logger.info(f"BST in ASN:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BST.to_asn1()}")
     last_sent_bst = EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BST.to_uper()
-    bcm_logger.debug(f"BST value (UPER hex): {last_sent_bst.hex().upper()}")
+    bcm_logger.info(f"BST value (UPER hex): {last_sent_bst.hex().upper()}")
 
     initialization_request_value = ('initialisationRequest', bst_value)
 
@@ -242,7 +242,7 @@ async def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand
 
     bcm_logger.info("A VST was received!")
     fragmented_t_apdu_init_resp_datagram = beacon_bac_l7_wrapper.get_vst()
-    bcm_logger.debug(f"Fragmented T_APDU containing VST (UPER hex): {fragmented_t_apdu_init_resp_datagram.hex().upper()}")
+    bcm_logger.info(f"Fragmented T_APDU containing VST (UPER hex): {fragmented_t_apdu_init_resp_datagram.hex().upper()}")
 
     bcm_logger.debug("We now remove the fragmentation header and instantiate an T_APDU object from the response!")
     t_apdu_init_resp_datagram = bytes(fragmented_t_apdu_init_resp_datagram[1:])

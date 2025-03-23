@@ -13,7 +13,7 @@ from dsrc_l7 import dsrc_l7_rse
 import logging
 
 root_logger = logging.getLogger()
-root_logger.setLevel(logging.DEBUG)
+root_logger.setLevel(logging.INFO)
 
 # SETTING UP COLORED CONSOLE LOGGING
 console_handler = logging.StreamHandler()

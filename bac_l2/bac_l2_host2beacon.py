@@ -89,10 +89,10 @@ class BacHost(serial.Serial):
         Also, we do not implement a BAC L2 beacon serial port listener!
         As such, we only expect reading BAC L2 Rx in response to our commands!
         """
-        bac_serial_wrapper_logger.info(f"Initializing BAC protocol L2 communication with beacon...!!")
+        bac_serial_wrapper_logger.debug(f"Initializing BAC protocol L2 communication with beacon...!!")
 
         # Opening the serial port
-        bac_serial_wrapper_logger.info(f"Initializing serial communication with beacon (from config data)...!!")
+        bac_serial_wrapper_logger.info(f"Initializing serial communication (BAC L1) with beacon (from config data)...!!")
         serial_config = bac_l2_config['beacon_host_serial_config']
         super().__init__(*args, **serial_config, **kwargs)
 
@@ -101,15 +101,16 @@ class BacHost(serial.Serial):
         self.sender = BacMsgTransfer(serial_instance=self)
         self.receiver = BacMsgReceiver(serial_instance=self)
 
-        bac_serial_wrapper_logger.info(f"Successfully initialized BAC protocol serial wrapper!")
+        bac_serial_wrapper_logger.info(f"Successfully initialized BAC L2 (serial protocol) handler!")
 
         self.async_message_loop = asyncio.new_event_loop()
         # Queue of responses awaiting to be gotten by the respective callers.
         # I made this a queue so requests can await for their respective response to arrive.
         self.async_response_queue_dict_by_command_id = MessageQueuesDict()
 
-    def send_command(self, message_content:bytes) -> bytes:
-        return self.send_command_and_block_until_response(message_content)
+    async def send_command(self, message_content:bytes) -> bytes:
+        return await self.send_command_and_await_response(message_content)
+
     def send_command_and_block_until_response(self, message_content:bytes) -> bytes:
         future = self.send_command_and_await_response(message_content)
         response_content = self.async_message_loop.run_until_complete(future)
@@ -320,7 +321,7 @@ class BacMsgReceiver():
                 # End of message control sequence!!
                 if current_char == ETX:
                     break
-        print(f"[BAC L2] Response from beacon: 0x{received_msg_content_with_etx.hex().upper()}")
+        # print(f"[BAC L2] Response from beacon: 0x{received_msg_content_with_etx.hex().upper()}")
         crc_bytes = self.serial_instance.read(1) + self.serial_instance.read(1)
 
         if self._check_received_msg_crc(received_msg_content_with_etx, crc_bytes):
