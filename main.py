@@ -4,7 +4,7 @@ try:
 except:
     os.environ['MK_PATH'] = r"..\master_keys_v1.1.0.json"
 
-import threading
+import asyncio
 
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
@@ -46,16 +46,12 @@ console_formatter = ColoredFormatterWrapper(logging.Formatter(f"%(levelname)-8s 
 console_handler.setFormatter(console_formatter)
 root_logger.addHandler(console_handler)
 
-def simple_bcm_transactions():
-    dsrc_l7_rse.init_bcm_and_set_transparent_mode()
+async def simple_bcm_transactions():
+    await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
 
     dsrc_l7_rse.set_beeping_state(beep_state=True)
-    dsrc_l7_rse.cardme_transaction(1, mand_applications=[1, 20, 29])
+    await dsrc_l7_rse.cardme_transaction(1, mand_applications=[1, 20, 29])
 
 # Main execution
 if __name__ == "__main__":
-    beacon_thread = threading.Thread(target=simple_bcm_transactions, daemon=True)
-    beacon_thread.start()
-
-    while beacon_thread.is_alive:
-        beacon_thread.join(1)
+    asyncio.run(simple_bcm_transactions())
