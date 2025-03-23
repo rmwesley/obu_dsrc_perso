@@ -219,7 +219,7 @@ class BacHost(serial.Serial):
         return True
     def close(self):
         super().close()
-        async_message_loop.close()
+        self.async_message_loop.close()
 
 class BacMsgTransfer():
     def __init__(self, serial_instance: serial.Serial):
