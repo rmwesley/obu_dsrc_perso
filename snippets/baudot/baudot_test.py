@@ -4,10 +4,12 @@ from io import BytesIO, BufferedIOBase
 
 import baudot.handlers
 
-country_code = 0xb280
+country_code = 0xb280 >> 6
 
-first_5bits = (country_code >> 11) & 0b11111
-second_5bits = (country_code >> 6) & 0b11111
+def split_country_code_baudot_chars_in_bytes(country_code:int) -> bytes:
+    first_5bits = (country_code >> 5) & 0b11111
+    second_5bits = country_code & 0b11111
+    return bytes([first_5bits, second_5bits])
 
 def reverse_mask_5_bits(x:int) -> int:
     x = ((x & 0x05) << 1) | ((x & 0x0A) >> 1) | (x & 0x10)
@@ -33,18 +35,11 @@ class BaudotMsbFirstBytesReader(baudot.handlers.core.BaudotReader):
             raise ReadError(f'Invalid hexadecimal byte: {str_repr}')
         if not 0 <= code < 32:
             raise ReadError(f'Code value {code} is not a valid 5-bit value')
-        print(code)
+        # print(code)
         return code
 
-baudot_2_bytes_int = int.from_bytes([first_5bits, second_5bits])
-print(f'0xB280 10 MSB split in 2 bytes, 5 bits each: {baudot_2_bytes_int:0b}')
-
-# baudot_lsb_on_right = [reverse_mask_1_byte(curr_int) for curr_int in [first_5bits, second_5bits]]
-baudot_lsb_on_right = bytes([13, 10])
-baudot_lsb_on_right = [first_5bits, second_5bits]
-
 # ITA2_SWITCH_CODE = 0x1F
-code = bytes([0x1F]) + bytes(baudot_lsb_on_right)
+code = bytes([0x1F]) + split_country_code_baudot_chars_in_bytes(714)
 print(f"Baudot code with LSB on the right, split in bytes, in hex: {code.hex()}")
 with BytesIO(code) as country_code_bitstream:
         reader = BaudotMsbFirstBytesReader(country_code_bitstream)
