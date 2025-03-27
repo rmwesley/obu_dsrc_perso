@@ -363,24 +363,27 @@ async def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, clos
 
         TApdu_container.set_val(t_apdu_response_value)
         response_t_apdu_jval = TApdu_container._to_jval()
-        current_exchanged_data_json |= response_t_apdu_jval
-        # Pushing T-APDU to transactions database collection
-
-        with open(f'local_file_storage/transactions/{current_transaction_id}.json', 'r') as json_file:
-            transaction_data_json = json.load(json_file)
-            transaction_data_json['exchanged_data'].append(current_exchanged_data_json)
-            
-        with open(f'local_file_storage/transactions/{current_transaction_id}.json', 'w') as json_file:
-            transaction_data_json['last_update_timestamp'] = datetime.now().isoformat()
-            json.dump(transaction_data_json, json_file, indent=2)
-
-        return response_t_apdu_jval
     except:
         bcm_logger.error("Error when decoding T-APDU response!!")
         bcm_logger.info("Transaction Exception: We simply send an ECHO.request to close the transaction...")
 
         eid = asn1_request_t_apdu_value[1]['eid']
         await send_close_transaction_echo(eid=eid)
+        return
+
+    # Adding T-APDU with response data to transaction dict (dict merge)
+    current_exchanged_data_json |= response_t_apdu_jval
+
+    # Storing transaction files T-APDUs locally as a JSON
+    with open(f'local_file_storage/transactions/{current_transaction_id}.json', 'r') as json_file:
+        transaction_data_json = json.load(json_file)
+        transaction_data_json['exchanged_data'].append(current_exchanged_data_json)
+
+    with open(f'local_file_storage/transactions/{current_transaction_id}.json', 'w') as json_file:
+        transaction_data_json['last_update_timestamp'] = datetime.now().isoformat()
+        json.dump(transaction_data_json, json_file, indent=2)
+
+    return response_t_apdu_jval
 
 def decode_vst_parameter_from_eid(eid):
     bcm_logger.debug(f"Decoding VST parameter with EID {eid}...")
