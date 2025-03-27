@@ -115,7 +115,7 @@ def update_rnd_rse():
 
     bcm_logger.debug(f"Updating DateAndTime/SessionTime value (to be used as RndRSE value)...")
 
-    EFC_CCC_LAC_asn1_objs.EfcDataDictionary.DateAndTime.set_val({ 
+    EFC_CCC_LAC_asn1_objs.EfcDataDictionary.DateAndTime.set_val({
         'timeDate':{
             'year': datetime.utcnow().year,
             'month': datetime.utcnow().month,
@@ -780,7 +780,7 @@ def test_ccc_2009_transaction(eid, mand_applications=[1, 20, 29], accessCredenti
         send_close_transaction_setmmi(eid=eid)
     else:
         send_close_transaction_echo(eid=eid)
-    EFC_CCC_LAC_asn1_objs = AXXESv1_1
+    EFC_CCC_LAC_asn1_objs = AXXESv1_2
 
 def test_ccc_2009_transaction_old(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
     global EFC_CCC_LAC_asn1_objs
@@ -812,7 +812,7 @@ def test_ccc_2009_transaction_old(eid, mand_applications=[1, 20, 29], accessCred
         send_close_transaction_setmmi(eid=eid)
     else:
         send_close_transaction_echo(eid=eid)
-    EFC_CCC_LAC_asn1_objs = AXXESv1_1
+    EFC_CCC_LAC_asn1_objs = AXXESv1_2
 
 def ccc_2015_status_history_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
     global EFC_CCC_LAC_asn1_objs
@@ -838,7 +838,7 @@ def ccc_2015_status_history_transaction(eid, mand_applications=[1, 20, 29], acce
         send_close_transaction_setmmi(eid=eid)
     else:
         send_close_transaction_echo(eid=eid)
-    EFC_CCC_LAC_asn1_objs = AXXESv1_1
+    EFC_CCC_LAC_asn1_objs = AXXESv1_2
 
 def test_ccc_2015_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
     global EFC_CCC_LAC_asn1_objs
@@ -877,7 +877,7 @@ def test_ccc_2015_transaction(eid, mand_applications=[1, 20, 29], accessCredenti
         send_close_transaction_setmmi(eid=eid)
     else:
         send_close_transaction_echo(eid=eid)
-    EFC_CCC_LAC_asn1_objs = AXXESv1_1
+    EFC_CCC_LAC_asn1_objs = AXXESv1_2
 
 def ccc_2023_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
     initialize_transaction(mand_applications=mand_applications)
