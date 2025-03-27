@@ -191,11 +191,9 @@ def compute_access_credentials_with_access_key(rnd_obe:int, access_key):
     key_derivation_logger.debug(f"Access Credentials in hex: {ac_cr:08X}")
     return ac_cr
 
-def compute_authenticator_with_auk_ref(pan_8_msb:bytes, efc_cm, attribute_list_bytes, rnd_rse, auk_ref=115) -> bytes:
-    authenticator_key = compute_auth_key_with_mauk_ref(pan_8_msb, efc_cm, auk_ref)
-
+def compute_authenticator_with_auk_value(attribute_list_bytes, rnd_rse, auk_value:bytes):
     # Prepare the DES cipher with the MAuK
-    cipher = DES.new(authenticator_key, DES.MODE_ECB)
+    cipher = DES.new(auk_value, DES.MODE_ECB)
     des_output = b''
     right_padding_size = (8 - (len(attribute_list_bytes) + 5)%8)%8
     des_input_bytes = attribute_list_bytes + b'\x04' + rnd_rse.to_bytes(4) + bytearray(right_padding_size)
@@ -209,8 +207,14 @@ def compute_authenticator_with_auk_ref(pan_8_msb:bytes, efc_cm, attribute_list_b
         des_input = int.from_bytes(des_output, 'big') ^ block_of_8_bytes
         des_output = cipher.encrypt(des_input.to_bytes(8))
 
-    authenticator = des_output[0:4]
-    return authenticator
+    attr_authenticator = des_output[0:4]
+    return attr_authenticator
+
+def compute_authenticator_with_auk_ref(pan_bytes:bytes, efc_cm, attribute_list_bytes, rnd_rse, auk_ref=115) -> bytes:
+    authenticator_key = compute_auth_key_with_mauk_ref(pan_bytes, efc_cm, auk_ref)
+
+    attr_authenticator = compute_authenticator_with_auk_value(attribute_list_bytes, rnd_rse, auk_value=authenticator_key)
+    return attr_authenticator
 
 def decrypt_auth_key(efc_cm, auth_key:bytes, auk_ref=115):
     key_derivation_logger.debug("Preparing the Master Authentication Key (MAuK) 3DES cipher")
@@ -222,13 +226,33 @@ def decrypt_auth_key(efc_cm, auth_key:bytes, auk_ref=115):
 
 # Compact_PAN is defined in EN 15509
 # CODE FOR DERIVED AUTHENTICATION KEYS (Uses MasterKeys with ref 111 through 118)
+def compute_pan_8_msb(pan_bytes:bytes) -> bytes:
+    if current_security_profile == 'TIS_decimal':
+        return compute_pan_8_msb_tis(pan_bytes)
+    elif current_security_profile == 'EN15509':
+        pan_8_msb = pan_bytes[0:8]
+        return pan_8_msb
+
 def compute_pan_8_msb_tis(pan_bytes:bytes) -> bytes:
-    pan_bytes_hex = pan_bytes.hex().upper()
     # Weird TIS 8 PAN MSB
-    pan_8_msb_tis = int(pan_bytes[0:4].hex()).to_bytes(4) + int(pan_bytes[4:8].hex()).to_bytes(4)
+    # The literal PAN here is treated as a decimal value, not HEX!!
+
+    # pan_8_msb_tis = int(pan_bytes[0:4].hex()).to_bytes(4) + int(pan_bytes[4:8].hex()).to_bytes(4)
+    # pan_8_msb_tis = bytes.fromhex(f'{high_cpan_int:08d}') + bytes.fromhex(f'{low_cpan_int:08d}')
+    # pan_8_msb_tis = bytes.fromhex(f'{pan_8_msb_tis.hex().upper()}')
+    high_cpan_int = int(pan_bytes[0:4].hex(), 10)
+    low_cpan_int = int(pan_bytes[4:8].hex(), 10)
+
+    high_cpan_bytes = high_cpan_int.to_bytes(4)
+    low_cpan_bytes = low_cpan_int.to_bytes(4)
+    pan_8_msb_tis = high_cpan_bytes + low_cpan_bytes
+
     return pan_8_msb_tis
 
-def compute_compact_pan_from_pan_8_msb(pan_8_msb:bytes) -> bytes:
+def compute_compact_pan(pan_bytes:bytes) -> bytes:
+    # Compute actual PAN 8 MSB.
+    # This means you can directly pass pan_bytes to the functions without an issue!
+    pan_8_msb = compute_pan_8_msb(pan_bytes=pan_bytes)
     if type(pan_8_msb) != bytes:
         raise ValueError('pan_8_msb should be a bytes object!!!')
     if len(pan_8_msb) < 8:
@@ -238,11 +262,19 @@ def compute_compact_pan_from_pan_8_msb(pan_8_msb:bytes) -> bytes:
     for i in range(0,4):
         current_byte = pan_8_msb[i] ^ pan_8_msb[i+4]
         compact_pan_bytes.append(current_byte)
+
+    if current_security_profile == 'TIS_decimal':
+        # We interpret a decimal as a hex!
+        compact_pan_int = int.from_bytes(compact_pan_bytes)
+        return bytes.fromhex(f'{compact_pan_int:08d}')
+
+    elif current_security_profile == 'EN15509':
+        pass
     return compact_pan_bytes
 
 def compute_auk_plaintext(pan_8_msb:bytes, contract_provider) -> bytes:
     # Prepare the compact PAN
-    bytes_compact_pan = compute_compact_pan_from_pan_8_msb(pan_8_msb)
+    bytes_compact_pan = compute_compact_pan(pan_bytes)
     key_derivation_logger.debug(f'Compact PAN in hex: {bytes_compact_pan.hex().upper()}')
     if len(bytes_compact_pan) != 4:
         key_derivation_logger.error("Compact PAN should be encoded in 4 bytes!")
