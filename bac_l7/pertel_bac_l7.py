@@ -136,12 +136,11 @@ class PertelBacL7(bac_l2_host2beacon.BacHost):
         message_content = bytes([0x03]) + t_apdu_containing_bst
         response_content = await self.send_command(message_content)
 
-        if response_content[1] == 0:
-            # Removing Command ID 0x03
-            self.t_apdu_containing_vst = response_content[1:]
-            return response_content
-        else:
-            raise PertelBacL7Exception(f'Error response when requesting for BST!! Response message: 0x{response_content.hex().upper()}')
+        if response_content[1] != 0:
+            bac_serial_wrapper_logger.error(f'Error response when requesting for BST!! Response message: 0x{response_content.hex().upper()}')
+        # Removing Command ID 0x03 and error code
+        self.t_apdu_containing_vst = response_content[2:]
+        return response_content
 
     async def _pertel_stop_bst_emission(self, t_apdu_bst_datagram:bytes) -> bytes:
         """
@@ -189,11 +188,10 @@ class PertelBacL7(bac_l2_host2beacon.BacHost):
         message_content = bytes([0x05]) + t_apdu_containing_request
         response_content = await self.send_command(message_content)
 
-        # Removing Command ID 0x05
-        self.t_apdu_containing_response = response_content[1:]
-
-        # Transaction is over!! Setting VST to None!
-        self.t_apdu_containing_vst = None
+        if response_content[1] != 0:
+            bac_serial_wrapper_logger.error('BAC L2 error code present!!')
+        # Removing Command ID 0x05 and error code
+        self.t_apdu_containing_response = response_content[2:]
 
         return response_content
 
@@ -219,8 +217,16 @@ class PertelBacL7(bac_l2_host2beacon.BacHost):
         """
         message_content = bytes([0x06]) + t_apdu_containing_request
         response_content = await self.send_command(message_content)
-        # Removing Command ID 0x06
-        self.t_apdu_containing_response = response_content[1:]
+
+        if response_content[1] != 0:
+            bac_serial_wrapper_logger.error('BAC L2 error code present!!')
+        else:
+            # Transaction is over!! Setting VST to None!
+            self.t_apdu_containing_vst = None
+
+        # Removing Command ID 0x06 and error code
+        self.t_apdu_containing_response = response_content[2:]
+
         return response_content
 
     async def _pertel_change_config(self, config_parameters:bytes) -> bytes:
