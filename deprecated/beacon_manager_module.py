@@ -594,46 +594,26 @@ def verify_obe_authenticity(get_stamped_action_response_value=None, efc_cm=None)
     bcm_logger.info(f"[OBE AUTH] Authenticator provided by OBE (UPER hex): {provided_authenticator.hex().upper()}")
 
     rnd_rse_bytes = rnd_rse_bytes_value
-    bcm_logger.debug(f"[OBE AUTH] RndRSE value in hex: {rnd_rse_bytes.hex().upper()}")
     rnd_rse_int = int.from_bytes(rnd_rse_bytes, 'big')
 
     pan_bytes = get_stamped_rs['attributeList'][0]['attributeValue'][1]['personalAccountNumber']
-    bcm_logger.info(f"[OBE AUTH] PAN bytes in hex (PAN ID): {pan_bytes.hex().upper()}")
 
     try:
-        pan_8_msb = pan_bytes[0:8]
-        authenticator = dsrc_security.compute_authenticator_with_auk_ref(pan_8_msb, efc_cm, attribute_list_bytes, rnd_rse_int, 115)
+        bcm_logger.debug(f'[OBE AUTH] EFC-CM: {efc_cm}')
+        bcm_logger.debug(f'[OBE AUTH] AttributeList: {attribute_list_bytes}')
+        bcm_logger.debug(f'[OBE AUTH] RndRSE int: {rnd_rse_int}')
+
+        # Remember to set the key derivation settings for the Toll Domain!!
+        # 2 key derivation algorithms are implemented.
+        # One follows EN15509, and the other works for TIS.
+        authenticator = dsrc_security.compute_authenticator_with_auk_ref(pan_bytes, efc_cm, attribute_list_bytes, rnd_rse_int, 115)
     except:
-        bcm_logger.critical('Key derivation error (Check master keys!!!)')
+        bcm_logger.critical('Attribute Authenticator computation error (Check master keys!!!)')
     
-    try:
-        bcm_logger.info(f"[OBE AUTH] EN15509 Authenticator computed by RSE (UPER hex): {authenticator.hex().upper()}")
-        if provided_authenticator != authenticator:
-            raise Exception('[OBE AUTH] Invalid EN15509 OBE Auth!!')
-        else:
-            bcm_logger.critical('[OBE AUTH] OK EN15509!!!')
-    except:
-        bcm_logger.error('[OBE AUTH] Invalid EN15509 OBE Auth!!')
-
-    try:
-        pan_8_msb = dsrc_security.compute_pan_8_msb_tis(pan_bytes)
-        bcm_logger.info(f'PAN 8 MSB: {pan_8_msb}')
-        bcm_logger.info(f'EFC-CM: {efc_cm}')
-        bcm_logger.info(f'AttributeList: {attribute_list_bytes}')
-        bcm_logger.info(f'RndRSE: {rnd_rse_int}')
-        authenticator = dsrc_security.compute_authenticator_with_auk_ref(pan_8_msb, efc_cm, attribute_list_bytes, rnd_rse_int, 115)
-    except:
-        bcm_logger.critical('Key derivation error (Check master keys!!!)')
-
-    try:
-        bcm_logger.info(f"[OBE AUTH] TIS Authenticator computed by RSE (UPER hex): {authenticator.hex().upper()}")
-        if provided_authenticator != authenticator:
-            raise Exception('[OBE AUTH] Invalid TIS OBE Auth!!')
-        else:
-            bcm_logger.critical('[OBE AUTH] OK TIS!!!')
-    except:
-        bcm_logger.error('[OBE AUTH] Invalid TIS OBE Auth!!')
-        # bcm_logger.error(f"[OBE AUTH] The device/OBE is fraudulent!!")
+    if provided_authenticator == authenticator:
+        bcm_logger.critical('[OBE AUTH] OK!!!')
+        return True
+        # raise Exception('[OBE AUTH] Invalid OBE Auth!!')
 
 def get_stamped_request_action_parameter_preparation(eid:int, attrIdList:list = [], operator_auk_ref=111):
     """
