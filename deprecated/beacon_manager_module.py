@@ -1,13 +1,13 @@
 import sys
 import time
 
-from ASN.compiled_DSRC_instances import AXXESv1_1
+from ASN.compiled_DSRC_instances import AXXESv1_2
 # from ASN.compiled_DSRC_instances import EFCv5
-EFCv5 = AXXESv1_1
+EFCv5 = AXXESv1_2
 from ASN.compiled_DSRC_instances import CCCv1
 # from ASN.compiled_DSRC_instances import LACv2_1 as EFC_CCC_LAC_asn1_objs
 
-EFC_CCC_LAC_asn1_objs = AXXESv1_1
+EFC_CCC_LAC_asn1_objs = AXXESv1_2
 
 from datetime import datetime
 import json
@@ -153,7 +153,7 @@ def safe_set_beacon(chosen_beacon_name):
         current_beacon_name = chosen_beacon_name
 
     if chosen_beacon_name == 'OPS1955':
-        ops1955_bac_l7._kapsch_set_config()
+        # ops1955_bac_l7._kapsch_set_config()
         
         if beacon_manager_config[chosen_beacon_name]['chosen_communication_mode'] == 'serial-pertel':
             tgbv_bac_l7.set_beacon_name(beacon_name='OPS1955')
@@ -438,7 +438,7 @@ def compute_access_credentials(eid:int) -> bytes:
     except KeyError:
         return None
 
-def send_get_request(eid, accessCredentialsPresent:bool = False, attrIdList=None, close_transaction = False) -> AXXESv1_1.SEQ:
+def send_get_request(eid, accessCredentialsPresent:bool = False, attrIdList=None, close_transaction = False) -> EFC_CCC_LAC_asn1_objs.SEQ:
     if accessCredentialsPresent:
         accessCredentials = compute_access_credentials(eid)
     else:
@@ -591,7 +591,7 @@ def verify_obe_authenticity(get_stamped_action_response_value=None, efc_cm=None)
     attribute_list_bytes = EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_uper()[1:]
 
     provided_authenticator = get_stamped_rs['authenticator']
-    bcm_logger.debug(f"[OBE AUTH] Authenticator provided by OBE (UPER hex): {provided_authenticator.hex().upper()}")
+    bcm_logger.info(f"[OBE AUTH] Authenticator provided by OBE (UPER hex): {provided_authenticator.hex().upper()}")
 
     rnd_rse_bytes = rnd_rse_bytes_value
     bcm_logger.debug(f"[OBE AUTH] RndRSE value in hex: {rnd_rse_bytes.hex().upper()}")
@@ -603,21 +603,37 @@ def verify_obe_authenticity(get_stamped_action_response_value=None, efc_cm=None)
     try:
         pan_8_msb = pan_bytes[0:8]
         authenticator = dsrc_security.compute_authenticator_with_auk_ref(pan_8_msb, efc_cm, attribute_list_bytes, rnd_rse_int, 115)
-
-        bcm_logger.debug(f"[OBE AUTH] EN15509 Authenticator computed by RSE (UPER hex): {authenticator.hex().upper()}")
+    except:
+        bcm_logger.critical('Key derivation error (Check master keys!!!)')
+    
+    try:
+        bcm_logger.info(f"[OBE AUTH] EN15509 Authenticator computed by RSE (UPER hex): {authenticator.hex().upper()}")
         if provided_authenticator != authenticator:
             raise Exception('[OBE AUTH] Invalid EN15509 OBE Auth!!')
+        else:
+            bcm_logger.critical('[OBE AUTH] OK EN15509!!!')
     except:
-        try:
-            pan_8_msb = dsrc_security.compute_pan_8_msb_tis(pan_bytes)
-            authenticator = dsrc_security.compute_authenticator_with_auk_ref(pan_8_msb, efc_cm, attribute_list_bytes, rnd_rse_int, 115)
+        bcm_logger.error('[OBE AUTH] Invalid EN15509 OBE Auth!!')
 
-            bcm_logger.debug(f"[OBE AUTH] TIS Authenticator computed by RSE (UPER hex): {authenticator.hex().upper()}")
-            if provided_authenticator != authenticator:
-                raise Exception('[OBE AUTH] Invalid TIS OBE Auth!!')
-        except:
-            bcm_logger.error(f"[OBE AUTH] The device/OBE is fraudulent!!")
-    bcm_logger.error(f"[OBE AUTH] The device/OBE is authentic!!!")
+    try:
+        pan_8_msb = dsrc_security.compute_pan_8_msb_tis(pan_bytes)
+        bcm_logger.info(f'PAN 8 MSB: {pan_8_msb}')
+        bcm_logger.info(f'EFC-CM: {efc_cm}')
+        bcm_logger.info(f'AttributeList: {attribute_list_bytes}')
+        bcm_logger.info(f'RndRSE: {rnd_rse_int}')
+        authenticator = dsrc_security.compute_authenticator_with_auk_ref(pan_8_msb, efc_cm, attribute_list_bytes, rnd_rse_int, 115)
+    except:
+        bcm_logger.critical('Key derivation error (Check master keys!!!)')
+
+    try:
+        bcm_logger.info(f"[OBE AUTH] TIS Authenticator computed by RSE (UPER hex): {authenticator.hex().upper()}")
+        if provided_authenticator != authenticator:
+            raise Exception('[OBE AUTH] Invalid TIS OBE Auth!!')
+        else:
+            bcm_logger.critical('[OBE AUTH] OK TIS!!!')
+    except:
+        bcm_logger.error('[OBE AUTH] Invalid TIS OBE Auth!!')
+        # bcm_logger.error(f"[OBE AUTH] The device/OBE is fraudulent!!")
 
 def get_stamped_request_action_parameter_preparation(eid:int, attrIdList:list = [], operator_auk_ref=111):
     """
