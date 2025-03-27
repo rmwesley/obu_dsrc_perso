@@ -134,15 +134,15 @@ class BacHost(serial.Serial):
         response_content = self.async_message_loop.run_until_complete(future)
         return response_content
 
-    async def send_command_and_await_response(self, message_content:bytes) -> None:
+    async def send_command_and_await_response(self, message_content:bytes) -> bytes:
         """Send message and await a response from Beacon"""
         command_id = message_content[0]
-        command_queue = self.async_response_queue_dict_by_command_id[command_id]
+        command_response_queue = self.async_response_queue_dict_by_command_id[command_id]
 
         self._send_request_message(message_content)
         await self.__block_and_receive_response_message(command_id)
 
-        response_content = await command_queue.get()
+        response_content = await command_response_queue.get()
         return response_content
 
     def _send_request_message(self, message_content:bytes) -> asyncio.Queue:
@@ -214,7 +214,7 @@ class BacHost(serial.Serial):
             transfer_request_counter += 1
         return True
 
-    def read_with_timeout(self, size:int, timeout:float):
+    def read_with_timeout(self, size:int, timeout:float|None):
         previous_timeout_value = self.timeout
         self.timeout = timeout
         received_char = self.read(size)
@@ -224,7 +224,8 @@ class BacHost(serial.Serial):
     # DEPRECATION WARNING
     def __block_and_wait_for_transfer_req_from_dest(self):
         """Blocking wait function to read 1 byte.
-        That is, no timeout=None!"""
+        That is, no timeout!
+        timeout=None"""
         received_char = self.read_with_timeout(1, timeout=None)
         if received_char == b'':
             raise BacL2Exception('Received null byte! Set timeout to None!!!')
@@ -232,7 +233,7 @@ class BacHost(serial.Serial):
             print('[BAC L2] Received EOT instead of ENQ!! A message was lost!')
             return False
         elif received_char != ENQ:
-            raise BacL2Exception(f'Received non-ENQ character ({received_char.hex().upper()}) before reception started!!')
+            raise BacL2Exception(f'Received 0x{received_char.hex().upper()}, a non-ENQ (0x05) character before reception started!!')
         # Got an ENQ from destination!
         self.write(ACK)
         return True
@@ -342,9 +343,9 @@ class BacMsgReceiver():
                 # End of message control sequence!!
                 if current_char == ETX:
                     break
-        crc_bytes = self.serial_instance.read(1) + self.serial_instance.read(1)
         # print(f"[BAC L2] Response from beacon with ETX: 0x{received_msg_content_with_etx.hex().upper()}")
 
+        crc_bytes = self.serial_instance.read(1) + self.serial_instance.read(1)
         if self._check_received_msg_crc(received_msg_content_with_etx, crc_bytes):
             self.serial_instance.write(ACK)
         else:
