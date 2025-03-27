@@ -196,6 +196,11 @@ async def start_bst_emission_and_await_vst(manufacturer_id=0x31, individual_id=0
 
     await beacon_bac_l7_wrapper._pertel_start_bst_emission_and_await_vst(last_sent_t_apdu_containing_bst)
 
+    # Transaction unclosed!!
+    if response[1] == 2:
+        await send_close_transaction_setmmi()
+        exit()
+
     bcm_logger.debug("We now get the lastest BeaconID just after starting the BST")
 
     await update_beacon_state()
