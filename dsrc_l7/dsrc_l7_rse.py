@@ -39,12 +39,22 @@ keep_looping = False
 ## Beacon L7 necessary values
 beacon_bac_l7_wrapper = None
 
+def set_fragmentation_header():
+    global frag_header
+    # PDU cannot be 0 or 1
+    pdu = 0x2
+    # PDU is at most 4 bits
+    pdu &= 0xF
+    # The fragmentation header is 0b1xxxx001, where xxxx is the PDU
+    frag_header = bytes([0x81 | (pdu << 3)]) # 0x91
+
 # RSE <> OBE = Host <> Host BAC L2 <> Beacon BAC L2 <> Beacon DSRC L7 <> OBE DSRC L7
 async def initialize_bcm(aid=20):
     """Initialize the beacon manager wrapper"""
     global beacon_manager_config
     global TApdu_container
 
+    set_fragmentation_header()
     if aid == 1:
         TApdu_container = TApdu_container
     else:
@@ -194,7 +204,8 @@ async def start_bst_emission_and_await_vst(manufacturer_id=0x31, individual_id=0
     last_sent_t_apdu_containing_bst = TApdu_container.to_uper()
     bcm_logger.info(f"T_APDU containing BST (UPER hex): {TApdu_container.to_uper().hex().upper()}")
 
-    await beacon_bac_l7_wrapper._pertel_start_bst_emission_and_await_vst(last_sent_t_apdu_containing_bst)
+    fragmented_t_apdu = frag_header + last_sent_t_apdu_containing_bst
+    response = await beacon_bac_l7_wrapper._pertel_start_bst_emission_and_await_vst(fragmented_t_apdu)
 
     # Transaction unclosed!!
     if response[1] == 2:
@@ -344,16 +355,16 @@ async def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, clos
     request_t_apdu_jval = TApdu_container._to_jval()
     current_exchanged_data_json |= request_t_apdu_jval
     # Sending command!!!
-    t_apdu_request = Apdu_container.to_uper()
+    fragmented_t_apdu_request = frag_header + TApdu_container.to_uper()
 
     (await beacon_bac_l7_wrapper
         ._pertel_send_dsrc_l7_command_with_close_transaction_option(
-            t_apdu_request,
+            fragmented_t_apdu_request,
             close_transaction
             )
     )
     beacon_bac_l7_wrapper.t_apdu_containing_response
-    t_apdu_with_response_bytes = beacon_bac_l7_wrapper.t_apdu_containing_response
+    fragmented_t_apdu_with_response_bytes = beacon_bac_l7_wrapper.t_apdu_containing_response
     bcm_logger.info(f"Fragmented T-APDU response obtained from beacon in hex (UPER hex): {fragmented_t_apdu_with_response_bytes.hex().upper()}")
 
     try:
