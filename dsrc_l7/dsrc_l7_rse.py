@@ -65,7 +65,7 @@ async def initialize_bcm(aid=20):
     default_beacon_name = beacon_manager_config["default_beacon_name"]
     await safe_set_beacon(chosen_beacon_name = default_beacon_name)
     bcm_logger.info("Initialized RSE DSRC L7!!")
-    
+
     bcm_logger.debug("We now update/get the BeaconID (according to the beacon HW itself) before sending the BST")
     await update_beacon_state()
     # SETTING BEACON TO TRANSPARENT MODE!!
@@ -173,22 +173,9 @@ class EIDNotFoundException(Exception):
     pass
 
 # Start sending a BST
-async def start_bst_emission_and_await_vst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = []):
+async def start_bst_emission_and_await_vst(bst_value: dict):
     global TApdu_container
     global current_beacon_name
-
-    mand_applications = [{'aid': mandatory_aid} for mandatory_aid in mand_applications]
-
-    bst_value = {
-        'rsu': {
-            'manufacturerid': manufacturer_id,
-            'individualid': individual_id
-            },
-        'time': int(datetime.utcnow().timestamp()),
-        'profile': profile,
-        'mandApplications': mand_applications,
-        'profileList': profile_list
-        }
 
     efc_asn_compilation.EfcDsrcGeneric.BST.set_val(bst_value)
     bcm_logger.debug(f"BST in ASN:\n{efc_asn_compilation.EfcDsrcGeneric.BST.to_asn1()}")
@@ -218,7 +205,14 @@ async def start_bst_emission_and_await_vst(manufacturer_id=0x31, individual_id=0
 
     return initialization_request_jval
 
-async def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = []):
+async def initialize_transaction(
+        manufacturer_id=0x31,
+        individual_id=0x111,
+        mand_applications=[1, 20, 29],
+        profile=0x00,
+        profile_list=[0x00],
+        non_mand_applications = []
+    ):
     """
     The initialization phase comprises 2 steps for the beacon:
     Start of a BST, and
@@ -246,8 +240,20 @@ async def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand
     current_transaction_id = uuid.uuid1()
     initialization_data['_id'] = current_transaction_id.hex
 
+    mand_applications = [{'aid': mandatory_aid} for mandatory_aid in mand_applications]
+    bst_value = {
+        'rsu': {
+            'manufacturerid': manufacturer_id,
+            'individualid': individual_id
+            },
+        'time': int(datetime.utcnow().timestamp()),
+        'profile': profile,
+        'mandApplications': mand_applications,
+        'profileList': profile_list
+        }
+
     # Adding initialisationRequest json to initialization_data dict
-    initialization_request_jval = await start_bst_emission_and_await_vst(manufacturer_id=manufacturer_id, individual_id=individual_id, mand_applications=mand_applications, profile=profile, profile_list=profile_list, non_mand_applications=non_mand_applications)
+    initialization_request_jval = await start_bst_emission_and_await_vst(bst_value=bst_value)
     initialization_data |= initialization_request_jval
 
     bcm_logger.info("A VST was received!")
@@ -278,7 +284,7 @@ async def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand
     with open(f'local_file_storage/transactions/{current_transaction_id}.json', 'w') as json_file:
         initialization_data['creation_time'] = datetime.now().isoformat()
         json.dump(initialization_data, json_file, indent=2)
-        
+
     return initialization_data
 
 async def update_beacon_state():
