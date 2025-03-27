@@ -1,9 +1,4 @@
 import os
-try:
-    os.environ['MK_PATH']
-except:
-    os.environ['MK_PATH'] = r"..\master_keys_v1.1.0.json"
-
 import asyncio
 
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
@@ -13,7 +8,7 @@ from dsrc_l7 import dsrc_l7_rse
 import logging
 
 root_logger = logging.getLogger()
-root_logger.setLevel(logging.INFO)
+root_logger.setLevel(logging.DEBUG)
 
 # SETTING UP COLORED CONSOLE LOGGING
 console_handler = logging.StreamHandler()
