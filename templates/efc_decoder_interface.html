@@ -7,8 +7,8 @@
     <meta name="keywords" content="uat, testing">
     <link rel="icon" href="security.png">
     <script>
-      async function per_to_jer(uper_encoded_efc_obj_hex_str){
-        const decoding_request = new Request("/decoding/per2jer", {
+      async function EFC_Container_per_to_jer(uper_encoded_efc_obj_hex_str){
+        const decoding_request = new Request("/decoding/EfcContainer_PER2JER", {
           method: "POST",
           body: uper_encoded_efc_obj_hex_str,
         });
@@ -18,9 +18,45 @@
             return jer_encoded_efc_json
           });
       }
-      async function get_decoding(){
-        input = document.getElementById("input zone").querySelector("input").value
-        output = await per_to_jer(input)
+      async function EFC_Container_get_decoding(){
+        input = document.getElementById("EFC input zone").querySelector("input").value
+        output = await EFC_Container_per_to_jer(input)
+        console.log(output)
+
+        document.getElementById("JER-decoded value").textContent = JSON.stringify(output, null, 2)
+      }
+      async function CCC_Container_per_to_jer(uper_encoded_efc_obj_hex_str){
+        const decoding_request = new Request("/decoding/CccContainer_PER2JER", {
+          method: "POST",
+          body: uper_encoded_efc_obj_hex_str,
+        });
+        return await fetch(decoding_request)
+          .then((response) => response.json())
+          .then((jer_encoded_efc_json) => {
+            return jer_encoded_efc_json
+          });
+      }
+      async function CCC_Container_get_decoding(){
+        input = document.getElementById("CCC input zone").querySelector("input").value
+        output = await CCC_Container_per_to_jer(input)
+        console.log(output)
+
+        document.getElementById("JER-decoded value").textContent = JSON.stringify(output, null, 2)
+      }
+      async function TIS_VL_Container_per_to_jer(uper_encoded_efc_obj_hex_str){
+        const decoding_request = new Request("/decoding/TisVlContainer_PER2JER", {
+          method: "POST",
+          body: uper_encoded_efc_obj_hex_str,
+        });
+        return await fetch(decoding_request)
+          .then((response) => response.json())
+          .then((jer_encoded_efc_json) => {
+            return jer_encoded_efc_json
+          });
+      }
+      async function TIS_VL_Container_get_decoding(){
+        input = document.getElementById("TIS-VL input zone").querySelector("input").value
+        output = await TIS_VL_Container_per_to_jer(input)
         console.log(output)
 
         document.getElementById("JER-decoded value").textContent = JSON.stringify(output, null, 2)
@@ -28,9 +64,17 @@
     </script>
   </head>
   <body>
-    <div id="input zone">
-      <input></input>
-      <button onclick="get_decoding()">Send</button>
+    <div id="EFC input zone">
+      <input placeholder="EfcContainer"></input>
+      <button onclick="EFC_Container_get_decoding()">Send</button>
+    </div>
+    <div id="CCC input zone">
+      <input placeholder="CccContainer"></input>
+      <button onclick="CCC_Container_get_decoding()">Send</button>
+    </div>
+    <div id="TIS-VL input zone">
+      <input placeholder="TisVlContainer"></input>
+      <button onclick="TIS_VL_Container_get_decoding()">Send</button>
     </div>
     <div id="decoding zone">
       <p>JER-decoded value:</p>
