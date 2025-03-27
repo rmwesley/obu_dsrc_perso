@@ -96,16 +96,16 @@ class PertelBacL7(bac_l2_host2beacon.BacHost):
         """
         message_content = bytes([0x01])
         return await self.send_command(message_content)
-    def update_state(self) -> bytes:
-        response_content = self._pertel_monitor_beacon()
+    async def update_state(self) -> bytes:
+        response_content = await self._pertel_monitor_beacon()
         self.beacon_state = bytes(response_content[1:])
-        return self.beacon_state
+        return response_content
     def get_beacon_state(self) -> bytes:
         return self.beacon_state
 
-    def _pertel_communication_count(self) -> bytes:
+    async def _pertel_get_communication_count(self) -> bytes:
         message_content = bytes([0x02])
-        return self.send_command(message_content)
+        return await self.send_command(message_content)
 
     def get_vst(self) -> bytes:
         return self.t_apdu_containing_vst
@@ -143,7 +143,7 @@ class PertelBacL7(bac_l2_host2beacon.BacHost):
         else:
             raise PertelBacL7Exception(f'Error response when requesting for BST!! Response message: 0x{response_content.hex().upper()}')
 
-    def _pertel_stop_bst_emission(self, t_apdu_bst_datagram:bytes) -> bytes:
+    async def _pertel_stop_bst_emission(self, t_apdu_bst_datagram:bytes) -> bytes:
         """
         A transaction should not be in progress!
         That is, the beacon did not receive a VST yet!
@@ -158,13 +158,13 @@ class PertelBacL7(bac_l2_host2beacon.BacHost):
             0x1D : configuration non effectuée
         """
         message_content = bytes([0x04])
-        return self.send_command(message_content)
+        return await self.send_command(message_content)
 
-    def _pertel_send_dsrc_l7_command_with_close_transaction_option(self, t_apdu_containing_request:bytes, close_transaction:bool) -> bytes:
+    async def _pertel_send_dsrc_l7_command_with_close_transaction_option(self, t_apdu_containing_request:bytes, close_transaction:bool) -> bytes:
         if close_transaction:
-            self._pertel_send_dsrc_l7_command(t_apdu_containing_request)
+            return await self._pertel_send_dsrc_l7_command(t_apdu_containing_request)
         else:
-            self._pertel_send_dsrc_l7_command_and_close_transaction(t_apdu_containing_request)
+            return await self._pertel_send_dsrc_l7_command_and_close_transaction(t_apdu_containing_request)
 
     async def _pertel_send_dsrc_l7_command(self, t_apdu_containing_request:bytes) -> bytes:
         """
