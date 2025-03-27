@@ -26,13 +26,6 @@ def crc16_arc(data : bytearray) -> bytes:
     crc_2_bytes = int.to_bytes(crc16_int, length=2, byteorder='little')
     return crc_2_bytes
 
-def wrap_message(message_content:bytes) -> bytes:
-    """Wrap message contents with control characters and append its CRC16 (Checksum) at the end"""
-    message_frame = DLE + STX + message_content + DLE + ETX
-    # We skip the first 2 bytes (DLE and STX) to compute the CRC-16 of the message!!
-    crc16_bytes = crc16_arc(message_frame[2:])
-    return message_frame + crc16_bytes
-
 ENQ = bytes([0x05]) # Request the transmission of a message
 ACK = bytes([0x06]) # Positive acknowledgement (message can be sent!!)
 NAK = bytes([0x15]) # Negative acknowledgement (message CANNOT be sent!)
@@ -47,7 +40,32 @@ MAX_MSG_TRANSFER_RETRIES = 8
 T1_FOR_1_BAUD = 20000
 T2_FOR_1_BAUD = 20000
 
-def unescape_message_content_dle(message_content:bytes) -> bytes:
+def escape_dle_in_message_content(message_content:bytes) -> bytes:
+    escaped_message_content = bytearray()
+    for char_int in message_content:
+        if char_int == DLE[0]:
+            # Add an escape character!
+            escaped_message_content.append(DLE[0])
+        escaped_message_content.append(char_int)
+    return escaped_message_content
+
+def wrap_message(message_content:bytes) -> bytes:
+    """
+    We escape DLE (0x10) characters in the message content and then
+    wrap the message content with start and end control characters,
+    appending its CRC16 (Checksum) at the end.
+    """
+    # Escape DLE (0x10) characters
+    escaped_message_content = escape_dle_in_message_content(message_content)
+    # Wrap message with control chars
+    message_frame = DLE + STX + escaped_message_content + DLE + ETX
+    # Then we append its CRC-16 checksum at the end
+    # We skip the first 2 bytes (DLE and STX) to compute the CRC-16 of the message!!
+    crc16_bytes = crc16_arc(message_frame[2:])
+
+    return message_frame + crc16_bytes
+
+def unescape_dle_in_message_content(message_content:bytes) -> bytes:
     unescaped_message_content = bytearray()
     escape_next = False
     for char_int in message_content:
@@ -349,7 +367,7 @@ class BacMsgReceiver():
     def receive_message(self):
         self._wait_for_message_start_header()
         source_msg_content_with_etx = self._read_message_content_and_acknowledge_it()
-        unescaped_source_msg_content = unescape_message_content_dle(source_msg_content_with_etx[:-2])
+        unescaped_source_msg_content = unescape_dle_in_message_content(source_msg_content_with_etx[:-2])
         print(f'[BAC L2] Received message content: 0x{unescaped_source_msg_content.hex().upper()}')
 
         self._receive_eot_char()
