@@ -94,6 +94,7 @@ class BacHost(serial.Serial):
         # Opening the serial port
         bac_serial_wrapper_logger.info(f"Initializing serial communication (BAC L1) with beacon (from config data)...!!")
         serial_config = bac_l2_config['beacon_host_serial_config']
+        # print(f'Serial config: {serial_config}')
         super().__init__(*args, **serial_config, **kwargs)
 
         T1 = T1_FOR_1_BAUD / self.baudrate
@@ -246,7 +247,10 @@ class BacMsgTransfer():
 
     # Source transfers a message to destination
     def transfer_message(self, message_content:bytes):
+        print(f'[BAC L2] Sending message content...: 0x{message_content.hex().upper()}')
+
         message_value = wrap_message(message_content)
+        # print(f'[BAC L2] Sent message content with STX: {message_value.hex().upper()}')
         self.serial_instance.write(message_value)
 
         message_transfer_counter = 0
@@ -321,14 +325,17 @@ class BacMsgReceiver():
                 # End of message control sequence!!
                 if current_char == ETX:
                     break
-        # print(f"[BAC L2] Response from beacon: 0x{received_msg_content_with_etx.hex().upper()}")
         crc_bytes = self.serial_instance.read(1) + self.serial_instance.read(1)
+        # print(f"[BAC L2] Response from beacon with ETX: 0x{received_msg_content_with_etx.hex().upper()}")
 
         if self._check_received_msg_crc(received_msg_content_with_etx, crc_bytes):
             self.serial_instance.write(ACK)
         else:
             self.serial_instance.write(NAK)
             self.receive_message()
+
+        received_msg_content = received_msg_content_with_etx[:-2]
+        # print(f"[BAC L2] Response from beacon: 0x{received_msg_content.hex().upper()}")
 
         return received_msg_content_with_etx
 
@@ -344,7 +351,7 @@ class BacMsgReceiver():
         self._wait_for_message_start_header()
         source_msg_content_with_etx = self._read_message_content_and_acknowledge_it()
         unescaped_source_msg_content = unescape_message_control_characters(source_msg_content_with_etx[:-2])
-        # print(f'[BAC L2] Received message content: {unescaped_source_msg_content.hex().upper()}')
+        print(f'[BAC L2] Received message content: {unescaped_source_msg_content.hex().upper()}')
 
         self._receive_eot_char()
 
