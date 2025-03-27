@@ -25,8 +25,12 @@ Required PIP packages for running beacon code:
 Required dependencies for deploying FastAPI app:
 - fastapi[standard]
 
-Required dependencies for running some other automatated tests/tasks:
+Required dependencies for EFC decoder:
 - requests_pkcs12
+- baudot
+
+Required dependencies for security interface:
+- iso3166
 - baudot
 
 Required dependencies for DM tests:

@@ -1,5 +1,8 @@
 import os
 import json
+import iso3166
+import custom_its_per_decoders
+
 from Crypto.Cipher import DES3
 from Crypto.Cipher import DES
 
@@ -272,21 +275,42 @@ def compute_compact_pan(pan_bytes:bytes) -> bytes:
         pass
     return compact_pan_bytes
 
-def compute_auk_plaintext(pan_8_msb:bytes, contract_provider) -> bytes:
+def contract_provider_hex_str_to_iso3166_numeric(contract_provider:str) -> int:
+        first_5bits = (country_code >> 11) & 0b11111
+        second_5bits = (country_code >> 6) & 0b11111
+
+def compute_auk_plaintext_contract_provider_part(efc_cm:str) -> bytes:
+    contract_provider_hex = efc_cm[0:6]
+
+    if current_security_profile == 'TIS_decimal':
+        iso3166_alpha2 = custom_its_per_decoders.decode_country_code(efc_cm)
+        iso3166_numeric3_dec_str = iso3166.countries_by_alpha2.get(iso3166_alpha2).numeric
+
+        # IssuerId is 14 bits long
+        issuer_id = int(contract_provider_hex[3:6], 16) & 0x3FFF
+        decimal_contract_provider = f'{iso3166_numeric3_dec_str}0{issuer_id:02d}'
+
+        plaintext_extension = decimal_contract_provider + "00"
+
+    elif current_security_profile == 'EN15509':
+        plaintext_extension = contract_provider_hex + "00"
+        contract_provider_size = len(contract_provider_hex)
+        if contract_provider_size != 6:
+            key_derivation_logger.error(f"Contract Provider should contain 6 hex characters (3 bytes), not {contract_provider_size} chars!")
+    bytes_plaintext_tail = bytes.fromhex(plaintext_extension)
+    return bytes_plaintext_tail
+
+def compute_auk_plaintext(pan_bytes:bytes, efc_cm:str) -> bytes:
     # Prepare the compact PAN
     bytes_compact_pan = compute_compact_pan(pan_bytes)
     key_derivation_logger.debug(f'Compact PAN in hex: {bytes_compact_pan.hex().upper()}')
     if len(bytes_compact_pan) != 4:
         key_derivation_logger.error("Compact PAN should be encoded in 4 bytes!")
 
-    # Concatenating a "00" tail and assembling the full ciphertext
-    ciphertext_extension = contract_provider + "00"
-    contract_provider_size = len(contract_provider)
-    if contract_provider_size != 6:
-        key_derivation_logger.error(f"Contract Provider should contain 6 hex characters (3 bytes), not {contract_provider_size} chars!")
+    # Concatenating a "00" tail and assembling the full AuK plaintext
+    contract_provider_part = compute_auk_plaintext_contract_provider_part(efc_cm)
 
-    bytes_ciphertext_extension = bytes.fromhex(ciphertext_extension)
-    plaintext_bytes = bytes_compact_pan + bytes_ciphertext_extension
+    plaintext_bytes = bytes_compact_pan + contract_provider_part
     if len(plaintext_bytes) != 8:
         key_derivation_logger.error("Plaintext should be 8 bytes!!")
         key_derivation_logger.error("Please ensure that the Compact PAN is encoded in 4 bytes and that the Contract Provider is 3 bytes!")
@@ -306,24 +330,23 @@ def compute_auk_with_mauk_value_and_plaintext(plaintext_bytes:bytes, master_key:
     key_derivation_logger.debug(f'Computed Auth key: {auth_key.hex().upper()}')
     return auth_key
 
+
 def compute_auth_key_with_mauk_ref(pan_8_msb: bytes, efc_cm: str, key_ref: int) -> bytes:
     key_derivation_logger.debug(f'Computing Authentication Key with KeyRef {key_ref} for PAN {pan_8_msb}...')
-    key_derivation_logger.debug(f'Getting the Contract Provider. It is encodeed in the first 3 bytes of the EFC-CM...')
-    contract_provider = efc_cm[0:6]
-    plaintext_bytes = compute_auk_plaintext(pan_8_msb, contract_provider)
-    
+    key_derivation_logger.debug(f'Getting the Contract Provider for EFC-CM 0x{efc_cm}. It is encodeed in the first 3 bytes of the EFC-CM...')
+    plaintext_bytes = compute_auk_plaintext(pan_8_msb, efc_cm=efc_cm)
+
     if key_ref not in range(111, 119):
         raise ValueError("Invalid master authentication key (MAuK) reference!")
     mauk_hex = get_master_keys_with_efc_cm_only(efc_cm)[str(key_ref)]
     mauk = bytes.fromhex(mauk_hex)
-    print(mauk)
+    # key_derivation_logger.info(f'FOUND MAUK: 0x{mauk_hex}')
     return compute_auk_with_mauk_value_and_plaintext(plaintext_bytes, mauk)
 
 def compute_all_auth_keys(pan_8_msb: bytes, efc_cm: str) -> dict[int, bytes]:
     key_derivation_logger.debug(f'Computing all 8 Authentication Keys for PAN {pan_8_msb}')
     key_derivation_logger.debug(f'Getting the Contract Provider. It is encodeed in the first 3 bytes of the EFC-CM...')
-    contract_provider = efc_cm[0:6]
-    plaintext_bytes = compute_auk_plaintext(pan_8_msb, contract_provider)
+    plaintext_bytes = compute_auk_plaintext(pan_8_msb, efc_cm)
     
     auth_keys = {}
     for key_ref in range(111, 119):
