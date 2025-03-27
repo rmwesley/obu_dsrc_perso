@@ -16,6 +16,8 @@ import threading
 import uuid
 import asyncio
 
+import typing
+
 from bac_l7 import ops1955_bac_l7, pertel_bac_l7, tgbv_bac_l7
 
 import custom_its_per_decoders
@@ -65,7 +67,8 @@ def reset_beacon():
     bcm_logger.info('L7: Resetting beacon!!')
     beacon_bac_l7_wrapper.reset_beacon()
 
-async def change_trx_mode(mode_name):
+BeaconModes = typing.Literal['Stopped', 'Transparent', 'Maintenance']
+async def change_trx_mode(mode_name:BeaconModes = 'Stopped'):
     global beacon_manager_config
     global current_beacon_name
     global beacon_bac_l7_wrapper
