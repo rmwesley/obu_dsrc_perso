@@ -42,8 +42,6 @@ async def initialize_bcm(aid=20):
     """Initialize the beacon manager wrapper"""
     global beacon_manager_config
     global TApdu_container
-    global l7_initialization_phase_lock
-    global l7_transfer_kernel_lock
 
     if aid == 1:
         TApdu_container = TApdu_container
@@ -53,18 +51,13 @@ async def initialize_bcm(aid=20):
         beacon_manager_config = json.load(beacon_manager_config_file)
 
     default_beacon_name = beacon_manager_config["default_beacon_name"]
-    l7_initialization_phase_lock = threading.Lock()
-    l7_transfer_kernel_lock = threading.Lock()
     await safe_set_beacon(chosen_beacon_name = default_beacon_name)
     bcm_logger.info("Initialized RSE DSRC L7!!")
     
-    bcm_logger.debug("""We now update/get the BeaconID (L7, so according to the beacon) before sending the BST
-Note: This is weird... We should be the ones to set the BeaconID freely in the BST
-The beacon should then just keep the last sent BeaconID in its memory"""
-    )
-
+    bcm_logger.debug("We now update/get the BeaconID (according to the beacon HW itself) before sending the BST")
+    await update_beacon_state()
     # SETTING BEACON TO TRANSPARENT MODE!!
-    await beacon_bac_l7_wrapper.set_mode(1)
+    await change_trx_mode(mode_name='Transparent')
 
 def reset_beacon():
     global beacon_bac_l7_wrapper
@@ -72,7 +65,7 @@ def reset_beacon():
     bcm_logger.info('L7: Resetting beacon!!')
     beacon_bac_l7_wrapper.reset_beacon()
 
-def change_trx_mode(mode_name='Stopped'):
+async def change_trx_mode(mode_name):
     global beacon_manager_config
     global current_beacon_name
     global beacon_bac_l7_wrapper
@@ -82,10 +75,14 @@ def change_trx_mode(mode_name='Stopped'):
         return
     bcm_logger.info(f"Changing beacon mode to '{mode_name}'")
 
+    tgbv_gea_bcm_operating_modes_enum_values = {
+        'Stopped': 0x00,
+        'Transparent': 0x01,
+        'Maintenance': 0x03
+    }
     if current_beacon_name == 'TGBV':
-        tgbv_gea_bcm_operating_modes_enum_values = beacon_manager_config['TGBV']['modes_config']
         mode_code = tgbv_gea_bcm_operating_modes_enum_values[mode_name]
-        beacon_bac_l7_wrapper.change_trx_mode(operating_mode_code=mode_code)
+        await beacon_bac_l7_wrapper.set_mode(mode_code=mode_code)
 
 async def init_bcm_and_set_transparent_mode():
     global beacon_bac_l7_wrapper
@@ -165,7 +162,6 @@ class EIDNotFoundException(Exception):
 # Start sending a BST
 async def start_bst_emission_and_await_vst(manufacturer_id=0x31, individual_id=0x111, mand_applications=[1, 20, 29], profile=0x00, profile_list=[0x00], non_mand_applications = []):
     global TApdu_container
-    global l7_transfer_kernel_lock
     global current_beacon_name
 
     mand_applications = [{'aid': mandatory_aid} for mandatory_aid in mand_applications]
@@ -182,29 +178,24 @@ async def start_bst_emission_and_await_vst(manufacturer_id=0x31, individual_id=0
         }
 
     efc_asn_compilation.EfcDsrcGeneric.BST.set_val(bst_value)
-    bcm_logger.info(f"BST in ASN:\n{efc_asn_compilation.EfcDsrcGeneric.BST.to_asn1()}")
+    bcm_logger.debug(f"BST in ASN:\n{efc_asn_compilation.EfcDsrcGeneric.BST.to_asn1()}")
     last_sent_bst = efc_asn_compilation.EfcDsrcGeneric.BST.to_uper()
-    bcm_logger.info(f"BST value (UPER hex): {last_sent_bst.hex().upper()}")
+    bcm_logger.debug(f"BST value (UPER hex): {last_sent_bst.hex().upper()}")
 
     initialization_request_value = ('initialisationRequest', bst_value)
 
-    bcm_logger.debug(f"T_APDU containing BST value:\n{initialization_request_value}")
     TApdu_container.set_val(initialization_request_value)
-    bcm_logger.debug(f"T_APDU containing BST in ASN:\n{TApdu_container.to_asn1()}")
-
-    # bcm_logger.debug(f"T_APDU containing BST in JER:\n{TApdu_container.to_jer()}")
+    # bcm_logger.debug(f"T_APDU containing BST in ASN:\n{TApdu_container.to_asn1()}")
 
     initialization_request_jval = TApdu_container._to_jval()
     last_sent_t_apdu_containing_bst = TApdu_container.to_uper()
-
-    l7_transfer_kernel_lock.acquire()
-    l7_initialization_phase_lock.acquire()
+    bcm_logger.info(f"T_APDU containing BST (UPER hex): {TApdu_container.to_uper().hex().upper()}")
 
     await beacon_bac_l7_wrapper._pertel_start_bst_emission_and_await_vst(last_sent_t_apdu_containing_bst)
 
     bcm_logger.debug("We now get the lastest BeaconID just after starting the BST")
 
-    update_beacon_state()
+    await update_beacon_state()
 
     return initialization_request_jval
 
@@ -225,7 +216,7 @@ async def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand
     global initialization_data
     global current_transaction_id
 
-    update_beacon_state()
+    await update_beacon_state()
 
     if beacon_bac_l7_wrapper._is_transaction_in_progress():
         bcm_logger.error("Do not try to initilize a transaction! One is already in progress!")
@@ -242,11 +233,11 @@ async def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand
 
     bcm_logger.info("A VST was received!")
     fragmented_t_apdu_init_resp_datagram = beacon_bac_l7_wrapper.get_vst()
-    bcm_logger.info(f"Fragmented T_APDU containing VST (UPER hex): {fragmented_t_apdu_init_resp_datagram.hex().upper()}")
+    bcm_logger.debug(f"Fragmented T_APDU containing VST (UPER hex): {fragmented_t_apdu_init_resp_datagram.hex().upper()}")
 
     bcm_logger.debug("We now remove the fragmentation header and instantiate an T_APDU object from the response!")
     t_apdu_init_resp_datagram = bytes(fragmented_t_apdu_init_resp_datagram[1:])
-    bcm_logger.debug(f"T-APDU without fragmentation header (UPER hex): {t_apdu_init_resp_datagram}")
+    bcm_logger.debug(f"T-APDU without fragmentation header (UPER hex): {t_apdu_init_resp_datagram.hex().upper()}")
 
     bcm_logger.debug("We now instantiate a T_APDU object from the UPER response!")
     TApdu_container.from_uper(t_apdu_init_resp_datagram)
@@ -271,11 +262,12 @@ async def initialize_transaction(manufacturer_id=0x31, individual_id=0x111, mand
         
     return initialization_data
 
-def update_beacon_state():
+async def update_beacon_state():
     global current_beacon_name
+    await beacon_bac_l7_wrapper._pertel_get_communication_count()
 
     if current_beacon_name == 'TGBV':
-        beacon_state = beacon_bac_l7_wrapper.update_state()
+        beacon_state = await beacon_bac_l7_wrapper.update_state()
         if beacon_state[1] == pertel_bac_l7.BCM_MODE_Enum.PERTEL_MODE_Stopped:
             raise BeaconManagerException("Beacon is in Stopped mode, not Transparent!!")
         bcm_logger.debug(f"Last BeaconID: {beacon_bac_l7_wrapper.get_beacon_id().hex().upper()}")
@@ -313,9 +305,9 @@ def decode_t_apdu_response_uper(t_apdu_with_response_bytes):
     bcm_logger.info(f"Response T-APDU value: {last_response_t_apdu_value}")
 
     bcm_logger.debug(f"Response T-APDU ASN1 decoding/representation:\n{TApdu_container.to_asn1()}")
-    bcm_logger.debug(f"Response T-APDU decoded with JER:\n{TApdu_container.to_jer()}")
+    # bcm_logger.debug(f"Response T-APDU decoded with JER:\n{TApdu_container.to_jer()}")
     last_response_t_apdu_json = TApdu_container._to_jval()
-    bcm_logger.debug(f"Response T-APDU in JSON: {last_response_t_apdu_json}")
+    # bcm_logger.debug(f"Response T-APDU in JSON: {last_response_t_apdu_json}")
 
     bcm_logger.debug(f"Checking if T-APDU contains a return (ret) value (error code)...")
     try:
@@ -333,7 +325,6 @@ def decode_t_apdu_response_uper(t_apdu_with_response_bytes):
 
 async def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close_transaction=False) -> dict:
     global TApdu_container
-
     global current_transaction_id
 
     bcm_logger.debug(f"Preparing request T-APDU to be sent...")
@@ -345,15 +336,16 @@ async def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, clos
     request_t_apdu_jval = TApdu_container._to_jval()
     current_exchanged_data_json |= request_t_apdu_jval
     # Sending command!!!
-    l7_transfer_kernel_lock.acquire()
-    try:
-        fragmented_t_apdu_with_response_bytes = (
-            await beacon_bac_l7_wrapper._pertel_send_dsrc_l7_command_with_close_transaction_option(TApdu_container.to_uper(), close_transaction)
-        )
-    except tgbv_bac_l7.Layer7Exception as e:
-        bcm_logger.error(f"L7 Error!", exc_info=True)
-        return
-    l7_transfer_kernel_lock.release()
+    t_apdu_request = Apdu_container.to_uper()
+
+    (await beacon_bac_l7_wrapper
+        ._pertel_send_dsrc_l7_command_with_close_transaction_option(
+            t_apdu_request,
+            close_transaction
+            )
+    )
+    beacon_bac_l7_wrapper.t_apdu_containing_response
+    t_apdu_with_response_bytes = beacon_bac_l7_wrapper.t_apdu_containing_response
     bcm_logger.info(f"Fragmented T-APDU response obtained from beacon in hex (UPER hex): {fragmented_t_apdu_with_response_bytes.hex().upper()}")
 
     try:
@@ -361,7 +353,6 @@ async def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, clos
 
         t_apdu_response_value = decode_t_apdu_response_uper(t_apdu_with_response_bytes)
 
-        # Adding T-APDU with response data to dict
         TApdu_container.set_val(t_apdu_response_value)
         response_t_apdu_jval = TApdu_container._to_jval()
         current_exchanged_data_json |= response_t_apdu_jval
@@ -688,11 +679,11 @@ async def cardme_transaction(eid, mand_applications=[1, 20, 29], accessCredentia
 
     # Close the transaction
     if set_mmi == True:
-        send_close_transaction_setmmi(eid=eid)
+        await send_close_transaction_setmmi(eid=eid)
     else:
-        send_close_transaction_echo(eid=eid)
+        await send_close_transaction_echo(eid=eid)
 
-def tis_vl_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
+async def tis_vl_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
     """
     Used in the context of TIS VL CIP CARDME/Liber-t transactions.
     TIS: Télépéage Inter Sociétés
@@ -719,11 +710,11 @@ def tis_vl_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPres
 
     # Close the transaction
     if set_mmi == True:
-        send_close_transaction_setmmi(eid=eid)
+        await send_close_transaction_setmmi(eid=eid)
     else:
-        send_close_transaction_echo(eid=eid)
+        await send_close_transaction_echo(eid=eid)
 
-def test_ccc_2009_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
+async def test_ccc_2009_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
     global efc_asn_compilation
     # Compiled CCC 2015 specs
     efc_asn_compilation = CCCv1
@@ -750,12 +741,12 @@ def test_ccc_2009_transaction(eid, mand_applications=[1, 20, 29], accessCredenti
 
     # Close the transaction
     if set_mmi == True:
-        send_close_transaction_setmmi(eid=eid)
+        await send_close_transaction_setmmi(eid=eid)
     else:
-        send_close_transaction_echo(eid=eid)
+        await send_close_transaction_echo(eid=eid)
     efc_asn_compilation = AXXESv1_2
 
-def test_ccc_2009_transaction_old(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
+async def test_ccc_2009_transaction_old(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
     global efc_asn_compilation
     # Compiled CCC 2015 specs
     efc_asn_compilation = CCCv1
@@ -782,12 +773,12 @@ def test_ccc_2009_transaction_old(eid, mand_applications=[1, 20, 29], accessCred
 
     # Close the transaction
     if set_mmi == True:
-        send_close_transaction_setmmi(eid=eid)
+        await send_close_transaction_setmmi(eid=eid)
     else:
-        send_close_transaction_echo(eid=eid)
+        await send_close_transaction_echo(eid=eid)
     efc_asn_compilation = AXXESv1_2
 
-def ccc_2015_status_history_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
+async def ccc_2015_status_history_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
     global efc_asn_compilation
     # Compiled CCC 2015 specs
     efc_asn_compilation = EFCv5
@@ -808,12 +799,12 @@ def ccc_2015_status_history_transaction(eid, mand_applications=[1, 20, 29], acce
 
     # Close the transaction
     if set_mmi == True:
-        send_close_transaction_setmmi(eid=eid)
+        await send_close_transaction_setmmi(eid=eid)
     else:
-        send_close_transaction_echo(eid=eid)
+        await send_close_transaction_echo(eid=eid)
     efc_asn_compilation = AXXESv1_2
 
-def test_ccc_2015_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
+async def test_ccc_2015_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
     global efc_asn_compilation
     # Compiled CCC 2015 specs
     efc_asn_compilation = EFCv5
@@ -847,12 +838,12 @@ def test_ccc_2015_transaction(eid, mand_applications=[1, 20, 29], accessCredenti
 
     # Close the transaction
     if set_mmi == True:
-        send_close_transaction_setmmi(eid=eid)
+        await send_close_transaction_setmmi(eid=eid)
     else:
-        send_close_transaction_echo(eid=eid)
+        await send_close_transaction_echo(eid=eid)
     efc_asn_compilation = AXXESv1_2
 
-def ccc_2023_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
+async def ccc_2023_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
     initialize_transaction(mand_applications=mand_applications)
     presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
@@ -870,11 +861,11 @@ def ccc_2023_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPr
 
     # Close the transaction
     if set_mmi == True:
-        send_close_transaction_setmmi(eid=eid)
+        await send_close_transaction_setmmi(eid=eid)
     else:
-        send_close_transaction_echo(eid=eid)
+        await send_close_transaction_echo(eid=eid)
 
-def kapsch_system_element_transaction(eid=0, mand_applications=[0], accessCredentialsPresent=True, set_mmi=True):
+async def kapsch_system_element_transaction(eid=0, mand_applications=[0], accessCredentialsPresent=True, set_mmi=True):
     initialize_transaction(mand_applications=mand_applications)
     send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[1, 2, 3])
     send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[6, 7])
@@ -890,11 +881,11 @@ def kapsch_system_element_transaction(eid=0, mand_applications=[0], accessCreden
 
     # Close the transaction
     if set_mmi == True:
-        send_close_transaction_setmmi(eid=eid)
+        await send_close_transaction_setmmi(eid=eid)
     else:
-        send_close_transaction_echo(eid=eid)
+        await send_close_transaction_echo(eid=eid)
 
-def test_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
+async def test_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
     initialize_transaction(mand_applications=mand_applications)
     presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
@@ -914,15 +905,15 @@ def test_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresen
 
     # Close the transaction
     if set_mmi == True:
-        send_close_transaction_setmmi(eid=eid)
+        await send_close_transaction_setmmi(eid=eid)
     else:
-        send_close_transaction_echo(eid=eid)
+        await send_close_transaction_echo(eid=eid)
 
-def get_all_attributes(eid, mand_applications=[1, 20, 29]):
+async def get_all_attributes(eid, mand_applications=[1, 20, 29]):
     attrIdList = list(range(0, 128))
-    return get_attributes_in_list(eid, attrIdList, mand_applications=mand_applications)
+    return await get_attributes_in_list(eid, attrIdList, mand_applications=mand_applications)
 
-def get_attributes_in_list(eid, accessCredentialsPresent=True, attrIdList=[32], mand_applications=[1, 20, 29], set_mmi=False):
+async def get_attributes_in_list(eid, accessCredentialsPresent=True, attrIdList=[32], mand_applications=[1, 20, 29], set_mmi=False):
     global last_response_t_apdu_json
 
     # Initialize transaction
@@ -952,9 +943,9 @@ def get_attributes_in_list(eid, accessCredentialsPresent=True, attrIdList=[32], 
 
     # Close the transaction
     if set_mmi == True:
-        send_close_transaction_setmmi(eid=eid)
+        await send_close_transaction_setmmi(eid=eid)
     else:
-        send_close_transaction_echo(eid=eid)
+        await send_close_transaction_echo(eid=eid)
 
     return obtained_attrs, get_responses
 
