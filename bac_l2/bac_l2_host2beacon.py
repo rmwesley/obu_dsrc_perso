@@ -33,21 +33,35 @@ def wrap_message(message_content:bytes) -> bytes:
     crc16_bytes = crc16_arc(message_frame[2:])
     return message_frame + crc16_bytes
 
-def unescape_message_control_characters(message_content:bytes) -> bytes:
+ENQ = bytes([0x05]) # Request the transmission of a message
+ACK = bytes([0x06]) # Positive acknowledgement (message can be sent!!)
+NAK = bytes([0x15]) # Negative acknowledgement (message CANNOT be sent!)
+EOT = bytes([0x04]) # End Of Transmission of message
+DLE = bytes([0x10]) # Escape character, to discriminate between special characters and message content
+STX = bytes([0x02]) # Start of message
+ETX = bytes([0x03]) # End of message
+
+MAX_TRANSFER_REQ_RETRIES = 255
+MAX_MSG_TRANSFER_RETRIES = 8
+
+T1_FOR_1_BAUD = 20000
+T2_FOR_1_BAUD = 20000
+
+def unescape_message_content_dle(message_content:bytes) -> bytes:
     unescaped_message_content = bytearray()
     escape_next = False
-    for char in message_content:
+    for char_int in message_content:
         if escape_next:
-            if char in CONTROL_SEQUENCE_CHARACTERS:
-                unescaped_message_content.append(char)
+            if char_int == DLE[0]:
+                unescaped_message_content.append(char_int)
+                escape_next = False
             else:
-                raise BacL2Exception('Escaped a normal, non-control character!')
-        elif char == DLE:
+                raise BacL2Exception(f'Forgot to escape DLE, or escaped (0x{char_int}), a non-DLE (0x10) character !')
+            continue
+        elif char_int == DLE[0]:
             escape_next = True
-        elif char in CONTROL_SEQUENCE_CHARACTERS:
-            raise BacL2Exception('Did not escape a control character!')
-        else:
-            unescaped_message_content.append(char)
+            continue
+        unescaped_message_content.append(char_int)
     return unescaped_message_content
 
 # Default values are empty Queues instead of None!!
@@ -57,21 +71,6 @@ class MessageQueuesDict(dict):
         if key not in self:
             dict.__setitem__(self, key, asyncio.Queue())
         return dict.__getitem__(self, key)
-
-ENQ = bytes([0x05]) # Request the transmission of a message
-ACK = bytes([0x06]) # Positive acknowledgement (message can be sent!!)
-NAK = bytes([0x15]) # Negative acknowledgement (message CANNOT be sent!)
-EOT = bytes([0x04]) # End Of Transmission of message
-DLE = bytes([0x10]) # Escape character, to discriminate between special characters and message content
-STX = bytes([0x02]) # Start of message
-ETX = bytes([0x03]) # End of message
-CONTROL_SEQUENCE_CHARACTERS = set([ENQ, ACK, NAK, EOT, DLE, STX, ETX])
-
-MAX_TRANSFER_REQ_RETRIES = 255
-MAX_MSG_TRANSFER_RETRIES = 8
-
-T1_FOR_1_BAUD = 20000
-T2_FOR_1_BAUD = 20000
 
 # Remember to increase the timeouts if you are sniffing the serial line!!
 # Otherwise, use the values set above
@@ -350,8 +349,8 @@ class BacMsgReceiver():
     def receive_message(self):
         self._wait_for_message_start_header()
         source_msg_content_with_etx = self._read_message_content_and_acknowledge_it()
-        unescaped_source_msg_content = unescape_message_control_characters(source_msg_content_with_etx[:-2])
-        print(f'[BAC L2] Received message content: {unescaped_source_msg_content.hex().upper()}')
+        unescaped_source_msg_content = unescape_message_content_dle(source_msg_content_with_etx[:-2])
+        print(f'[BAC L2] Received message content: 0x{unescaped_source_msg_content.hex().upper()}')
 
         self._receive_eot_char()
 
