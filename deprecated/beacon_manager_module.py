@@ -598,17 +598,14 @@ def verify_obe_authenticity(get_stamped_action_response_value=None, efc_cm=None)
 
     pan_bytes = get_stamped_rs['attributeList'][0]['attributeValue'][1]['personalAccountNumber']
 
-    try:
-        bcm_logger.debug(f'[OBE AUTH] EFC-CM: {efc_cm}')
-        bcm_logger.debug(f'[OBE AUTH] AttributeList: {attribute_list_bytes}')
-        bcm_logger.debug(f'[OBE AUTH] RndRSE int: {rnd_rse_int}')
+    bcm_logger.debug(f'[OBE AUTH] EFC-CM: {efc_cm}')
+    bcm_logger.debug(f'[OBE AUTH] AttributeList: {attribute_list_bytes}')
+    bcm_logger.debug(f'[OBE AUTH] RndRSE int: {rnd_rse_int}')
 
-        # Remember to set the key derivation settings for the Toll Domain!!
-        # 2 key derivation algorithms are implemented.
-        # One follows EN15509, and the other works for TIS.
-        authenticator = dsrc_security.compute_authenticator_with_auk_ref(pan_bytes, efc_cm, attribute_list_bytes, rnd_rse_int, 115)
-    except:
-        bcm_logger.critical('Attribute Authenticator computation error (Check master keys!!!)')
+    # Remember to set the key derivation settings for the Toll Domain!!
+    # 2 key derivation algorithms are implemented.
+    # One follows EN15509, and the other works for TIS.
+    authenticator = dsrc_security.compute_authenticator_with_auk_ref(pan_bytes, efc_cm, attribute_list_bytes, rnd_rse_int, 115)
     
     if provided_authenticator == authenticator:
         bcm_logger.critical('[OBE AUTH] OK!!!')
