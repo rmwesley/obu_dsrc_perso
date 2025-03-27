@@ -12,19 +12,90 @@ from ASN.compiled_DSRC_instances import EFCv10_1 as EFC
 # Loading the Master Keys from a JSON into a Python dict
 # This dict maps an EFC-CM in hex format to a MasterKeySet also in hex format
 try:
-    os.environ['MK_PATH']
+    os.environ['EFC_SEC_CONF_PATH']
 except:
-    os.environ['MK_PATH'] = r"..\master_keys_v1.1.0.json"
+    os.environ['EFC_SEC_CONF_PATH'] = r"..\efc_security_config_v2.0.0.json"
 
-mk_path = os.environ['MK_PATH']
-master_keys = {}
-with open(mk_path) as json_file:
-    master_keys_config = json.load(json_file)
+efc_sec_conf_path = os.environ['EFC_SEC_CONF_PATH']
 
-    device_type_to_keyset_mapping = master_keys_config["device_type_to_efc_cm_keyset_name_pairs_mapping"]
-    for efc_cm_to_keyset_name_mapping in device_type_to_keyset_mapping.values():
-        for efc_cm, keyset_name in efc_cm_to_keyset_name_mapping.items():
-            master_keys[efc_cm] = master_keys_config['keysets'][keyset_name]
+def assemble_device_contract_ref_hex_str(efc_cm_hex_str: str, manufacturer_id_hex_str:str, equipment_class_hex_str:str):
+    if type(manufacturer_id_hex_str) is int:
+        manufacturer_id_hex_str = f'{manufacturer_id:04X}'
+    if type(equipment_class_hex_str) is int:
+        equipment_class_hex_str = f'{equipment_class_hex_str:04X}'
+    if type(efc_cm_hex_str) is int:
+        efc_cm_hex_str = f'{efc_cm_hex_str:12X}'
+
+    if type(manufacturer_id_hex_str) is bytes:
+        manufacturer_id_hex_str = manufacturer_id_hex_str.hex().upper()
+    if type(equipment_class_hex_str) is bytes:
+        equipment_class_hex_str = equipment_class_hex_str.hex().upper()
+    if type(efc_cm_hex_str) is bytes:
+        efc_cm_hex_str = efc_cm_hex_str.hex().upper()
+
+    device_contract_hex_ref = f'{efc_cm_hex_str}{manufacturer_id_hex_str}{equipment_class_hex_str}'
+    return device_contract_hex_ref
+
+master_keys_by_toll_domain = {}
+with open(efc_sec_conf_path) as json_file:
+    efc_security_config = json.load(json_file)
+    for toll_domain_name, contracts_by_manufacturer in efc_security_config['device_contracts_by_toll_domain'].items():
+        # Assembling masterkeys for a Toll Domain!!
+        master_keys_by_toll_domain[toll_domain_name] = {}
+        for manufacturer_id_hex, device_details_by_equipment_class in contracts_by_manufacturer.items():
+            for equipment_class_hex, device_details in device_details_by_equipment_class.items():
+                contract_data = device_details['EFC_contract_data']
+                keyset_name = contract_data['keyset_name']
+                efc_cm = contract_data['EFC-CM']
+
+                # This dictionary makes it easier to find a keyset!!
+                device_contract_ref = assemble_device_contract_ref_hex_str(efc_cm, manufacturer_id_hex, equipment_class_hex)
+
+                master_keys_by_toll_domain[toll_domain_name][device_contract_ref] = efc_security_config['keysets'][keyset_name]
+
+    toll_domain_security_profiles = efc_security_config['toll_domain_security_profiles']
+    del efc_security_config
+
+class TollDomainException(Exception):
+    pass
+
+current_toll_domain_name = 'TIS'
+current_security_profile = 'TIS_decimal'
+master_keys_by_device_contract_ref = {}
+def set_toll_domain(toll_domain_name:str):
+    global current_toll_domain_name
+    global current_security_profile
+    global master_keys_by_device_contract_ref
+    if toll_domain_name not in master_keys_by_toll_domain:
+        raise TollDomainException('NO MASTERKEYS FOUND FOR GIVEN TOLL DOMAIN')
+    current_toll_domain_name = toll_domain_name
+    current_security_profile = toll_domain_security_profiles[current_toll_domain_name]
+    master_keys_by_device_contract_ref = master_keys_by_toll_domain[current_toll_domain_name]
+
+with open('settings/toll_domain_config.json') as json_file:
+    toll_domain_config_json = json.load(json_file)
+    default_toll_domain_name = toll_domain_config_json['default_toll_domain_name']
+    set_toll_domain(toll_domain_name=default_toll_domain_name)
+
+def get_master_keys(efc_cm_hex_str: str, manufacturer_id_hex_str:str, equipment_class_hex_str:str):
+    """Get master keys through device (OBE) model data and EFC contract data
+    All of these should be present in the OBE's VST!!!"""
+    try:
+        device_contract_ref = assemble_device_contract_ref_hex_str(efc_cm_hex_str, manufacturer_id_hex_str, equipment_class_hex_str)
+        get_master_keys_through_device_contract_data(efc_cm_hex_str, manufacturer_id_hex_str, equipment_class_hex_str)
+    except KeyError:
+        # Try to get masterkeys through EFC-CM only!!
+        # Be careful if there are repeated EFC-CMs for different device models!!
+        return get_master_keys_with_efc_cm_only(efc_cm_hex_str)
+
+    return master_keys_by_device_contract_ref[device_contract_ref]
+
+def get_master_keys_with_efc_cm_only(efc_cm_hex_str: str):
+    efc_cm_hex_str = efc_cm_hex_str.upper()
+    for device_contract_ref, master_keys in master_keys_by_device_contract_ref.items():
+        if device_contract_ref[0:12] == efc_cm_hex_str:
+            return master_keys
+    raise Exception(f'Master Keys not found for EFC-CM {efc_cm_hex_str}!!!')
 
 def triple_des_decryption(ciphertext_hex:str, key_hex: str) -> str:
     key_bytes = bytes.fromhex(key_hex)
@@ -55,7 +126,7 @@ def compute_master_key_kcv(master_key: bytes) -> dict[int, str]:
 
 def compute_kcvs_for_efc_cm_keyset(efc_cm: str):
     kcv_dict = {}
-    for key_ref, master_key in master_keys[efc_cm].items():
+    for key_ref, master_key in get_master_keys_with_efc_cm_only(efc_cm).items():
         kcv_dict[key_ref] = compute_master_key_kcv(bytes.fromhex(master_key)).hex().upper()
     return kcv_dict
 
@@ -65,7 +136,7 @@ def prepare_3DES_cipher(efc_cm:str, key_ref:str):
     efc_cm = efc_cm.upper()
     key_derivation_logger.debug(f"Getting the Master Key with ref {key_ref} for EFC-CM {efc_cm}")
     try :
-        master_access_key = bytes.fromhex(master_keys[efc_cm][key_ref])
+        master_access_key = bytes.fromhex(get_master_keys_with_efc_cm_only(efc_cm)[key_ref])
     except KeyError as e:
         key_derivation_logger.error(e)
         key_derivation_logger.error(f"We do not possess the masterkeys for EFC-CM {efc_cm}")
@@ -98,9 +169,9 @@ def decrypt_access_key(efc_cm, access_key:bytes):
     key_derivation_logger.info(f"Plaintext (decrypted access key) in hex: {decrypted_access_key.hex().upper()}")
     return decrypted_access_key
 
-def compute_access_credentials(contract_provider, rnd_obe:int, ac_cr_key_ref:int):
+def compute_access_credentials(efc_cm:str, rnd_obe:int, ac_cr_key_ref:int):
     # Compute the Access Key
-    access_key = compute_access_key(contract_provider, ac_cr_key_ref)
+    access_key = compute_access_key(efc_cm, ac_cr_key_ref)
     # Compute the Access Credentials and return it
     return compute_access_credentials_with_access_key(rnd_obe, access_key)
 
@@ -211,7 +282,7 @@ def compute_auth_key_with_mauk_ref(pan_8_msb: bytes, efc_cm: str, key_ref: int) 
     
     if key_ref not in range(111, 119):
         raise ValueError("Invalid master authentication key (MAuK) reference!")
-    mauk_hex = master_keys[efc_cm.upper()][str(key_ref)]
+    mauk_hex = get_master_keys_with_efc_cm_only(efc_cm)[str(key_ref)]
     mauk = bytes.fromhex(mauk_hex)
     print(mauk)
     return compute_auk_with_mauk_value_and_plaintext(plaintext_bytes, mauk)
@@ -224,7 +295,7 @@ def compute_all_auth_keys(pan_8_msb: bytes, efc_cm: str) -> dict[int, bytes]:
     
     auth_keys = {}
     for key_ref in range(111, 119):
-        mauk_hex = master_keys[efc_cm][str(key_ref)]
+        mauk_hex = get_master_keys_with_efc_cm_only(efc_cm)[str(key_ref)]
         mauk = bytes.fromhex(mauk_hex)
         auth_keys[key_ref] = compute_auk_with_mauk_value_and_plaintext(plaintext_bytes, mauk)
     return auth_keys
@@ -249,7 +320,7 @@ def compute_all_derived_keys_for_device_type_and_return_hex_dict(pan_8_msb:bytes
 
 def compute_all_derived_keys_for_available_keysets_and_return_hex_dict(pan_8_msb:bytes, ac_cr_key_ref:int):
     efc_cm_to_derived_keys = {}
-    for efc_cm in master_keys:
+    for efc_cm in master_keys_by_device_contract_ref:
         derived_keys_dict = compute_all_auth_keys(pan_8_msb, efc_cm)
         derived_keys_dict[120] = compute_access_key(efc_cm, ac_cr_key_ref)
         efc_cm_to_derived_keys[efc_cm] = {key_ref: computed_auk.hex().upper() for (key_ref, computed_auk) in derived_keys_dict.items()}
@@ -267,5 +338,5 @@ def decipher_auth_key_with_mauk_value(auth_key: str, mauk: str) -> bytes:
 
 
 def decipher_auth_key_with_mauk_ref(auth_key: str, efc_cm: str, key_ref: int) -> bytes:
-    mauk = master_keys[efc_cm][str(key_ref)]
+    mauk = get_master_keys_with_efc_cm_only(efc_cm)[str(key_ref)]
     return decipher_auth_key_with_mauk_value(auth_key, mauk)
