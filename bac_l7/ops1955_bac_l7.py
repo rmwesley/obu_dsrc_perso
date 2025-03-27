@@ -12,7 +12,7 @@ class Ops1955BacL7(pertel_bac_l7.PertelBacL7):
 
     async def _kapsch_set_config(self):
         # STOP the beacon first!!
-        await self._pertel_set_beacon_mode(0x03)
+        await self._pertel_set_beacon_mode(0x00)
         await self._pertel_monitor_beacon()
 
         await self._kapsch_cd_read_dsrc_config()
