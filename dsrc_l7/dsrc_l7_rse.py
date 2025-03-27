@@ -5,9 +5,9 @@ from ASN.compiled_DSRC_instances import AXXESv1_2
 # from ASN.compiled_DSRC_instances import EFCv5
 EFCv5 = AXXESv1_2
 from ASN.compiled_DSRC_instances import CCCv1
-# from ASN.compiled_DSRC_instances import LACv2_1 as EFC_CCC_LAC_asn1_objs
+# from ASN.compiled_DSRC_instances import LACv2_1 as efc_asn_compilation
 
-EFC_CCC_LAC_asn1_objs = AXXESv1_2
+efc_asn_compilation = AXXESv1_2
 
 from datetime import datetime
 import json
@@ -48,7 +48,7 @@ async def initialize_bcm(aid=20):
     if aid == 1:
         TApdu_container = TApdu_container
     else:
-        TApdu_container = EFC_CCC_LAC_asn1_objs.EfcCcc.CccTApdus
+        TApdu_container = efc_asn_compilation.EfcCcc.CccTApdus
     with open('settings/beacon_manager_config.json', 'r') as beacon_manager_config_file:
         beacon_manager_config = json.load(beacon_manager_config_file)
 
@@ -113,7 +113,7 @@ def update_rnd_rse():
 
     bcm_logger.debug(f"Updating DateAndTime/SessionTime value (to be used as RndRSE value)...")
 
-    EFC_CCC_LAC_asn1_objs.EfcDataDictionary.DateAndTime.set_val({
+    efc_asn_compilation.EfcDataDictionary.DateAndTime.set_val({
         'timeDate':{
             'year': datetime.utcnow().year,
             'month': datetime.utcnow().month,
@@ -126,8 +126,8 @@ def update_rnd_rse():
         }
     })
 
-    bcm_logger.debug(f"RndRSE or SessionTime value (of type DateAndTime) in ASN:\n{EFC_CCC_LAC_asn1_objs.EfcDataDictionary.DateAndTime.to_asn1()}")
-    rnd_rse_bytes_value = EFC_CCC_LAC_asn1_objs.EfcDataDictionary.DateAndTime.to_uper()
+    bcm_logger.debug(f"RndRSE or SessionTime value (of type DateAndTime) in ASN:\n{efc_asn_compilation.EfcDataDictionary.DateAndTime.to_asn1()}")
+    rnd_rse_bytes_value = efc_asn_compilation.EfcDataDictionary.DateAndTime.to_uper()
     setattr(sys.modules[__name__], "rnd_rse_bytes_value", rnd_rse_bytes_value)
 
     bcm_logger.debug(f"RndRSE value (UPER hex): {rnd_rse_bytes_value.hex().upper()}")
@@ -181,9 +181,9 @@ async def start_bst_emission_and_await_vst(manufacturer_id=0x31, individual_id=0
         'profileList': profile_list
         }
 
-    EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BST.set_val(bst_value)
-    bcm_logger.info(f"BST in ASN:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BST.to_asn1()}")
-    last_sent_bst = EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.BST.to_uper()
+    efc_asn_compilation.EfcDsrcGeneric.BST.set_val(bst_value)
+    bcm_logger.info(f"BST in ASN:\n{efc_asn_compilation.EfcDsrcGeneric.BST.to_asn1()}")
+    last_sent_bst = efc_asn_compilation.EfcDsrcGeneric.BST.to_uper()
     bcm_logger.info(f"BST value (UPER hex): {last_sent_bst.hex().upper()}")
 
     initialization_request_value = ('initialisationRequest', bst_value)
@@ -322,11 +322,11 @@ def decode_t_apdu_response_uper(t_apdu_with_response_bytes):
         return_code = last_response_t_apdu_value[1]["ret"]
         if return_code == 0:
             bcm_logger.info(f"Return code is present and is 0! (No errors)")
-            bcm_logger.debug(f"ReturnStatus ASN1 decoding:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.ReturnStatus.to_asn1()}")
+            bcm_logger.debug(f"ReturnStatus ASN1 decoding:\n{efc_asn_compilation.EfcDsrcGeneric.ReturnStatus.to_asn1()}")
         else:
             bcm_logger.error(f"Error code present! Return Code: {return_code}")
-            EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.ReturnStatus.set_val(return_code)
-            bcm_logger.error(f"ReturnStatus ASN1 decoding:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.ReturnStatus.to_asn1()}")
+            efc_asn_compilation.EfcDsrcGeneric.ReturnStatus.set_val(return_code)
+            bcm_logger.error(f"ReturnStatus ASN1 decoding:\n{efc_asn_compilation.EfcDsrcGeneric.ReturnStatus.to_asn1()}")
     except KeyError:
         bcm_logger.info(f"No return code in T-APDU! (No errors)")
     return last_response_t_apdu_value
@@ -418,7 +418,7 @@ def compute_access_credentials(eid:int) -> bytes:
     except KeyError:
         return None
 
-def send_get_request(eid, accessCredentialsPresent:bool = False, attrIdList=None, close_transaction = False) -> EFC_CCC_LAC_asn1_objs.SEQ:
+def send_get_request(eid, accessCredentialsPresent:bool = False, attrIdList=None, close_transaction = False) -> efc_asn_compilation.SEQ:
     if accessCredentialsPresent:
         accessCredentials = compute_access_credentials(eid)
     else:
@@ -435,8 +435,8 @@ def send_get_request(eid, accessCredentialsPresent:bool = False, attrIdList=None
     # This is specially the case for the OPTIONAL accessCredentials
     get_req_value = {key: value for key, value in get_req_value.items() if value is not None}
 
-    EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.Get_Request.set_val(get_req_value)
-    bcm_logger.debug(f"Get.Request value: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.Get_Request._val}")
+    efc_asn_compilation.EfcDsrcGeneric.Get_Request.set_val(get_req_value)
+    bcm_logger.debug(f"Get.Request value: {efc_asn_compilation.EfcDsrcGeneric.Get_Request._val}")
 
     t_apdu_with_get_request_value = ('getRequest', get_req_value)
     response_t_apdu_value = send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_get_request_value, close_transaction=close_transaction)
@@ -465,11 +465,11 @@ async def send_action_request(
     bcm_logger.info(f"Preparing an ACTION.request with ActionType ({actionParameter[0]})")
 
     # ACTION.request has a parameter, which needs to be inside a container
-    EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.set_val(actionParameter)
-    parameter_tag = EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer._tag
+    efc_asn_compilation.EfcDsrcGeneric.EfcContainer.set_val(actionParameter)
+    parameter_tag = efc_asn_compilation.EfcDsrcGeneric.EfcContainer._tag
 
-    bcm_logger.debug(f"ActionParameter is an EfcContainer of Type ({actionParameter[0]}) (tag {parameter_tag}) value decoded with JER:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_jer()}")
-    bcm_logger.debug(f"Same value but APER-encoded in hex: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_aper().hex().upper()}")
+    bcm_logger.debug(f"ActionParameter is an EfcContainer of Type ({actionParameter[0]}) (tag {parameter_tag}) value decoded with JER:\n{efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_jer()}")
+    bcm_logger.debug(f"Same value but APER-encoded in hex: {efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_aper().hex().upper()}")
 
     action_request_value = {
         'mode': mode,
@@ -561,10 +561,10 @@ def verify_obe_authenticity(get_stamped_action_response_value=None, efc_cm=None)
     container_with_attribute_list = ('attrList', get_stamped_rs['attributeList'])
 
     bcm_logger.info(f"EFC Container of Type/CHOICE 'attrList' value: {container_with_attribute_list}")
-    EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.set_val(container_with_attribute_list)
-    bcm_logger.info(f"EFC Container of Type/CHOICE 'attrList' in ASN: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_asn1()}")
+    efc_asn_compilation.EfcDsrcGeneric.EfcContainer.set_val(container_with_attribute_list)
+    bcm_logger.info(f"EFC Container of Type/CHOICE 'attrList' in ASN: {efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_asn1()}")
 
-    attribute_list_bytes = EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_uper()[1:]
+    attribute_list_bytes = efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_uper()[1:]
 
     provided_authenticator = get_stamped_rs['authenticator']
     rnd_rse_bytes = rnd_rse_bytes_value
@@ -603,10 +603,10 @@ def get_stamped_request_action_parameter_preparation(eid:int, attrIdList:list = 
         'keyRef': operator_auk_ref
         }
     bcm_logger.debug(f"GetStampedRq value to be stored in definition: {get_stamped_rq_value}")
-    EFC_CCC_LAC_asn1_objs.EfcDsrcApplication.GetStampedRq.set_val(get_stamped_rq_value)
+    efc_asn_compilation.EfcDsrcApplication.GetStampedRq.set_val(get_stamped_rq_value)
 
-    bcm_logger.debug(f"GetStampedRq in ASN: {EFC_CCC_LAC_asn1_objs.EfcDsrcApplication.GetStampedRq.to_asn1()}")
-    # bcm_logger.info(f"GetStampedRs in JER:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcApplication.GetStampedRq.to_jer()}")
+    bcm_logger.debug(f"GetStampedRq in ASN: {efc_asn_compilation.EfcDsrcApplication.GetStampedRq.to_asn1()}")
+    # bcm_logger.info(f"GetStampedRs in JER:\n{efc_asn_compilation.EfcDsrcApplication.GetStampedRq.to_jer()}")
     return get_stamped_rq_value
 
 def send_echo_action_request(eid=0, text='Hello, World!', close_transaction=False):
@@ -615,9 +615,9 @@ def send_echo_action_request(eid=0, text='Hello, World!', close_transaction=Fals
 
     echo_rq_value = ('octetstring', text.encode('utf-8'))
 
-    EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.set_val(echo_rq_value)
-    bcm_logger.debug(f"EfcContainer of Type 02 (OCTET STRING) value decoded with JER:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_jer()}")
-    bcm_logger.debug(f"EfcContainer of Type 69 (OCTET STRING) value decoded with PER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_uper()}")
+    efc_asn_compilation.EfcDsrcGeneric.EfcContainer.set_val(echo_rq_value)
+    bcm_logger.debug(f"EfcContainer of Type 02 (OCTET STRING) value decoded with JER:\n{efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_jer()}")
+    bcm_logger.debug(f"EfcContainer of Type 69 (OCTET STRING) value decoded with PER: {efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_uper()}")
 
     # ActionType is 15 or 0xF for ECHO.request
     set_mmi_action_request_val = {
@@ -640,9 +640,9 @@ def set_mmi(eid=0, close_transaction=False):
     set_mmi_request_value = 0
     # SetMMI is a parameterized type, so it needs to be inside a container
     set_mmi_efc_container_value = ('setmmirq', set_mmi_request_value)
-    EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.set_val(set_mmi_efc_container_value)
-    bcm_logger.debug(f"EfcContainer of Type 69 (SET_MMI) value decoded with JER:\n{EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_jer()}")
-    bcm_logger.debug(f"EfcContainer of Type 69 (SET_MMI) value decoded with PER: {EFC_CCC_LAC_asn1_objs.EfcDsrcGeneric.EfcContainer.to_uper()}")
+    efc_asn_compilation.EfcDsrcGeneric.EfcContainer.set_val(set_mmi_efc_container_value)
+    bcm_logger.debug(f"EfcContainer of Type 69 (SET_MMI) value decoded with JER:\n{efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_jer()}")
+    bcm_logger.debug(f"EfcContainer of Type 69 (SET_MMI) value decoded with PER: {efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_uper()}")
 
     # SetMMI ActionType is 0xA, or 10 in decimal
     set_mmi_action_request_val = {
@@ -724,9 +724,9 @@ def tis_vl_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPres
         send_close_transaction_echo(eid=eid)
 
 def test_ccc_2009_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
-    global EFC_CCC_LAC_asn1_objs
+    global efc_asn_compilation
     # Compiled CCC 2015 specs
-    EFC_CCC_LAC_asn1_objs = CCCv1
+    efc_asn_compilation = CCCv1
 
     initialize_transaction(mand_applications=mand_applications)
     presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
@@ -753,12 +753,12 @@ def test_ccc_2009_transaction(eid, mand_applications=[1, 20, 29], accessCredenti
         send_close_transaction_setmmi(eid=eid)
     else:
         send_close_transaction_echo(eid=eid)
-    EFC_CCC_LAC_asn1_objs = AXXESv1_2
+    efc_asn_compilation = AXXESv1_2
 
 def test_ccc_2009_transaction_old(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
-    global EFC_CCC_LAC_asn1_objs
+    global efc_asn_compilation
     # Compiled CCC 2015 specs
-    EFC_CCC_LAC_asn1_objs = CCCv1
+    efc_asn_compilation = CCCv1
 
     initialize_transaction(mand_applications=mand_applications)
     presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
@@ -785,12 +785,12 @@ def test_ccc_2009_transaction_old(eid, mand_applications=[1, 20, 29], accessCred
         send_close_transaction_setmmi(eid=eid)
     else:
         send_close_transaction_echo(eid=eid)
-    EFC_CCC_LAC_asn1_objs = AXXESv1_2
+    efc_asn_compilation = AXXESv1_2
 
 def ccc_2015_status_history_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
-    global EFC_CCC_LAC_asn1_objs
+    global efc_asn_compilation
     # Compiled CCC 2015 specs
-    EFC_CCC_LAC_asn1_objs = EFCv5
+    efc_asn_compilation = EFCv5
 
     initialize_transaction(mand_applications=mand_applications)
     presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
@@ -811,12 +811,12 @@ def ccc_2015_status_history_transaction(eid, mand_applications=[1, 20, 29], acce
         send_close_transaction_setmmi(eid=eid)
     else:
         send_close_transaction_echo(eid=eid)
-    EFC_CCC_LAC_asn1_objs = AXXESv1_2
+    efc_asn_compilation = AXXESv1_2
 
 def test_ccc_2015_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
-    global EFC_CCC_LAC_asn1_objs
+    global efc_asn_compilation
     # Compiled CCC 2015 specs
-    EFC_CCC_LAC_asn1_objs = EFCv5
+    efc_asn_compilation = EFCv5
 
     initialize_transaction(mand_applications=mand_applications)
     presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
@@ -850,7 +850,7 @@ def test_ccc_2015_transaction(eid, mand_applications=[1, 20, 29], accessCredenti
         send_close_transaction_setmmi(eid=eid)
     else:
         send_close_transaction_echo(eid=eid)
-    EFC_CCC_LAC_asn1_objs = AXXESv1_2
+    efc_asn_compilation = AXXESv1_2
 
 def ccc_2023_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
     initialize_transaction(mand_applications=mand_applications)
