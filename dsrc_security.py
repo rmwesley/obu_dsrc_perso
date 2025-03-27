@@ -98,7 +98,7 @@ def get_master_keys_with_efc_cm_only(efc_cm_hex_str: str):
     for device_contract_ref, master_keys in master_keys_by_device_contract_ref.items():
         if device_contract_ref[0:12] == efc_cm_hex_str:
             return master_keys
-    raise Exception(f'Master Keys not found for EFC-CM {efc_cm_hex_str}!!!')
+    raise TollDomainException(f'Master Keys not found for EFC-CM {efc_cm_hex_str}!!!')
 
 def triple_des_decryption(ciphertext_hex:str, key_hex: str) -> str:
     key_bytes = bytes.fromhex(key_hex)
@@ -214,9 +214,14 @@ def compute_authenticator_with_auk_value(attribute_list_bytes, rnd_rse, auk_valu
     return attr_authenticator
 
 def compute_authenticator_with_auk_ref(pan_bytes:bytes, efc_cm, attribute_list_bytes, rnd_rse, auk_ref=115) -> bytes:
+    # Remember to set the key derivation settings for the Toll Domain!!
+    # 2 key derivation algorithms are implemented.
+    # One follows EN15509, and the other works for TIS.
+
     authenticator_key = compute_auth_key_with_mauk_ref(pan_bytes, efc_cm, auk_ref)
 
     attr_authenticator = compute_authenticator_with_auk_value(attribute_list_bytes, rnd_rse, auk_value=authenticator_key)
+    key_derivation_logger.info(f"[OBE AUTH] Authenticator computed by RSE (UPER hex): {attr_authenticator.hex().upper()}")
     return attr_authenticator
 
 def decrypt_auth_key(efc_cm, auth_key:bytes, auk_ref=115):
