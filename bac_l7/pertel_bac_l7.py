@@ -188,8 +188,6 @@ class PertelBacL7(bac_l2_host2beacon.BacHost):
         message_content = bytes([0x05]) + t_apdu_containing_request
         response_content = await self.send_command(message_content)
 
-        if response_content[1] != 0:
-            bac_serial_wrapper_logger.error('BAC L2 error code present!!')
         # Removing Command ID 0x05 and error code
         self.t_apdu_containing_response = response_content[2:]
 
