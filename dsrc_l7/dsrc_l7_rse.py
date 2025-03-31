@@ -194,8 +194,8 @@ async def start_bst_emission_and_await_vst(bst_value: dict):
     fragmented_t_apdu = frag_header + last_sent_t_apdu_containing_bst
     response = await beacon_bac_l7_wrapper._pertel_start_bst_emission_and_await_vst(fragmented_t_apdu)
 
-    # Transaction unclosed!!
     if response[1] == 2:
+        bcm_logger.critical("Transaction unclosed!!")
         await send_close_transaction_setmmi()
         exit()
 
@@ -544,7 +544,7 @@ async def send_get_stamped_request(
     bcm_logger.debug(f"Container with GetStampedRq value: {container_with_get_stamped_rq_value}")
 
     # ActionType is 0 for GET_STAMPED.request and Mode is True (Always expects a response)
-    response_t_apdu_json = send_action_request(True, eid, 0, accessCredentialsPresent, container_with_get_stamped_rq_value, close_transaction=close_transaction)
+    response_t_apdu_json = await send_action_request(True, eid, 0, accessCredentialsPresent, container_with_get_stamped_rq_value, close_transaction=close_transaction)
 
     bcm_logger.debug("We now obtain the GET_STAMPED.response object from the T_APDU response!")
     bcm_logger.debug("GET_STAMPED.response is a parameterized type, so we cannot encode/decode it, only the T_APDU!")
@@ -698,8 +698,8 @@ async def cardme_transaction(eid, mand_applications=[1, 20, 29], accessCredentia
 
     # Getting Vehicle attributes...
     ## Getting LPN only first case errors occurs in the 'big' GET.request
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[17, 18, 19, 20, 22])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[17, 18, 19, 20, 22])
 
     # Getting OBE info...
     # send_get_request(eid, False, attrIdList=[24, 25, 26])
@@ -723,20 +723,20 @@ async def tis_vl_transaction(eid, mand_applications=[1, 20, 29], accessCredentia
     initialize_transaction(mand_applications=mand_applications)
     presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[17, 18, 19, 20, 22])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[17, 18, 19, 20, 22])
 
     # Getting TIS specific/reserved attributes...
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[125, 126])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[95, 96])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[97, 98, 99])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=list(range(100, 104)))
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=list(range(104, 108)))
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=list(range(108, 112)))
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=list(range(112, 116)))
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[116])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[124])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[127])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[125, 126])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[95, 96])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[97, 98, 99])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=list(range(100, 104)))
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=list(range(104, 108)))
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=list(range(108, 112)))
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=list(range(112, 116)))
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[116])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[124])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[127])
 
     # Close the transaction
     if set_mmi == True:
@@ -752,22 +752,22 @@ async def test_ccc_2009_transaction(eid, mand_applications=[1, 20, 29], accessCr
     initialize_transaction(mand_applications=mand_applications)
     presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
 
     # OBU ID
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[24])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[24])
 
     # Getting CCC 2009 attributes...
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[48])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[49])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[50])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[51])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[52])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[53])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[48])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[49])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[50])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[51])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[52])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[53])
 
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[116])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[124])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[127])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[116])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[124])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[127])
 
     # Close the transaction
     if set_mmi == True:
@@ -784,22 +784,22 @@ async def test_ccc_2009_transaction_old(eid, mand_applications=[1, 20, 29], acce
     initialize_transaction(mand_applications=mand_applications)
     presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
 
     # OBU ID
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[24])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[24])
 
     # Getting CCC 2009 attributes...
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[37])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[38])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[39])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[40])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[41])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[42])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[37])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[38])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[39])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[40])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[41])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[42])
 
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[116])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[124])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[127])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[116])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[124])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[127])
 
     # Close the transaction
     if set_mmi == True:
@@ -817,15 +817,15 @@ async def ccc_2015_status_history_transaction(eid, mand_applications=[1, 20, 29]
     presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
     # OBU ID
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[24])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[24])
 
     # Getting CCC attributes...
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[53])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[55])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[60])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[61])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[62])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[63])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[53])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[55])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[60])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[61])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[62])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[63])
 
     # Close the transaction
     if set_mmi == True:
@@ -842,29 +842,29 @@ async def test_ccc_2015_transaction(eid, mand_applications=[1, 20, 29], accessCr
     initialize_transaction(mand_applications=mand_applications)
     presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
 
     # OBU ID
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[24])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[24])
 
     # Getting CCC attributes...
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[46])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[48])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[49])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[50])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[51])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[52])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[53])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[55])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[60])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[61])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[62])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[63])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[64])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[46])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[48])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[49])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[50])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[51])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[52])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[53])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[55])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[60])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[61])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[62])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[63])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[64])
 
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[116])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[124])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[127])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[116])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[124])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[127])
 
     # Close the transaction
     if set_mmi == True:
@@ -877,17 +877,17 @@ async def ccc_2023_transaction(eid, mand_applications=[1, 20, 29], accessCredent
     initialize_transaction(mand_applications=mand_applications)
     presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
 
     # Getting CCC attributes...
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[53])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[99])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[100])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[101])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[53])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[99])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[100])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[101])
 
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[116])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[124])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[127])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[116])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[124])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[127])
 
     # Close the transaction
     if set_mmi == True:
@@ -897,17 +897,17 @@ async def ccc_2023_transaction(eid, mand_applications=[1, 20, 29], accessCredent
 
 async def kapsch_system_element_transaction(eid=0, mand_applications=[0], accessCredentialsPresent=True, set_mmi=True):
     initialize_transaction(mand_applications=mand_applications)
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[1, 2, 3])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[6, 7])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[10])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[17])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[18])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[23])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[33])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[108])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[120])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[1, 2, 3])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[6, 7])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[10])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[17])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[18])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[23])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[33])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[108])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[120])
 
     # Close the transaction
     if set_mmi == True:
@@ -919,19 +919,19 @@ async def test_transaction(eid, mand_applications=[1, 20, 29], accessCredentials
     initialize_transaction(mand_applications=mand_applications)
     presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
 
     # Getting CCC attributes...
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[53])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[99])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[100])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[101])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[53])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[99])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[100])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[101])
 
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[111, 115, 118])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[116])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[124])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[127])
-    send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[125, 126])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[111, 115, 118])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[116])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[124])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[127])
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[125, 126])
 
     # Close the transaction
     if set_mmi == True:
@@ -954,7 +954,7 @@ async def get_attributes_in_list(eid, accessCredentialsPresent=True, attrIdList=
     get_responses = []
     try:
         for attr in attrIdList:
-            send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[attr])
+            await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[attr])
             try:
                 if last_response_t_apdu_json['getResponse']['ret'] == 0:
                     bcm_logger.info(last_response_t_apdu_json['getResponse'])
