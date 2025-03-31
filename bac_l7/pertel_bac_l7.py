@@ -189,7 +189,7 @@ class PertelBacL7(bac_l2_host2beacon.BacHost):
         response_content = await self.send_command(message_content)
 
         # Removing Command ID 0x05 and error code
-        self.t_apdu_containing_response = response_content[2:]
+        self.last_t_apdu_response_datagram = response_content[2:]
 
         return response_content
 
@@ -223,7 +223,7 @@ class PertelBacL7(bac_l2_host2beacon.BacHost):
             self.t_apdu_containing_vst = None
 
         # Removing Command ID 0x06 and error code
-        self.t_apdu_containing_response = response_content[2:]
+        self.last_t_apdu_response_datagram = response_content[2:]
 
         return response_content
 

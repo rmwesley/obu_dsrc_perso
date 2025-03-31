@@ -369,8 +369,8 @@ async def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, clos
             close_transaction
             )
     )
-    beacon_bac_l7_wrapper.t_apdu_containing_response
-    fragmented_t_apdu_with_response_bytes = beacon_bac_l7_wrapper.t_apdu_containing_response
+    beacon_bac_l7_wrapper.last_t_apdu_response_datagram
+    fragmented_t_apdu_with_response_bytes = beacon_bac_l7_wrapper.last_t_apdu_response_datagram
     bcm_logger.info(f"Fragmented T-APDU response obtained from beacon in hex (UPER hex): {fragmented_t_apdu_with_response_bytes.hex().upper()}")
 
     try:
