@@ -1,11 +1,13 @@
 {
-  "default_beacon_name": "OPS1955",
+  "default_beacon_name": "TGBV",
   "TGBV":{
     "chosen_communication_mode": "serial-pertel",
     "bac_l2_config": {
       "beacon_host_serial_config": {
-        "port": "COM15",
-        "baudrate": 115200
+        "port": "COM6",
+        "baudrate": 115200,
+        "parity": "E",
+        "stopbits": 2
       },
       "beacon_type": "TGB",
       "beacon_alarm_state_polling_ms": 2000,
