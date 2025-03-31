@@ -547,14 +547,11 @@ async def send_get_stamped_request(
     bcm_logger.debug("We now obtain the GetStampedRq object in the ACTION.Response's parameter!")
     bcm_logger.debug("GET_STAMPED.response is a parameterized type, so we cannot encode/decode it, only the T_APDU!")
 
-    try:
-        action_response_parameter = last_response_t_apdu_value[1]['responseParameter']
-        get_stamped_response_value = action_response_parameter[1]
-        bcm_logger.info(f'GetStampedRq value: {get_stamped_response_value}')
+    action_response_parameter = last_response_t_apdu_value[1]['responseParameter']
+    get_stamped_response_value = action_response_parameter[1]
+    bcm_logger.info(f'GetStampedRq value: {get_stamped_response_value}')
 
-        bcm_logger.debug(f"GET_STAMPED.response (Presentation response): {response_t_apdu_json['actionResponse']['responseParameter']}")
-    except KeyError:
-        bcm_logger.error(f"Reponse Parameter not present in GET_STAMPED.reponse!")
+    bcm_logger.debug(f"GET_STAMPED.response (Presentation response): {response_t_apdu_json['actionResponse']['responseParameter']}")
     return response_t_apdu_json
 
 def verify_obe_authenticity(get_stamped_action_response_value=None, efc_cm=None):
