@@ -444,7 +444,7 @@ def compute_access_credentials(eid:int) -> bytes:
     except KeyError:
         return None
 
-def send_get_request(eid, accessCredentialsPresent:bool = False, attrIdList=None, close_transaction = False) -> efc_asn_compilation.SEQ:
+async def send_get_request(eid, accessCredentialsPresent:bool = False, attrIdList=None, close_transaction = False) -> efc_asn_compilation.SEQ:
     if accessCredentialsPresent:
         accessCredentials = compute_access_credentials(eid)
     else:
@@ -465,7 +465,7 @@ def send_get_request(eid, accessCredentialsPresent:bool = False, attrIdList=None
     bcm_logger.debug(f"Get.Request value: {efc_asn_compilation.EfcDsrcGeneric.Get_Request._val}")
 
     t_apdu_with_get_request_value = ('getRequest', get_req_value)
-    response_t_apdu_value = send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_get_request_value, close_transaction=close_transaction)
+    response_t_apdu_value = await send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_get_request_value, close_transaction=close_transaction)
 
     bcm_logger.debug("We now obtain the GET.response object from the T_APDU response!")
     bcm_logger.debug("GET.response is a parameterized type, so we cannot encode/decode it, only the T_APDU!")
@@ -632,7 +632,7 @@ def get_stamped_request_action_parameter_preparation(eid:int, attrIdList:list = 
     # bcm_logger.info(f"GetStampedRs in JER:\n{efc_asn_compilation.EfcDsrcApplication.GetStampedRq.to_jer()}")
     return get_stamped_rq_value
 
-def send_echo_action_request(eid=0, text='Hello, World!', close_transaction=False):
+async def send_echo_action_request(eid=0, text='Hello, World!', close_transaction=False):
     """EID should always be 0 for ECHO.request!!!"""
     bcm_logger.debug(f"Preparing an ECHO.request")
 
@@ -652,11 +652,11 @@ def send_echo_action_request(eid=0, text='Hello, World!', close_transaction=Fals
     t_apdu_with_echo_action_req_value = ('actionRequest', set_mmi_action_request_val)
     bcm_logger.info(f"ACTION.request of Type 15 (ECHO) being now sent...")
 
-    response_t_apdu_json = send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_echo_action_req_value, close_transaction=close_transaction)
+    response_t_apdu_json = await send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_echo_action_req_value, close_transaction=close_transaction)
     # response_t_apdu_json = send_action_request(mode=True, eid=eid, actionType=15, accessCredentialsPresent=False, actionParameter=echo_rq_value, close_transaction=close_transaction)
     return response_t_apdu_json
 
-def set_mmi(eid=0, close_transaction=False):
+async def set_mmi(eid=0, close_transaction=False):
     bcm_logger.debug(f"Preparing a SET_MMI.request")
     bcm_logger.debug(f"The function to send ACTION.requests is defined to send a SET_MMI by default if no arguments are provided!")
 
@@ -678,7 +678,7 @@ def set_mmi(eid=0, close_transaction=False):
     t_apdu_with_set_mmi_action_req_value = ('actionRequest', set_mmi_action_request_val)
     bcm_logger.info(f"ACTION.request of Type 10 (SET_MMI) being now sent...")
 
-    t_apdu_with_action_response = send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_set_mmi_action_req_value, close_transaction)
+    t_apdu_with_action_response = await send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_set_mmi_action_req_value, close_transaction)
     return t_apdu_with_action_response
 
 async def send_close_transaction_echo(eid=0, text="Hello, World!"):
