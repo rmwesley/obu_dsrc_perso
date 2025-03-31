@@ -351,6 +351,8 @@ def decode_t_apdu_response_uper(t_apdu_with_response_bytes):
 async def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close_transaction=False) -> dict:
     global TApdu_container
     global current_transaction_id
+    if close_transaction:
+        bcm_logger.info(f"Closing Transaction!! Info: BAC L2 command for closing a transaction is 0x06.")
 
     bcm_logger.debug(f"Preparing request T-APDU to be sent...")
     TApdu_container.set_val(asn1_request_t_apdu_value)
