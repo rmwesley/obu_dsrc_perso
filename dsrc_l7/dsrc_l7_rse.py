@@ -363,12 +363,17 @@ async def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, clos
     # Sending command!!!
     fragmented_t_apdu_request = frag_header + TApdu_container.to_uper()
 
-    (await beacon_bac_l7_wrapper
+    bac_l2_response = (await beacon_bac_l7_wrapper
         ._pertel_send_dsrc_l7_command_with_close_transaction_option(
             fragmented_t_apdu_request,
             close_transaction
             )
     )
+    bac_l2_error_code = bac_l2_response[1]
+    if bac_l2_error_code != 0:
+        if bac_l2_error_code == 0x09:
+            raise Exception('[BAC L2] Timeout OBE (0x09) received!!')
+        raise Exception(f'[BAC L2] Error code present in BAC L2 response!!')
     beacon_bac_l7_wrapper.last_t_apdu_response_datagram
     fragmented_t_apdu_with_response_bytes = beacon_bac_l7_wrapper.last_t_apdu_response_datagram
     bcm_logger.info(f"Fragmented T-APDU response obtained from beacon in hex (UPER hex): {fragmented_t_apdu_with_response_bytes.hex().upper()}")
