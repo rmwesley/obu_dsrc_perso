@@ -180,12 +180,12 @@ class BacHost(serial.Serial):
     # Host receives a message
     def _receive_message(self) -> bytes:
         unescaped_response_content = self.receiver.receive_message()
-        # Responses always come with an error code byte
-        error_code_int = unescaped_response_content[1]
-        if error_code_int != 0:
-            bac_serial_wrapper_logger.error(f'BAC L2 error code (0x{error_code_int:02X}) present!!')
-        else:
-            bac_serial_wrapper_logger.debug(f'BAC L2 OK response, error code is (0x{error_code_int:02X}).')
+        # Responses NOT always come with an error code byte!!
+        # error_code_int = unescaped_response_content[1]
+        # if error_code_int != 0:
+        #     bac_serial_wrapper_logger.debug(f'BAC L2 error code (0x{error_code_int:02X}) present!!')
+        # else:
+        #     bac_serial_wrapper_logger.debug(f'BAC L2 OK response, error code is (0x{error_code_int:02X}).')
         return unescaped_response_content
 
     def _beacon_resolve_enq_conflict(self):
