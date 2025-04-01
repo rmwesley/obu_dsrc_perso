@@ -29,16 +29,32 @@ class Ops1955BacL7(pertel_bac_l7.PertelBacL7):
         msg_id = 0x61 # 97
         msg_data_struct_version = 0x01
         dsrc_channel = 0x01
-        bst_repetition_time = 0x00
+
+        # BST repetition time in ms, between 3ms and 255ms for OPS1955
+        bst_repetition_time_ms = 0x03
+
+        # 0x00: Managed by the device and incremented after no reply
+        # 0x01: Managed by the host
+        # 0x02: Managed by the device and incremented after each transaction
+        beacon_id_behavior = 0x02
 
         bac_l2_config = beacon_manager_settings['OPS1955']['bac_l2_config']
+        # ACn mode : Release with Private AC Command, OBE response expected
+        # UI mode : Release with 3 Private UI Command emissions, without OBE response 
         if bac_l2_config['release_command_config'] == 'UI':
             end_transceiver_behavior = 0x00
         elif bac_l2_config['release_command_config'] == 'ACn':
             end_transceiver_behavior = 0x01
 
-        message_content = bytes([msg_id, msg_data_struct_version, dsrc_channel, bst_repetition_time, end_transceiver_behavior])
-        return await self.send_command(message_content=message_content)
+        message_content = bytes([msg_id, msg_data_struct_version, dsrc_channel, bst_repetition_time_ms, beacon_id_behavior, end_transceiver_behavior])
+        response = await self.send_command(message_content=message_content)
+
+        error_code_int = response[1]
+        if error_code_int == 0x03:
+            raise Exception("Transceiver not OK")
+        if error_code_int == 0x0B:
+            raise Exception("Command refused because the parameters are wrong")
+        return response
 
     async def _kapsch_cd_read_dsrc_config(self) -> bytes:
         """
