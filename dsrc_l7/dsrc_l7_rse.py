@@ -197,7 +197,7 @@ async def start_bst_emission_and_await_vst(bst_value: dict):
 
     if response[1] == 2:
         bcm_logger.critical("Transaction unclosed!!")
-        await send_close_transaction_setmmi()
+        await send_close_transaction_echo()
         exit()
 
     bcm_logger.debug("We now get the lastest BeaconID just after starting the BST")
