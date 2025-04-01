@@ -192,6 +192,7 @@ async def start_bst_emission_and_await_vst(bst_value: dict):
     bcm_logger.info(f"T_APDU containing BST (UPER hex): {TApdu_container.to_uper().hex().upper()}")
 
     fragmented_t_apdu = frag_header + last_sent_t_apdu_containing_bst
+    bcm_logger.info(f"RSE is now emitting BST and awaiting VST from OBE...")
     response = await beacon_bac_l7_wrapper._pertel_start_bst_emission_and_await_vst(fragmented_t_apdu)
 
     if response[1] == 2:
