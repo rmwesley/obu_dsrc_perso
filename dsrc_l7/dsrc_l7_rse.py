@@ -558,6 +558,10 @@ async def send_get_stamped_request(
 
     bcm_logger.debug(f"GET_STAMPED.response (Presentation response): {response_t_apdu_json['actionResponse']['responseParameter']}")
 
+    try:
+        verify_obe_authenticity()
+    except:
+        bcm_logger.critical("OBE AUTH ERROR!!!")
     return response_t_apdu_json
 
 def verify_obe_authenticity(get_stamped_action_response_value=None, efc_cm=None):
