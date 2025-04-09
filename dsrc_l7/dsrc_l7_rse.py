@@ -557,6 +557,7 @@ async def send_get_stamped_request(
     bcm_logger.info(f'GetStampedRq value: {get_stamped_response_value}')
 
     bcm_logger.debug(f"GET_STAMPED.response (Presentation response): {response_t_apdu_json['actionResponse']['responseParameter']}")
+
     return response_t_apdu_json
 
 def verify_obe_authenticity(get_stamped_action_response_value=None, efc_cm=None):
@@ -567,7 +568,7 @@ def verify_obe_authenticity(get_stamped_action_response_value=None, efc_cm=None)
     try:
         get_stamped_rs = get_stamped_action_response_value['responseParameter'][1]
     except KeyError:
-        bcm_logger.error('No responseParameter in GET_STAMPED.response!!!')
+        bcm_logger.error('[OBE AUTH] No responseParameter in GET_STAMPED.response!!!')
         return
 
     # if 'get_stamped_response_value' not in locals():
@@ -577,34 +578,39 @@ def verify_obe_authenticity(get_stamped_action_response_value=None, efc_cm=None)
         decoded_vst_param = decode_vst_parameter_from_eid(eid)
         efc_cm = decoded_vst_param['EFC-ContextMark']
     attributeList = get_stamped_rs['attributeList']
-    bcm_logger.info(f'attributeList value: {attributeList}')
+    bcm_logger.info(f'[OBE AUTH] attributeList value: {attributeList}')
 
     container_with_attribute_list = ('attrList', get_stamped_rs['attributeList'])
 
-    bcm_logger.info(f"EFC Container of Type/CHOICE 'attrList' value: {container_with_attribute_list}")
+    bcm_logger.info(f"[OBE AUTH] EFC Container of Type/CHOICE 'attrList' value: {container_with_attribute_list}")
     efc_asn_compilation.EfcDsrcGeneric.EfcContainer.set_val(container_with_attribute_list)
-    bcm_logger.info(f"EFC Container of Type/CHOICE 'attrList' in ASN: {efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_asn1()}")
+    bcm_logger.info(f"[OBE AUTH] EFC Container of Type/CHOICE 'attrList' in ASN: {efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_asn1()}")
 
     attribute_list_bytes = efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_uper()[1:]
 
     provided_authenticator = get_stamped_rs['authenticator']
+    bcm_logger.info(f"[OBE AUTH] Authenticator provided by OBE (UPER hex): {provided_authenticator.hex().upper()}")
+
     rnd_rse_bytes = rnd_rse_bytes_value
-    bcm_logger.debug(f"RndRSE value in hex: {rnd_rse_bytes.hex().upper()}")
     rnd_rse_int = int.from_bytes(rnd_rse_bytes, 'big')
 
     pan_bytes = get_stamped_rs['attributeList'][0]['attributeValue'][1]['personalAccountNumber']
-    pan_id = pan_bytes.hex().upper()
-    bcm_logger.info(f"PAN bytes in hex (PAN ID): {pan_id}")
 
-    authenticator = dsrc_security.compute_authenticator_with_auk_ref(pan_id, efc_cm, attribute_list_bytes, rnd_rse_int, 115)
+    bcm_logger.debug(f'[OBE AUTH] EFC-CM: {efc_cm}')
+    bcm_logger.debug(f'[OBE AUTH] AttributeList: {attribute_list_bytes}')
+    bcm_logger.debug(f'[OBE AUTH] RndRSE int: {rnd_rse_int}')
 
-    bcm_logger.debug(f"Authenticator provided by OBE (UPER hex): {provided_authenticator.hex().upper()}")
-    bcm_logger.debug(f"Authenticator computed by RSE (UPER hex): {authenticator.hex().upper()}")
+    # Remember to set the key derivation settings for the Toll Domain!!
+    # 2 key derivation algorithms are implemented.
+    # One follows EN15509, and the other works for TIS.
+    authenticator = dsrc_security.compute_authenticator_with_auk_ref(pan_bytes, efc_cm, attribute_list_bytes, rnd_rse_int, 115)
 
-    if provided_authenticator != authenticator:
-        bcm_logger.error(f"The device/OBE is fraudulent!!")
+    if provided_authenticator == authenticator:
+        bcm_logger.critical('[OBE AUTH] OK!!!')
+        return True
+        # raise Exception('[OBE AUTH] Invalid OBE Auth!!')
     else:
-        bcm_logger.info(f"The device/OBE is authentic!!!")
+        bcm_logger.critical('[OBE AUTH] ERROR!!!')
 
 def get_stamped_request_action_parameter_preparation(eid:int, attrIdList:list = [], operator_auk_ref=111):
     """
