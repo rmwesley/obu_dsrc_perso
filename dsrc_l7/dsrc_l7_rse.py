@@ -68,8 +68,6 @@ async def initialize_bcm(aid=20):
 
     bcm_logger.debug("We now update/get the BeaconID (according to the beacon HW itself) before sending the BST")
     await update_beacon_state()
-    # SETTING BEACON TO TRANSPARENT MODE!!
-    await change_trx_mode(mode_name='Transparent')
 
 def reset_beacon():
     global beacon_bac_l7_wrapper
@@ -102,6 +100,8 @@ async def init_bcm_and_set_transparent_mode():
 
     bcm_logger.debug("Instantiating/Initializing BeaconManager class...")
     await initialize_bcm()
+    # SETTING BEACON TO TRANSPARENT MODE!!
+    await change_trx_mode(mode_name='Transparent')
 
 def shutdown_beacon():
     global beacon_bac_l7_wrapper
