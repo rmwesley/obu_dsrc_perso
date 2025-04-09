@@ -28,7 +28,7 @@
     "chosen_communication_mode": "serial-pertel",
     "bac_l2_config": {
       "beacon_host_serial_config": {
-        "port": "COM15",
+        "port": "COM13",
         "baudrate": 115200,
         "parity": "E",
         "stopbits": 2
