@@ -44,8 +44,8 @@ root_logger.addHandler(console_handler)
 async def simple_bcm_transactions():
     await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
 
-    dsrc_l7_rse.set_beeping_state(beep_state=True)
-    await dsrc_l7_rse.cardme_transaction(1, mand_applications=[1, 20, 29])
+    dsrc_l7_rse.set_beeping_state(beep_state=False)
+    await dsrc_l7_rse.cardme_transaction(4, mand_applications=[1, 20, 29], set_mmi=False)
 
 # Main execution
 if __name__ == "__main__":
