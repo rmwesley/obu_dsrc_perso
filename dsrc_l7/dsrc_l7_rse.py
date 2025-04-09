@@ -147,9 +147,6 @@ async def safe_set_beacon(chosen_beacon_name):
     """Set the chosen beacon"""
     global current_beacon_name
     global beacon_bac_l7_wrapper
-    global rse_event_loop
-
-    rse_event_loop = asyncio.new_event_loop()
 
     bcm_logger.info(f'Setting beacon to ({chosen_beacon_name})')
     if beacon_bac_l7_wrapper is not None:
