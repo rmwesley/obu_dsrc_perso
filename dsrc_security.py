@@ -287,6 +287,17 @@ def contract_provider_hex_str_to_iso3166_numeric(contract_provider:str) -> int:
 def compute_auk_plaintext_contract_provider_part(efc_cm:str) -> bytes:
     contract_provider_hex = efc_cm[0:6]
 
+    # Weird Contract Provider (2 issues):
+    # Country code is in 10 bits with Numeric-3 instead
+    # of Alpha-2 Country Code encoded with Baudot on ITA2 mode
+    # For example, FR in ITA2 is 0b10110 (F) 010100 (R) (0xB2 80 in hex, since LSB is to the left)
+    # But TIS uses 0x25 00 instead!!! Which comes from the Numeric-3 country code for France (250), but in hex, not in dec!!!
+    # As you can clearly see, this does not follow the EN15509 norm for European Interoperability!!
+    #
+    # And the IssuerId for Axxès is 0x31 (49 in decimal).
+    # TIS uses 0x49 = 73 in dec instead!!!
+    #
+    # So the ContractProvider is 0x25 00 49 instead of 0xB2 80 31!!!
     if current_security_profile == 'TIS_decimal':
         iso3166_alpha2 = custom_its_per_decoders.decode_country_code(efc_cm)
         iso3166_numeric3_dec_str = iso3166.countries_by_alpha2.get(iso3166_alpha2).numeric
