@@ -104,8 +104,35 @@ class PertelBacL7(bac_l2_host2beacon.BacHost):
         return self.beacon_state
 
     async def _pertel_get_communication_count(self) -> bytes:
+        """DSRC Layer2 counters.
+        There are counters for reallocated private Medium Access Control (MAC) windows, and
+        LLC frame counts, LLC retries..."""
         message_content = bytes([0x02])
-        return await self.send_command(message_content)
+        response = await self.send_command(message_content)
+        if response[0] != 0x02:
+            raise Exception('Got a response for a different command!!')
+
+        # Exchange counters
+        private_address = response[1:5]
+        exchange_llc_frames_count = response[5]
+        exchange_llc_timer_retry_count = response[6]
+        mac_private_window_realloc_count = response[7:9]
+        private_downlink_frames_count = response[9:11]
+
+        # Total counters
+        total_exchange_count = response[11:13]
+        total_llc_frames_count = response[13:15]
+        total_llc_timer_retry_count = response[15:17]
+        total_mac_private_window_realloc_count = response[17:19]
+        public_downlink_frames_count = response[19:21]
+        total_private_downlink_frames_count = response[21:23]
+
+        # Reception quality counters
+        count_of_missing_expected_responses = response[23:25]
+        count_of_frames_with_error = response[23:25]
+        count_of_frames_without_error = response[25:27]
+
+        return response
 
     def get_vst(self) -> bytes:
         return self.t_apdu_containing_vst
