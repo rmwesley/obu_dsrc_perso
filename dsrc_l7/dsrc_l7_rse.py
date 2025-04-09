@@ -713,6 +713,7 @@ async def cardme_transaction(eid, mand_applications=[1, 20, 29], accessCredentia
 
     # Getting OBE info...
     # send_get_request(eid, False, attrIdList=[24, 25, 26])
+    await send_get_request(eid, False, attrIdList=[24]) # Get equOBUId
 
     # Getting driver info...
     # send_get_request(eid, False, attrIdList=[27, 47])
