@@ -17,7 +17,7 @@ from ASN.compiled_DSRC_instances import EFCv10_1 as EFC
 try:
     os.environ['EFC_SEC_CONF_PATH']
 except:
-    os.environ['EFC_SEC_CONF_PATH'] = r"..\efc_security_config_v2.0.0.json"
+    os.environ['EFC_SEC_CONF_PATH'] = r"..\efc_security_config_v2.1.0.json"
 
 efc_sec_conf_path = os.environ['EFC_SEC_CONF_PATH']
 
