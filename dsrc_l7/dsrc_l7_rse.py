@@ -760,8 +760,8 @@ async def test_ccc_2009_transaction(eid, mand_applications=[1, 20, 29], accessCr
     # Compiled CCC 2015 specs
     efc_asn_compilation = CCCv1
 
-    initialize_transaction(mand_applications=mand_applications)
-    presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+    await initialize_transaction(mand_applications=mand_applications)
+    await presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
 
@@ -885,8 +885,8 @@ async def test_ccc_2015_transaction(eid, mand_applications=[1, 20, 29], accessCr
     efc_asn_compilation = AXXESv1_2
 
 async def ccc_2023_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
-    initialize_transaction(mand_applications=mand_applications)
-    presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+    await initialize_transaction(mand_applications=mand_applications)
+    await presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
 
