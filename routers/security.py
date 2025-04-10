@@ -91,7 +91,7 @@ class ComputeAllDerivedKeysForAllKeySetsReq(BaseModel):
         "json_schema_extra": {
             "examples": [
                 {
-                    "pan_id": "3156496003252000650",
+                    "pan_id": "3156496003252000650F",
                     "ac_cr_key_ref": "0018"
                 }
             ]
@@ -112,7 +112,7 @@ class ComputeAllDerivedKeysForDeviceTypeReq(BaseModel):
         "json_schema_extra": {
             "examples": [
                 {
-                    "pan_id": "3156496003252000650",
+                    "pan_id": "3156496003252000650F",
                     "ac_cr_key_ref": "0018",
                     "device_type": "C3081"
                 }
@@ -150,7 +150,7 @@ class ComputeAllDerivedKeysReq(BaseModel):
             "examples": [
                 {
                     "efc_cm": "B2803100066F",
-                    "pan_id": "3156496003252000650",
+                    "pan_id": "3156496003252000650F",
                     "ac_cr_key_ref": "0018"
                 }
             ]
@@ -194,7 +194,7 @@ class ComputeAuthKeyReq(BaseModel):
             "examples": [
                 {
                     "efc_cm": "B2803100066F",
-                    "pan_id": "3156496003252000650",
+                    "pan_id": "3156496003252000650F",
                     "key_ref": 111
                 }
             ]
