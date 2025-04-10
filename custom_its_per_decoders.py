@@ -36,25 +36,28 @@ class BaudotMsbFirstBytesReader(baudot.handlers.core.BaudotReader):
         # print(code)
         return code
 
-def decode_country_code(country_code:str) -> str:
-    if type(country_code) is int:
-        return decode_country_code_from_int(country_code)
-    return decode_country_code_from_hex_str(country_code)
+def decode_baudot_country_code(baudot_country_code:str|int) -> str:
+    if type(baudot_country_code) is int:
+        return decode_baudot_country_code_from_int(baudot_country_code)
+    if  type(baudot_country_code) is str:
+        return decode_baudot_country_code_from_hex_str(baudot_country_code)
+    else:
+        raise TypeError("country_code must be either 'str' or 'int'!!")
 
-def decode_country_code_from_int(country_code_with_lsb_to_right_int:int) -> str:
-    baudot_stream = split_country_code_baudot_chars_in_bytes(country_code_with_lsb_to_right_int)
+def decode_baudot_country_code_from_int(baudot_country_code_with_lsb_to_right_int:int) -> str:
+    baudot_stream = split_country_code_baudot_chars_in_bytes(baudot_country_code_with_lsb_to_right_int)
     
     # ITA2_SWITCH_CODE: 0x1F
     code = bytes([0x1F]) + baudot_stream
     with io.BytesIO(code) as country_code_bitstream:
         reader = BaudotMsbFirstBytesReader(country_code_bitstream)
-        alpha2 = baudot.decode_to_str(reader, baudot.codecs.ITA2_STANDARD)
-    return alpha2
+        alpha2_country_code = baudot.decode_to_str(reader, baudot.codecs.ITA2_STANDARD)
+    return alpha2_country_code
 
-def decode_country_code_from_hex_str(country_code_with_msb_to_left_hex_str:str) -> str:
-    country_code_12_bits = country_code_with_msb_to_left_hex_str[0:3]
-    country_code_with_lsb_to_right_int = int(country_code_12_bits, 16) >> 2
-    return decode_country_code_from_int(country_code_with_lsb_to_right_int)
+def decode_baudot_country_code_from_hex_str(baudot_country_code_with_msb_to_left_hex_str:str) -> str:
+    baudot_country_code_12_bits = baudot_country_code_with_msb_to_left_hex_str[0:3]
+    baudot_country_code_with_lsb_to_right_int = int(baudot_country_code_12_bits, 16) >> 2
+    return decode_baudot_country_code_from_int(baudot_country_code_with_lsb_to_right_int)
 
 custom_per_decoders_logger = logging.getLogger()
 def decode_vst_parameter_oct_str_bytes(parameter_bytes):
