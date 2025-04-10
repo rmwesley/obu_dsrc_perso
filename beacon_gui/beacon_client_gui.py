@@ -9,65 +9,79 @@ from dsrc_l7 import dsrc_l7_rse
 async def simple_bcm_cardme_transaction():
     asyncio.run()
 
+def new_toll_domain_config_window():
+    toll_domain_config_window = tkinter.Toplevel()
+    btn_change_default_td = tkinter.Button(
+        master=toll_domain_config_window,
+        text="Change default Toll Domain",
+        width=25,
+        height=5,
+        bg="blue",
+        fg="yellow",
+    )
+    btn_change_default_td.pack()
+    btn_set_current_td = tkinter.Button(
+        master=toll_domain_config_window,
+        text="Set current Toll Domain",
+        width=25,
+        height=5,
+        bg="blue",
+        fg="yellow",
+    )
+    btn_set_current_td.pack()
+    return toll_domain_config_window
+
 def setup_beacon_client_app_window():
     global rse_event_loop
 
     main_window = tkinter.Tk()
 
-    # lbl_set_config = tkinter.Label(text="Set Beacon Config")
-    # lbl_set_config.pack()
-    btn_set_config = tkinter.Button(
+    btn_toll_domain_config = tkinter.Button(
+        text="Toll Domain Configuration",
+        width=25,
+        height=5,
+        bg="blue",
+        fg="yellow",
+        command=new_toll_domain_config_window
+    )
+    btn_toll_domain_config.pack()
+
+    btn_rse_set_config = tkinter.Button(
         text="Initialize RSE DSRC L7",
         width=25,
         height=5,
         bg="blue",
         fg="yellow",
     )
-    btn_set_config.bind("<Button-1>", lambda event: rse_event_loop.run_until_complete(dsrc_l7_rse.initialize_bcm()))
-    # btn_set_config.bind("<Button-1>", lambda event: asyncio.ensure_future(dsrc_l7_rse.initialize_bcm()))
-    btn_set_config.pack()
+    btn_rse_set_config.bind("<Button-1>", lambda event: rse_event_loop.run_until_complete(dsrc_l7_rse.initialize_bcm()))
+    btn_rse_set_config.pack()
 
-    # lbl_set_mode = tkinter.Label(text="Set Transparent Mode")
-    # lbl_set_mode.pack()
-    btn_set_mode = tkinter.Button(
+    btn_rse_set_mode = tkinter.Button(
         text="Set beacon mode",
         width=25,
         height=5,
         bg="blue",
         fg="yellow",
     )
-    btn_set_mode.bind("<Button-1>", lambda event: rse_event_loop.run_until_complete(dsrc_l7_rse.change_trx_mode('Transparent')))
-    # btn_set_mode.bind("<Button-1>", lambda event: asyncio.ensure_future(dsrc_l7_rse.change_trx_mode('Transparent')))
-    btn_set_mode.pack()
+    btn_rse_set_mode.bind("<Button-1>", lambda event: rse_event_loop.run_until_complete(dsrc_l7_rse.change_trx_mode('Transparent')))
+    btn_rse_set_mode.pack()
 
-    # lbl_transaction = tkinter.Label(text="Simple Transaction")
-    # lbl_transaction.pack()
-    btn_transaction = tkinter.Button(
+    btn_rse_transaction = tkinter.Button(
         text="CARDME Transaction!",
         width=25,
         height=5,
         bg="blue",
         fg="yellow",
     )
-    btn_transaction.pack()
+    btn_rse_transaction.pack()
     
-    btn_transaction.bind("<Button-1>",
+    btn_rse_transaction.bind("<Button-1>",
         func=lambda event: rse_event_loop.run_until_complete(
             future = dsrc_l7_rse.cardme_transaction(4, mand_applications=[1, 20, 29], set_mmi=False)
             )
         )
-    # btn_transaction.bind("<Button-1>",
-    #     func=lambda event: asyncio.ensure_future(
-    #         future=dsrc_l7_rse.cardme_transaction(4, mand_applications=[1, 20, 29], set_mmi=False)
-    #         )
-    #     )
 
     return main_window
-
-# async def init_beacon_management():
-#     await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
-
-#     dsrc_l7_rse.set_beeping_state(beep_state=False)
 
 # Main execution
 if __name__ == "__main__":
