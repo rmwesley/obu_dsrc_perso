@@ -52,8 +52,8 @@ def setup_beacon_client_app_window():
         height=5,
         bg="blue",
         fg="yellow",
+        command=lambda:rse_event_loop.run_until_complete(dsrc_l7_rse.initialize_bcm())
     )
-    btn_rse_set_config.bind("<Button-1>", lambda event: rse_event_loop.run_until_complete(dsrc_l7_rse.initialize_bcm()))
     btn_rse_set_config.pack()
 
     btn_rse_set_mode = tkinter.Button(
@@ -62,8 +62,8 @@ def setup_beacon_client_app_window():
         height=5,
         bg="blue",
         fg="yellow",
+        command=lambda:rse_event_loop.run_until_complete(dsrc_l7_rse.change_trx_mode('Transparent'))
     )
-    btn_rse_set_mode.bind("<Button-1>", lambda event: rse_event_loop.run_until_complete(dsrc_l7_rse.change_trx_mode('Transparent')))
     btn_rse_set_mode.pack()
 
     btn_rse_transaction = tkinter.Button(
@@ -72,14 +72,11 @@ def setup_beacon_client_app_window():
         height=5,
         bg="blue",
         fg="yellow",
-    )
-    btn_rse_transaction.pack()
-    
-    btn_rse_transaction.bind("<Button-1>",
-        func=lambda event: rse_event_loop.run_until_complete(
+        command=lambda:rse_event_loop.run_until_complete(
             future = dsrc_l7_rse.cardme_transaction(4, mand_applications=[1, 20, 29], set_mmi=False)
             )
-        )
+    )
+    btn_rse_transaction.pack()
 
     return main_window
 
