@@ -7,8 +7,8 @@ from pydantic import BaseModel, Field
 from typing import Literal, Optional
 from enum import IntEnum
 
-import dsrc_security
 from dsrc_l7 import dsrc_l7_rse
+import dsrc_security
 
 router = APIRouter(
     prefix="/beacon",
@@ -97,7 +97,7 @@ class ChangeModeRequest(BaseModel):
 @router.post("/change-mode")
 async def change_mode(request_body: ChangeModeRequest):
     mode_name = request_body.mode_name
-    dsrc_l7_rse.change_trx_mode(mode_name=mode_name)
+    dsrc_l7_rse.change_mode(mode_name=mode_name)
     return {"message": f"Changed mode to {mode_name}!"}
 
 @router.post("/initialize-transaction")
@@ -106,7 +106,7 @@ async def initialize_transaction():
     After intializing a transactions, the EFC functions can be called"""
     try:
         last_decoded_vst_obj = dsrc_l7_rse.initialize_transaction()
-    except BeaconManagerException as beacon_error:
+    except dsrc_l7_rse.BeaconManagerException as beacon_error:
         raise HTTPException(status_code=400, detail=f"{type(beacon_error).__name__}: {beacon_error}")
     return {"last_vst": last_decoded_vst_obj}
 
