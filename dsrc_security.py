@@ -84,9 +84,11 @@ with open('settings/toll_domain_config.json') as json_file:
 def get_master_keys(efc_cm_hex_str: str, manufacturer_id_hex_str:str, equipment_class_hex_str:str):
     """Get master keys through device (OBE) model data and EFC contract data
     All of these should be present in the OBE's VST!!!"""
+    global master_keys_by_device_contract_ref
     try:
         device_contract_ref = assemble_device_contract_ref_hex_str(efc_cm_hex_str, manufacturer_id_hex_str, equipment_class_hex_str)
-        get_master_keys_through_device_contract_data(efc_cm_hex_str, manufacturer_id_hex_str, equipment_class_hex_str)
+        master_keys_by_device_contract_ref[device_contract_ref]
+        # get_master_keys_through_device_contract_data(efc_cm_hex_str, manufacturer_id_hex_str, equipment_class_hex_str)
     except KeyError:
         # Try to get masterkeys through EFC-CM only!!
         # Be careful if there are repeated EFC-CMs for different device models!!
@@ -95,6 +97,7 @@ def get_master_keys(efc_cm_hex_str: str, manufacturer_id_hex_str:str, equipment_
     return master_keys_by_device_contract_ref[device_contract_ref]
 
 def get_master_keys_with_efc_cm_only(efc_cm_hex_str: str):
+    global master_keys_by_device_contract_ref
     efc_cm_hex_str = efc_cm_hex_str.upper()
     for device_contract_ref, master_keys in master_keys_by_device_contract_ref.items():
         if device_contract_ref[0:12] == efc_cm_hex_str:
@@ -300,7 +303,7 @@ def compute_auk_plaintext_contract_provider_part(efc_cm:str) -> bytes:
     #
     # So the ContractProvider is 0x25 00 49 instead of 0xB2 80 31!!!
     if current_security_profile == 'TIS_decimal':
-        iso3166_alpha2 = custom_its_per_decoders.decode_country_code(efc_cm)
+        iso3166_alpha2 = custom_its_per_decoders.decode_baudot_country_code(efc_cm)
         iso3166_numeric3_dec_str = iso3166.countries_by_alpha2.get(iso3166_alpha2).numeric
 
         # IssuerId is 14 bits long
