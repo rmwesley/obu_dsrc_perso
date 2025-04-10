@@ -438,7 +438,7 @@ def compute_access_credentials(eid:int) -> bytes:
     except KeyError:
         return None
 
-def send_get_request(eid, accessCredentialsPresent:bool = False, attrIdList=None, close_transaction = False) -> efc_asn_compilation.SEQ:
+def send_get_request(eid, accessCredentialsPresent:bool = False, attrIdList=None, close_transaction = False) -> AXXESv1_2.SEQ:
     if accessCredentialsPresent:
         accessCredentials = compute_access_credentials(eid)
     else:
@@ -559,7 +559,9 @@ def send_get_stamped_request(
         bcm_logger.debug(f"GET_STAMPED.response (Presentation response): {response_t_apdu_json['actionResponse']['responseParameter']}")
     except KeyError:
         bcm_logger.error(f"Reponse Parameter not present in GET_STAMPED.reponse!")
-    verify_obe_authenticity()
+    if eid != 1:
+        # No MK for VIA-T2 instances...
+        verify_obe_authenticity()
     return response_t_apdu_json
 
 def verify_obe_authenticity(get_stamped_action_response_value=None, efc_cm=None):
