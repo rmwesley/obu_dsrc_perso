@@ -106,7 +106,7 @@ def compute_all_derived_keys_for_all_keysets(req_body: ComputeAllDerivedKeysForA
 class ComputeAllDerivedKeysForDeviceTypeReq(BaseModel):
     pan_id: str = Field(min_length=16, max_length=20)
     ac_cr_key_ref: str = Field(max_length=4)
-    device_type: str = Field(max_length=12)
+    device_model_name: str = Field(max_length=25)
 
     model_config = {
         "json_schema_extra": {
@@ -114,7 +114,7 @@ class ComputeAllDerivedKeysForDeviceTypeReq(BaseModel):
                 {
                     "pan_id": "3156496003252000650F",
                     "ac_cr_key_ref": "0018",
-                    "device_type": "C3081"
+                    "device_model_name": "OBU-C3081"
                 }
             ]
         }
@@ -123,7 +123,7 @@ class ComputeAllDerivedKeysForDeviceTypeReq(BaseModel):
 def compute_all_derived_keys_for_device_type(req_body: ComputeAllDerivedKeysForDeviceTypeReq):
     ac_cr_key_ref = int(req_body.ac_cr_key_ref, 16)
     pan_bytes = bytes.fromhex(req_body.pan_id)
-    return dsrc_security.compute_all_derived_keys_for_device_type_and_return_hex_dict(pan_bytes, req_body.device_type, ac_cr_key_ref)
+    return dsrc_security.compute_all_derived_keys_for_device_model(pan_bytes, req_body.device_model_name, ac_cr_key_ref)
 
 class ComputeAccessKeyReq(BaseModel):
     efc_cm: str = Field(min_length=12, max_length=12, examples=["B28031000665", "B2803100066F", "B28031000A72"])
