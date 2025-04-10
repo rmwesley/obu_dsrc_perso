@@ -52,6 +52,7 @@ with open(efc_sec_conf_path) as json_file:
                 efc_cm = contract_data['EFC-CM']
 
                 # This dictionary makes it easier to find a keyset!!
+                # The dictionary keys are a concatenation of the EFC-CM, Manufacturer Id and Equipment Class!!
                 device_contract_ref = assemble_device_contract_ref_hex_str(efc_cm, manufacturer_id_hex, equipment_class_hex)
 
                 master_keys_by_toll_domain[toll_domain_name][device_contract_ref] = efc_security_config['keysets'][keyset_name]
