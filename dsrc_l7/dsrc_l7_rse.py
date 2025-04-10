@@ -561,7 +561,7 @@ async def send_get_stamped_request(
     try:
         verify_obe_authenticity()
     except:
-        bcm_logger.critical("OBE AUTH ERROR!!!")
+        bcm_logger.exception("OBE AUTH ERROR!!!", stack_info=True)
     return response_t_apdu_json
 
 def verify_obe_authenticity(get_stamped_action_response_value=None, efc_cm=None):
