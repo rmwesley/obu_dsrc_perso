@@ -288,13 +288,13 @@ def compute_authenticator_with_auk_ref(pan_bytes:bytes, efc_cm, attribute_list_b
     key_derivation_logger.info(f"[OBE AUTH] Authenticator computed by RSE (UPER hex): {attr_authenticator.hex().upper()}")
     return attr_authenticator
 
-def decrypt_auth_key(efc_cm, auth_key:bytes, auk_ref=115):
-    key_derivation_logger.debug("Preparing the Master Authentication Key (MAuK) 3DES cipher")
-    cipher = prepare_3DES_cipher_from_efc_cm(efc_cm, auk_ref)
+# def decrypt_auth_key(efc_cm, auth_key:bytes, auk_ref=115):
+#     key_derivation_logger.debug("Preparing the Master Authentication Key (MAuK) 3DES cipher")
+#     cipher = prepare_3DES_cipher_from_efc_cm(efc_cm, auk_ref)
 
-    decrypted_auth_key = cipher.decrypt(auth_key)
-    key_derivation_logger.info(f"Plaintext (decrypted authentication key) in hex: {decrypted_auth_key.hex().upper()}")
-    return decrypted_auth_key
+#     decrypted_auth_key = cipher.decrypt(auth_key)
+#     key_derivation_logger.info(f"Plaintext (decrypted authentication key) in hex: {decrypted_auth_key.hex().upper()}")
+#     return decrypted_auth_key
 
 # Compact_PAN is defined in EN 15509
 # CODE FOR DERIVED AUTHENTICATION KEYS (Uses MasterKeys with ref 111 through 118)
@@ -414,12 +414,17 @@ def compute_auk_with_mauk_value_and_plaintext(plaintext_bytes:bytes, master_key:
 def compute_auk(pan_8_msb: bytes, efc_cm: str, mauk_bytes: bytes) -> bytes:
     plaintext_bytes = compute_auk_plaintext(pan_8_msb, efc_cm=efc_cm)
 
-    if key_ref not in range(111, 119):
-        raise ValueError("Invalid master authentication key (MAuK) reference!")
     # key_derivation_logger.info(f'FOUND MAUK: 0x{mauk_hex}')
     return compute_auk_with_mauk_value_and_plaintext(plaintext_bytes, mauk_bytes)
 
-def compute_auk_with_key_ref_and_efc_cm(pan_8_msb: bytes, efc_cm: str, key_ref: int) -> bytes:
+def decrypt_auk(auth_key:bytes, mauk_bytes: bytes):
+    cipher = DES3.new(mauk_bytes, DES3.MODE_ECB)
+
+    decrypted_auth_key = cipher.decrypt(auth_key)
+    key_derivation_logger.info(f"AuK plaintext (decryption) in hex: {decrypted_auth_key.hex().upper()}")
+    return decrypted_auth_key
+
+def compute_auk_with_key_ref_and_efc_cm(pan_8_msb: bytes, efc_cm: str, key_ref:int=115) -> bytes:
     # key_derivation_logger.debug(f'Computing Authentication Key with KeyRef {key_ref} for PAN {pan_8_msb}...')
     # key_derivation_logger.debug(f'Getting the Contract Provider for EFC-CM 0x{efc_cm}. It is encodeed in the first 3 bytes of the EFC-CM...')
     plaintext_bytes = compute_auk_plaintext(pan_8_msb, efc_cm=efc_cm)
