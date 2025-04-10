@@ -236,7 +236,7 @@ class BacHost(serial.Serial):
         if received_char == b'':
             raise BacL2Exception('Received null byte! Set timeout to None!!!')
         elif received_char == EOT:
-            print('[BAC L2] Received EOT instead of ENQ!! A message was lost!')
+            bac_serial_wrapper_logger.debug('[BAC L2] Received EOT instead of ENQ!! A message was lost!')
             return False
         elif received_char != ENQ:
             raise BacL2Exception(f'Received 0x{received_char.hex().upper()}, a non-ENQ (0x05) character before reception started!!')
@@ -271,7 +271,7 @@ class BacMsgTransfer():
 
     # Source transfers a message to destination
     def transfer_message(self, message_content:bytes):
-        print(f'[BAC L2] Sending message content...: 0x{message_content.hex().upper()}')
+        bac_serial_wrapper_logger.debug(f'[BAC L2] Sending message content...: 0x{message_content.hex().upper()}')
 
         message_value = wrap_message(message_content)
         # print(f'[BAC L2] Sent message content with STX: {message_value.hex().upper()}')
@@ -320,12 +320,12 @@ class BacMsgReceiver():
         first_char = self._handle_repeated_transfer_requests(received_char)
 
         if first_char != DLE:
-            raise BacL2Exception(f'Message did not start with DLE/STX control sequence!!: 0x{first_char.hex().upper()}')
+            raise BacL2Exception(f'Message did not start with DLE/STX = 0x10 02 control sequence!!: 0x{first_char.hex().upper()}')
         second_char = self.serial_instance.read(1)
         if second_char != STX:
             control_sequence = bytes.join(first_char, second_char)
-            raise BacL2Exception(f'Message did not start with DLE/STX control sequence!!: 0x{control_sequence.hex().upper()}')
-        # print('[BAC L2] Message start control sequence DLE/STX received!!')
+            raise BacL2Exception(f'Message did not start with DLE/STX = 0x10 02 control sequence!!: 0x{control_sequence.hex().upper()}')
+        # print('[BAC L2] Message start control sequence DLE/STX = 0x10 02 received!!')
         return True
 
     def _check_received_msg_crc(self, message_content, crc_bytes) -> bool:
@@ -375,7 +375,7 @@ class BacMsgReceiver():
         self._wait_for_message_start_header()
         source_msg_content_with_etx = self._read_message_content_and_acknowledge_it()
         unescaped_source_msg_content = unescape_dle_in_message_content(source_msg_content_with_etx[:-2])
-        print(f'[BAC L2] Received message content: 0x{unescaped_source_msg_content.hex().upper()}')
+        bac_serial_wrapper_logger.debug(f'[BAC L2] Received message content: 0x{unescaped_source_msg_content.hex().upper()}')
 
         self._receive_eot_char()
 
