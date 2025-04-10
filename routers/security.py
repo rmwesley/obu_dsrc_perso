@@ -160,13 +160,13 @@ class ComputeAllDerivedKeysReq(BaseModel):
 def compute_key_checksum_values(req_body: ComputeAllDerivedKeysReq):
     ac_cr_key_ref = int(req_body.ac_cr_key_ref, 16)
     pan_bytes = bytes.fromhex(req_body.pan_id)
-    return dsrc_security.compute_all_derived_keys_and_return_hex_dict(pan_bytes, req_body.efc_cm, ac_cr_key_ref)
+    return dsrc_security.compute_all_derived_keys_for_efc_cm_and_return_hex_dict(pan_bytes, req_body.efc_cm, ac_cr_key_ref)
 
 @router.post("/compute_all_derived_keys_in_jer_format")
 def compute_key_checksum_values(req_body: ComputeAllDerivedKeysReq):
     ac_cr_key_ref = int(req_body.ac_cr_key_ref, 16)
     pan_bytes = bytes.fromhex(req_body.pan_id)
-    derived_keys_hex_dict = dsrc_security.compute_all_derived_keys_and_return_hex_dict(pan_bytes, req_body.efc_cm, ac_cr_key_ref)
+    derived_keys_hex_dict = dsrc_security.compute_all_derived_keys_for_efc_cm_and_return_hex_dict(pan_bytes, req_body.efc_cm, ac_cr_key_ref)
     return [{
         "attributeId": key_ref,
         "attributeValue": {
@@ -178,7 +178,7 @@ def compute_key_checksum_values(req_body: ComputeAllDerivedKeysReq):
 def compute_key_checksum_values(req_body: ComputeAllDerivedKeysReq):
     ac_cr_key_ref = int(req_body.ac_cr_key_ref, 16)
     pan_bytes = bytes.fromhex(req_body.pan_id)
-    derived_keys_hex_dict = dsrc_security.compute_all_derived_keys_and_return_hex_dict(pan_bytes, req_body.efc_cm, ac_cr_key_ref)
+    derived_keys_hex_dict = dsrc_security.compute_all_derived_keys_for_efc_cm_and_return_hex_dict(pan_bytes, req_body.efc_cm, ac_cr_key_ref)
     return [{
         "attribute": key_ref,
         "value": "0208" + derived_key_value
@@ -222,7 +222,7 @@ class AuthKeyDeciphReq(BaseModel):
 def compute_access_key(req_body: ComputeAccessKeyReq) -> str:
     efc_cm = req_body.efc_cm
     ac_cr_key_ref = int(req_body.ac_cr_key_ref, 16)
-    access_key = dsrc_security.compute_access_key(efc_cm, ac_cr_key_ref).hex().upper()
+    access_key = dsrc_security.compute_ack_with_efc_cm_only(efc_cm, ac_cr_key_ref).hex().upper()
 
     return access_key
 
@@ -239,7 +239,7 @@ def compute_auth_keys(req_body: ComputeAuthKeyReq) -> dict[int, str]:
     if key_ref < 111:
         key_ref += 110
 
-    auth_key = dsrc_security.compute_auth_key_with_mauk_ref(pan_bytes, efc_cm, key_ref).hex().upper()
+    auth_key = dsrc_security.compute_auk_with_key_ref_and_efc_cm(pan_bytes, efc_cm, key_ref).hex().upper()
     return {key_ref: auth_key}
 
 
@@ -249,5 +249,5 @@ def deciphAuthKey(req_body: AuthKeyDeciphReq):
     efc_cm = req_body.efc_cm
     key_ref = req_body.key_ref
 
-    deciphered_ciphertext = dsrc_security.decipher_auth_key_with_mauk_ref(auth_key, efc_cm, key_ref).hex().upper()
+    deciphered_ciphertext = dsrc_security.decipher_auth_key_with_efc_cm_and_mauk_ref_(auth_key, efc_cm, key_ref).hex().upper()
     return deciphered_ciphertext
