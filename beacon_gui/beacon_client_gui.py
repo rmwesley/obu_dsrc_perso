@@ -6,9 +6,6 @@ import tkinter
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
 from dsrc_l7 import dsrc_l7_rse
 
-async def simple_bcm_cardme_transaction():
-    asyncio.run()
-
 def new_toll_domain_config_window():
     toll_domain_config_window = tkinter.Toplevel()
     btn_change_default_td = tkinter.Button(
