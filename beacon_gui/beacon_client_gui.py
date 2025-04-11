@@ -28,6 +28,28 @@ def new_toll_domain_config_window():
     btn_set_current_td.pack()
     return toll_domain_config_window
 
+def new_beacon_config_window():
+    beacon_config_window = tkinter.Toplevel()
+    btn_change_default_beacon = tkinter.Button(
+        master=beacon_config_window,
+        text="Change default Beacon",
+        width=25,
+        height=5,
+        bg="blue",
+        fg="yellow",
+    )
+    btn_change_default_beacon.pack()
+    btn_set_current_beacon = tkinter.Button(
+        master=beacon_config_window,
+        text="Set current Beacon",
+        width=25,
+        height=5,
+        bg="blue",
+        fg="yellow",
+    )
+    btn_set_current_beacon.pack()
+    return beacon_config_window
+
 def new_rse_commands_window():
     rse_commands_window = tkinter.Toplevel()
 
@@ -71,7 +93,7 @@ def setup_beacon_client_app_main_window():
 
     main_window = tkinter.Tk()
 
-    btn_toll_domain_config = tkinter.Button(
+    btn_toll_domain_config_popup = tkinter.Button(
         text="Toll Domain Configuration",
         width=25,
         height=5,
@@ -79,7 +101,17 @@ def setup_beacon_client_app_main_window():
         fg="yellow",
         command=new_toll_domain_config_window
     )
-    btn_toll_domain_config.pack()
+    btn_toll_domain_config_popup.pack()
+
+    btn_beacon_config_popup = tkinter.Button(
+        text="Beacon Configuration",
+        width=25,
+        height=5,
+        bg="blue",
+        fg="yellow",
+        command=new_beacon_config_window
+    )
+    btn_beacon_config_popup.pack()
 
     btn_rse_commands_popup = tkinter.Button(
         text="RSE Commands",
