@@ -155,6 +155,7 @@ def new_beacon_config_window():
     return beacon_config_window
 
 def new_rse_commands_window():
+    global rse_event_loop
     rse_commands_window = tkinter.Toplevel()
 
     btn_rse_set_config = tkinter.Button(
@@ -170,7 +171,7 @@ def new_rse_commands_window():
 
     btn_rse_set_mode = tkinter.Button(
         master=rse_commands_window,
-        text="Set beacon mode",
+        text="Set beacon mode to Transparent",
         width=25,
         height=5,
         bg="blue",
@@ -187,13 +188,12 @@ def new_rse_commands_window():
         bg="blue",
         fg="yellow",
         command=lambda:rse_event_loop.run_until_complete(
-            future = dsrc_l7_rse.cardme_transaction(4, mand_applications=[1, 20, 29], set_mmi=False)
+            future = dsrc_l7_rse.cardme_transaction(4, mand_applications=[1, 20, 29], set_mmi=True)
             )
     )
     btn_rse_transaction.pack()
 
 def setup_beacon_client_app_main_window():
-    global rse_event_loop
     global main_window
 
     main_window = tkinter.Tk()
@@ -244,7 +244,7 @@ def setup_beacon_client_app_main_window():
 if __name__ == "__main__":
     global rse_event_loop
     refresh_td_config()
-    refresh_td_config = asyncio.new_event_loop()
+    rse_event_loop = asyncio.new_event_loop()
 
     main_window = setup_beacon_client_app_main_window()
     main_window.mainloop()
