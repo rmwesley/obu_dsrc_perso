@@ -2,8 +2,16 @@ import json
 import serial
 import logging
 import asyncio
+from datetime import datetime
 
 bac_serial_wrapper_logger = logging.getLogger(__name__)
+
+# SETTING UP LOGGER FILE HANDLER
+date_prefix = datetime.now().strftime('%y%m%d')
+file_handler = logging.FileHandler(f'beacon_logs/{date_prefix}_bac_l2.log')
+file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
+file_handler.setFormatter(file_formatter)
+bac_serial_wrapper_logger.addHandler(file_handler)
 
 class BacL2Exception(Exception):
     pass
@@ -111,7 +119,7 @@ class BacHost(serial.Serial):
         # Opening the serial port
         bac_serial_wrapper_logger.info(f"Initializing serial communication (BAC L1) with beacon (from config data)...!!")
         serial_config = bac_l2_config['beacon_host_serial_config']
-        # print(f'Serial config: {serial_config}')
+        bac_serial_wrapper_logger.debug(f'Serial config: {serial_config}')
         super().__init__(*args, **serial_config, **kwargs)
 
         T1 = T1_FOR_1_BAUD / self.baudrate
@@ -269,13 +277,16 @@ class BacMsgTransfer():
         else:
             raise BacL2Exception(f'Invalid control character ({received_char.hex().upper()}) received during message transfer!!!')
 
+    def _write_message(self, message_content:bytes):
+        message_value = wrap_message(message_content)
+        bac_serial_wrapper_logger.debug(f'[BAC L2] Sent message content with STX: {message_value.hex().upper()}')
+        self.serial_instance.write(message_value)
+
     # Source transfers a message to destination
     def transfer_message(self, message_content:bytes):
-        bac_serial_wrapper_logger.debug(f'[BAC L2] Sending message content...: 0x{message_content.hex().upper()}')
+        bac_serial_wrapper_logger.info(f'[BAC L2] Sending message content...: 0x{message_content.hex().upper()}')
 
-        message_value = wrap_message(message_content)
-        # print(f'[BAC L2] Sent message content with STX: {message_value.hex().upper()}')
-        self.serial_instance.write(message_value)
+        self._write_message(message_content)
 
         message_transfer_counter = 0
         # Reemit message until ACK is received!
@@ -287,9 +298,9 @@ class BacMsgTransfer():
 
         self.serial_instance.write(EOT)
 
-    def transfer_and_receive_message(self, message_content:bytes) -> bytes:
-        self.transfer_message(message_content)
-        return self.read_message()
+    # def transfer_and_receive_message(self, message_content:bytes) -> bytes:
+    #     self.transfer_message(message_content)
+    #     return self.read_message()
 
 class BacMsgReceiver():
     def __init__(self, serial_instance: serial.Serial):
@@ -325,11 +336,11 @@ class BacMsgReceiver():
         if second_char != STX:
             control_sequence = bytes.join(first_char, second_char)
             raise BacL2Exception(f'Message did not start with DLE/STX = 0x10 02 control sequence!!: 0x{control_sequence.hex().upper()}')
-        # print('[BAC L2] Message start control sequence DLE/STX = 0x10 02 received!!')
+        bac_serial_wrapper_logger.debug('[BAC L2] Message start control sequence DLE/STX = 0x10 02 received!!')
         return True
 
     def _check_received_msg_crc(self, message_content, crc_bytes) -> bool:
-        # print(f'[BAC L2] CRC-16: 0x{crc16_arc(message_content).hex()}')
+        bac_serial_wrapper_logger.debug(f'[BAC L2] CRC-16: 0x{crc16_arc(message_content).hex()}')
         return crc_bytes == crc16_arc(message_content)
 
     def _read_message_content_and_acknowledge_it(self) -> bytes:
@@ -349,7 +360,7 @@ class BacMsgReceiver():
                 # End of message control sequence!!
                 if current_char == ETX:
                     break
-        # print(f"[BAC L2] Response from beacon with ETX: 0x{received_msg_content_with_etx.hex().upper()}")
+        bac_serial_wrapper_logger.debug(f"[BAC L2] Response from beacon with ETX: 0x{received_msg_content_with_etx.hex().upper()}")
 
         crc_bytes = self.serial_instance.read(1) + self.serial_instance.read(1)
         if self._check_received_msg_crc(received_msg_content_with_etx, crc_bytes):
@@ -359,7 +370,7 @@ class BacMsgReceiver():
             self.receive_message()
 
         received_msg_content = received_msg_content_with_etx[:-2]
-        # print(f"[BAC L2] Response from beacon: 0x{received_msg_content.hex().upper()}")
+        bac_serial_wrapper_logger.debug(f"[BAC L2] Response from beacon: 0x{received_msg_content.hex().upper()}")
 
         return received_msg_content_with_etx
 
@@ -375,7 +386,7 @@ class BacMsgReceiver():
         self._wait_for_message_start_header()
         source_msg_content_with_etx = self._read_message_content_and_acknowledge_it()
         unescaped_source_msg_content = unescape_dle_in_message_content(source_msg_content_with_etx[:-2])
-        bac_serial_wrapper_logger.debug(f'[BAC L2] Received message content: 0x{unescaped_source_msg_content.hex().upper()}')
+        bac_serial_wrapper_logger.info(f'[BAC L2] Received message content: 0x{unescaped_source_msg_content.hex().upper()}')
 
         self._receive_eot_char()
 
