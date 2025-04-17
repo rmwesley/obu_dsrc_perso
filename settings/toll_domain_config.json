@@ -1,3 +1,13 @@
 {
-    "default_toll_domain_name": "TIS"
+    "default_toll_domain_name": "DE",
+    "environment": "TEST",
+    "available_toll_domains": [
+        "TIS",
+        "VIA-T2",
+        "EasyGo",
+        "DE",
+        "CH",
+        "BE",
+        "IT"
+    ]
 }
