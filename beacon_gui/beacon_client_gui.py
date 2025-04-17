@@ -43,10 +43,17 @@ def create_relative_window(master_widget: tkinter.BaseWidget) -> tkinter.BaseWid
     dy = 30
 
     relative_window = tkinter.Toplevel()
-    # w = toplevel.winfo_width()
-    # h = toplevel.winfo_height()  
-    # toplevel.geometry("%dx%d+%d+%d" % (w, h, root_x + dx, root_y + dy))
     relative_window.geometry("+%d+%d" % (root_x + dx, root_y + dy))
+    return relative_window
+
+def create_window_at_cursor_position() -> tkinter.BaseWidget:
+    relative_window = tkinter.Toplevel()
+    dx = -64
+    dy = -48
+
+    initial_window_position_x = main_window.winfo_pointerx() + dx
+    initial_window_position_y = main_window.winfo_pointery() + dy
+    relative_window.geometry("+%d+%d" % (initial_window_position_x, initial_window_position_y))
     return relative_window
 
 def __create_td_choice_dropdown_combobox(master_widget: tkinter.BaseWidget):
@@ -83,7 +90,26 @@ def __cb_update_toll_domain_from_dropdown_choice(combobox_dropdown:tkinter.ttk.C
     chosen_toll_domain_name = combobox_dropdown.get()
     _set_current_toll_domain(chosen_toll_domain_name)
 
-def create_new_toll_domain_config_window(master_widget:tkinter.BaseWidget):
+def create_new_toll_domain_config_window_at_cursor_position():
+    # toll_domain_config_window = tkinter.Toplevel()
+    toll_domain_config_window = create_window_at_cursor_position()
+    _cb_save_td = _create_td_choice_dropdown_combobox_and_return_its_update_td_callback_func(toll_domain_config_window)
+
+    btn_save_current_td = tkinter.Button(
+        master=toll_domain_config_window,
+        text="Save current Toll Domain",
+        width=25,
+        height=5,
+        bg="blue",
+        fg="yellow",
+        command=_cb_save_td
+    )
+    btn_save_current_td.pack()
+
+    return toll_domain_config_window
+
+# DEPRECATED
+def create_new_toll_domain_config_window_relative_to_master(master_widget:tkinter.BaseWidget):
     # toll_domain_config_window = tkinter.Toplevel()
     toll_domain_config_window = create_relative_window(master_widget)
     _cb_save_td = _create_td_choice_dropdown_combobox_and_return_its_update_td_callback_func(toll_domain_config_window)
@@ -104,7 +130,7 @@ def create_new_toll_domain_config_window(master_widget:tkinter.BaseWidget):
 # Callback with Dependency Injection (global var)!
 def _cb_new_toll_domain_config_window():
     global main_window
-    create_new_toll_domain_config_window(main_window)
+    create_new_toll_domain_config_window_at_cursor_position()
 
 def new_beacon_config_window():
     beacon_config_window = tkinter.Toplevel()
