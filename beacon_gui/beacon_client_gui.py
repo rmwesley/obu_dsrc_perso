@@ -171,6 +171,8 @@ def setup_beacon_client_app_main_window():
     global main_window
 
     main_window = tkinter.Tk()
+    initial_window_position_tuple = main_window.winfo_pointerxy()
+    main_window.geometry('+%d+%d' % initial_window_position_tuple)
 
     btn_toll_domain_config_popup = tkinter.Button(
         text="Toll Domain Configuration",
