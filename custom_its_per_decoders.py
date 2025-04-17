@@ -36,6 +36,14 @@ class BaudotMsbFirstBytesReader(baudot.handlers.core.BaudotReader):
         # print(code)
         return code
 
+# We can also use a dictionary with hardcoded values for the mapping:
+# Baudot (ITA2 character set/alphabet with LSB on right) encoding of the ISO3166 Alpha2 Country Code (as an integer, hex or binary string...) >
+# ISO3166 Numeric-3 Country Code (as an integer)
+# Exampli Gratia: For France, FR = 714 (or even "2CA" or "B28") would be mapped to 250.
+# I suggest to keep 2 dictionaries, one with the Baudot ITA2 Alpha2 > Numeric-3, and another with Alpha2 > Baudot ITA2 Alpha2 (or vice-versa)
+# No need to keep a config for inverse mappings/dicts: Inverting a dict with unique values is simple.
+# It is best to configure only the direct mappings and derive the inverses from them!
+# Duplicating configs "for safety" only complicate things further and is way more unsafe!!!
 def decode_baudot_country_code(baudot_country_code:str|int) -> str:
     if type(baudot_country_code) is int:
         return decode_baudot_country_code_from_int(baudot_country_code)
