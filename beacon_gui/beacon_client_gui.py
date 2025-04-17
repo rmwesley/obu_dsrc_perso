@@ -171,7 +171,15 @@ def setup_beacon_client_app_main_window():
     global main_window
 
     main_window = tkinter.Tk()
-    initial_window_position_tuple = main_window.winfo_pointerxy()
+    main_window.title('RSE Client GUI')
+    window_size = (640, 480)
+    main_window.geometry('%dx%d' % window_size)
+
+    # initial_window_position_tuple = main_window.winfo_pointerxy()
+    initial_window_position_x = (main_window.winfo_screenwidth() - window_size[0]) // 2
+    initial_window_position_y = (main_window.winfo_screenheight() - window_size[1]) // 2
+    initial_window_position_tuple = (initial_window_position_x, initial_window_position_y)
+
     main_window.geometry('+%d+%d' % initial_window_position_tuple)
 
     btn_toll_domain_config_popup = tkinter.Button(
