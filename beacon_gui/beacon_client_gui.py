@@ -2,6 +2,10 @@ import json
 import asyncio
 import tkinter
 import tkinter.ttk
+import logging
+
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
 
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
