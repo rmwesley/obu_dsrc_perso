@@ -93,6 +93,11 @@ The main UI (HMI) is contained in the index.html file and it is served in the ro
 So just go to localhost:8000 in your browser to view the index.
 To view FastAPI's Swagger UI instead, visit localhost:8000/docs.
 
+# Deploying the RSE FastAPI in development mode
+To deploy the RSE FastAPI on localhost:8000, just run:
+`.venv\Scripts\fastapi.exe dev .\rse_api_main.py`
+or even `.venv\Scripts\fastapi.exe dev rse_api_main.py --port 8001` if the port 8000 is occupied.
+
 # Using PIP to install packages in the venv
 To install packages, just run:
 `.venv\Scripts\python.exe main.py`

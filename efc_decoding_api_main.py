@@ -13,15 +13,15 @@ root_app = FastAPI(title="EFC Testing API")
 
 @root_app.get('/', include_in_schema=False)
 async def get_index():
-    return FileResponse('static/index.html')
+    return FileResponse('efc_decoding_front/static/index.html')
 
 @root_app.get('/home.svg', include_in_schema=False)
 async def favicon():
-    return FileResponse('static/home.svg')
+    return FileResponse('efc_decoding_front/static/home.svg')
 
 # root_app.include_router(beacon.router)
 root_app.include_router(security.router)
 root_app.include_router(efc_decoding.router)
 
 # Serve the static HTML files for each subapp
-root_app.mount("/", StaticFiles(directory="static/"), name="static")
+root_app.mount("/", StaticFiles(directory="efc_decoding_front/static/"), name="static")
