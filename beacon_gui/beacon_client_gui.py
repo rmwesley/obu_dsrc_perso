@@ -15,12 +15,15 @@ def _set_current_toll_domain(toll_domain_name):
     global current_toll_domain_name
     global td_list_index
 
+    # Setting frontend global vars
     try:
         current_toll_domain_name = toll_domain_name
         td_list_index = available_toll_domains.index(current_toll_domain_name)
-        print(f"Set Toll Domain to: {current_toll_domain_name}!")
+        # print(f"Set Toll Domain to: {current_toll_domain_name}!")
     except:
         raise TollDomainConfigException('Default Toll Domain not valid (not in available TD list)!!!')
+    # Setting DSRC L7 Security Toll Domain! (At runtime)
+    dsrc_l7_rse.dsrc_security.set_toll_domain(current_toll_domain_name)
 
 available_toll_domains = []
 def refresh_td_config():
