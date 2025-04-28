@@ -268,14 +268,17 @@ class BacMsgTransfer():
 
         received_char = self.serial_instance.read(1)
         if received_char == ACK:
+            bac_serial_wrapper_logger.info('Transfer success! Received ACK char from beacon!!')
             return True
-        if received_char == NAK:
-            return False
-        if received_char == b'':
-            # Read timed out after T1 seconds elapsed!!
-            return False
         else:
-            raise BacL2Exception(f'Invalid control character ({received_char.hex().upper()}) received during message transfer!!!')
+            bac_serial_wrapper_logger.critical('Transfer failure!! Did not receive ACK char from beacon!!')
+            if received_char == NAK:
+                return False
+            if received_char == b'':
+                # Read timed out after T1 seconds elapsed!!
+                return False
+            else:
+                raise BacL2Exception(f'Invalid control character ({received_char.hex().upper()}) received during message transfer!!!')
 
     def _write_message(self, message_content:bytes):
         message_value = wrap_message(message_content)
