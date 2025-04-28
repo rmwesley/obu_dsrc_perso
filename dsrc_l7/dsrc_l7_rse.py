@@ -544,7 +544,7 @@ async def send_get_stamped_request(
     bcm_logger.debug(f"Container with GetStampedRq value: {container_with_get_stamped_rq_value}")
 
     # ActionType is 0 for GET_STAMPED.request and Mode is True (Always expects a response)
-    response_t_apdu_json = await send_action_request(True, eid, 0, accessCredentialsPresent, container_with_get_stamped_rq_value, close_transaction=close_transaction)
+    response_t_apdu_value = await send_action_request(True, eid, 0, accessCredentialsPresent, container_with_get_stamped_rq_value, close_transaction=close_transaction)
 
     bcm_logger.debug("We now obtain the GET_STAMPED.response object from the T_APDU response!")
     bcm_logger.debug("GET_STAMPED.response is a parameterized type, so we cannot encode/decode it, only the T_APDU!")
@@ -556,13 +556,13 @@ async def send_get_stamped_request(
     get_stamped_response_value = action_response_parameter[1]
     bcm_logger.info(f'GetStampedRq value: {get_stamped_response_value}')
 
-    bcm_logger.debug(f"GET_STAMPED.response (Presentation response): {response_t_apdu_json['actionResponse']['responseParameter']}")
+    bcm_logger.debug(f"GET_STAMPED.response (Presentation response): {response_t_apdu_value['actionResponse']['responseParameter']}")
 
     try:
         verify_obe_authenticity()
     except:
         bcm_logger.exception("OBE AUTH ERROR!!!", stack_info=True)
-    return response_t_apdu_json
+    return response_t_apdu_value
 
 def verify_obe_authenticity(get_stamped_action_response_value=None, efc_cm=None):
     global last_response_t_apdu_value
