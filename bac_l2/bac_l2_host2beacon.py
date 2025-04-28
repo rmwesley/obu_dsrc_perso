@@ -331,10 +331,12 @@ class BacMsgReceiver():
         first_char = self._handle_repeated_transfer_requests(received_char)
 
         if first_char != DLE:
+            bac_serial_wrapper_logger.error(f'Message did not start with DLE/STX = 0x10 02 control sequence!!: 0x{first_char.hex().upper()}')
             raise BacL2Exception(f'Message did not start with DLE/STX = 0x10 02 control sequence!!: 0x{first_char.hex().upper()}')
         second_char = self.serial_instance.read(1)
         if second_char != STX:
             control_sequence = bytes.join(first_char, second_char)
+            bac_serial_wrapper_logger.error(f'Message did not start with DLE/STX = 0x10 02 control sequence!!: 0x{control_sequence.hex().upper()}')
             raise BacL2Exception(f'Message did not start with DLE/STX = 0x10 02 control sequence!!: 0x{control_sequence.hex().upper()}')
         bac_serial_wrapper_logger.debug('[BAC L2] Message start control sequence DLE/STX = 0x10 02 received!!')
         return True
