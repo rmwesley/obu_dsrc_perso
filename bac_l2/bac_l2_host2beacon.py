@@ -218,6 +218,7 @@ class BacHost(serial.Serial):
         while received_char != ACK:
             # Contention (ENQ conflict) resolution for Host
             if received_char == ENQ:
+                bac_serial_wrapper_logger.error('ENQ conflict!!')
                 self._host_resolve_enq_conflict()
                 return False
             if transfer_request_counter > MAX_TRANSFER_REQ_RETRIES:
@@ -225,6 +226,7 @@ class BacHost(serial.Serial):
             self.write(ENQ)
             # Wait for ACK, with the timeout TRANSFER_REQUEST_TIMEOUT
             received_char = self.read(1)
+            bac_serial_wrapper_logger.debug(f'ENQ (0x05) response (should be an ACK, 0x06): 0x{received_char.hex().upper()}')
             transfer_request_counter += 1
         return True
 
