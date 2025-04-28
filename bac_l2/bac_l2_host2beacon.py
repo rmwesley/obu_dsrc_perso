@@ -119,7 +119,7 @@ class BacHost(serial.Serial):
         # Opening the serial port
         bac_serial_wrapper_logger.info(f"Initializing serial communication (BAC L1) with beacon (from config data)...!!")
         serial_config = bac_l2_config['beacon_host_serial_config']
-        bac_serial_wrapper_logger.debug(f'Serial config: {serial_config}')
+        bac_serial_wrapper_logger.info(f'Serial config: {serial_config}')
         super().__init__(*args, **serial_config, **kwargs)
 
         T1 = T1_FOR_1_BAUD / self.baudrate
