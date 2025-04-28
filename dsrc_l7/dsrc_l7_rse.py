@@ -855,7 +855,7 @@ async def test_ccc_2015_transaction(eid, mand_applications=[1, 20, 29], accessCr
 
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
 
-    # OBU ID
+    # Get OBU ID
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[24])
 
     # Getting CCC attributes...
@@ -889,6 +889,9 @@ async def ccc_2023_transaction(eid, mand_applications=[1, 20, 29], accessCredent
     await presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
+
+    # Get OBU ID
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[24])
 
     # Getting CCC attributes...
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[53])
