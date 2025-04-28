@@ -293,7 +293,7 @@ class BacMsgTransfer():
         while not self._msg_ack_received_from_dest():
             if message_transfer_counter > MAX_MSG_TRANSFER_RETRIES:
                 raise BacL2Exception('Exceeded message transfer retry limit!!')
-            self.serial_instance.write(message_value)
+            self._write_message(message_content)
             message_transfer_counter += 1
 
         self.serial_instance.write(EOT)
