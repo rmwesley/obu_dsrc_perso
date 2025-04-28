@@ -164,7 +164,9 @@ async def safe_set_beacon(chosen_beacon_name):
 
 class BeaconManagerException(Exception):
     pass
-class TransactionException(Exception):
+class UnclosedTransactionException(Exception):
+    pass
+class TApduResponseException(Exception):
     pass
 class EIDNotFoundException(Exception):
     pass
@@ -342,6 +344,8 @@ def decode_t_apdu_response_uper(t_apdu_with_response_bytes):
             bcm_logger.error(f"Error code present! Return Code: {return_code}")
             efc_asn_compilation.EfcDsrcGeneric.ReturnStatus.set_val(return_code)
             bcm_logger.error(f"ReturnStatus ASN1 decoding:\n{efc_asn_compilation.EfcDsrcGeneric.ReturnStatus.to_asn1()}")
+            # if return_code == 1:
+            #     raise TApduResponseException(f"Return Status: {efc_asn_compilation.EfcDsrcGeneric.ReturnStatus.to_asn1()}")
     except KeyError:
         bcm_logger.info(f"No return code in T-APDU! (No errors)")
     return last_response_t_apdu_value
@@ -385,9 +389,9 @@ async def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, clos
 
         TApdu_container.set_val(t_apdu_response_value)
         response_t_apdu_jval = TApdu_container._to_jval()
-    except:
+    except UnclosedTransactionException:
         bcm_logger.error("Error when decoding T-APDU response!!")
-        bcm_logger.info("Transaction Exception: We simply send an ECHO.request to close the transaction...")
+        bcm_logger.info("Unclosed Transaction Exception: We simply send an ECHO.request to close the transaction...")
 
         eid = asn1_request_t_apdu_value[1]['eid']
         await send_close_transaction_echo(eid=eid)
@@ -431,16 +435,15 @@ def compute_access_credentials(eid:int) -> bytes:
     bcm_logger.debug(f"Computing Access Credentials for EID {eid}...")
     decoded_vst_param = decode_vst_parameter_from_eid(eid)
 
-    try:
-        efc_cm = decoded_vst_param['EFC-ContextMark']
-        ac_cr_key_ref = decoded_vst_param['AC_CR-KeyReference']
-        rnd_obe = decoded_vst_param['RndOBE']
+    efc_cm = decoded_vst_param['EFC-ContextMark']
+    ac_cr_key_ref = decoded_vst_param['AC_CR-KeyReference']
+    rnd_obe = decoded_vst_param['RndOBE']
 
-        access_credentials_int = dsrc_security.compute_access_credentials(efc_cm, rnd_obe, ac_cr_key_ref)
-        access_credentials_bytes = access_credentials_int.to_bytes(4, 'big')
-        return access_credentials_bytes
-    except KeyError:
-        return None
+    access_credentials_int = dsrc_security.compute_access_credentials(efc_cm, rnd_obe, ac_cr_key_ref)
+    access_credentials_bytes = access_credentials_int.to_bytes(4, 'big')
+    return access_credentials_bytes
+    # except dsrc_security.TollDomainException:
+    #     bcm_logger.error("TollDomainException occurred!", stack_info=True)
 
 async def send_get_request(eid, accessCredentialsPresent:bool = False, attrIdList=None, close_transaction = False) -> AXXESv1_2.SEQ:
     if accessCredentialsPresent:
@@ -1029,7 +1032,7 @@ def loop_transactions():
             time.sleep(0.3)
 
             time.sleep(3)
-        except TransactionException:
+        except UnclosedTransactionException:
             keep_looping = False
             bcm_logger.error("Transaction error occurred during loop!", exc_info=True)
             time.sleep(1)
