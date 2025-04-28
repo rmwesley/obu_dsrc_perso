@@ -325,9 +325,9 @@ def decode_t_apdu_response_uper(t_apdu_with_response_bytes):
     bcm_logger.debug(f"Decoding received response T-APDU...")
     TApdu_container.from_uper(t_apdu_with_response_bytes)
     last_response_t_apdu_value = TApdu_container._val
-    bcm_logger.info(f"Response T-APDU value: {last_response_t_apdu_value}")
+    bcm_logger.debug(f"Response T-APDU value: {last_response_t_apdu_value}")
 
-    bcm_logger.debug(f"Response T-APDU ASN1 decoding/representation:\n{TApdu_container.to_asn1()}")
+    bcm_logger.info(f"Response T-APDU in ASN:\n{TApdu_container.to_asn1()}")
     # bcm_logger.debug(f"Response T-APDU decoded with JER:\n{TApdu_container.to_jer()}")
     last_response_t_apdu_json = TApdu_container._to_jval()
     # bcm_logger.debug(f"Response T-APDU in JSON: {last_response_t_apdu_json}")
