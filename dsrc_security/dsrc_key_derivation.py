@@ -7,7 +7,7 @@ from Crypto.Cipher import DES3
 from Crypto.Cipher import DES
 
 import logging
-import dsrc_mk_by_device_and_td_loader as dsrc_mk_by_device_and_td_loader
+import dsrc_security.dsrc_mk_by_device_and_td_loader as dsrc_mk_by_device_and_td_loader
 
 key_derivation_logger = logging.getLogger(__name__)
 

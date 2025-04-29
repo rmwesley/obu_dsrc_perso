@@ -8,7 +8,7 @@ from typing import Literal, Optional
 from enum import IntEnum
 
 from dsrc_l7 import dsrc_l7_rse
-import dsrc_security
+import dsrc_security.dsrc_key_derivation as dsrc_key_derivation
 
 router = APIRouter(
     prefix="/beacon",

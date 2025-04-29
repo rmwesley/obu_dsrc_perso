@@ -21,7 +21,7 @@ import typing
 from bac_l7 import ops1955_bac_l7, pertel_bac_l7, tgbv_bac_l7
 
 import custom_its_per_decoders
-import dsrc_security
+import dsrc_security.dsrc_key_derivation as dsrc_key_derivation
 
 bcm_logger = logging.getLogger(__name__)
 
@@ -439,7 +439,7 @@ def compute_access_credentials(eid:int) -> bytes:
     ac_cr_key_ref = decoded_vst_param['AC_CR-KeyReference']
     rnd_obe = decoded_vst_param['RndOBE']
 
-    access_credentials_int = dsrc_security.compute_access_credentials(efc_cm, rnd_obe, ac_cr_key_ref)
+    access_credentials_int = dsrc_key_derivation.compute_access_credentials(efc_cm, rnd_obe, ac_cr_key_ref)
     access_credentials_bytes = access_credentials_int.to_bytes(4, 'big')
     return access_credentials_bytes
     # except dsrc_security.TollDomainException:
@@ -610,7 +610,7 @@ def verify_obe_authenticity(get_stamped_action_response_value=None, efc_cm=None)
     # Remember to set the key derivation settings for the Toll Domain!!
     # 2 key derivation algorithms are implemented.
     # One follows EN15509, and the other works for TIS.
-    authenticator = dsrc_security.compute_authenticator_with_auk_ref(pan_bytes, efc_cm, attribute_list_bytes, rnd_rse_int, 115)
+    authenticator = dsrc_key_derivation.compute_authenticator_with_auk_ref(pan_bytes, efc_cm, attribute_list_bytes, rnd_rse_int, 115)
 
     if provided_authenticator == authenticator:
         bcm_logger.critical('[OBE AUTH] OK!!!')
