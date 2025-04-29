@@ -8,6 +8,7 @@ key_derivation_logger = logging.getLogger(__name__)
 # Loading the Master Keys from a JSON into a Python dict
 # This dict maps an EFC-CM in hex format to a MasterKeySet also in hex format
 
+root_dir = os.environ['EFC_SYSTEM_TESTER_ROOT_DIR']
 efc_sec_conf_path = os.environ['EFC_SEC_CONF_PATH']
 
 class TollDomainMasterKeysNotFoundException(Exception):
@@ -41,7 +42,7 @@ def assemble_device_contract_ref_hex_str(efc_cm_hex_str: str, manufacturer_id_he
 
 # Device name to Manufacturer Id + Equipment Class mapping (in hex!!)
 equipment_refs_by_device_names = {}
-with open('settings/obu_models.json', 'r') as json_file:
+with open(f'{root_dir}/settings/obu_models.json', 'r') as json_file:
     obu_models_data_by_name = json.load(json_file)
     equipment_refs_by_device_names = obu_models_data_by_name['equipment_references_by_device_model_name']
 
@@ -71,7 +72,7 @@ def load_master_keys_by_toll_domain():
         del efc_security_config
     return master_keys_by_toll_domain
 
-with open('settings/toll_domain_config.json') as json_file:
+with open(f'{root_dir}/settings/toll_domain_config.json') as json_file:
     toll_domain_config_json = json.load(json_file)
     default_toll_domain_name = toll_domain_config_json['default_toll_domain_name']
     td_conf_by_td_name = toll_domain_config_json['td_conf_by_td_name']
