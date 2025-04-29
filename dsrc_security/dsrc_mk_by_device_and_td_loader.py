@@ -7,10 +7,6 @@ key_derivation_logger = logging.getLogger(__name__)
 
 # Loading the Master Keys from a JSON into a Python dict
 # This dict maps an EFC-CM in hex format to a MasterKeySet also in hex format
-try:
-    os.environ['EFC_SEC_CONF_PATH']
-except:
-    os.environ['EFC_SEC_CONF_PATH'] = r"..\efc_security_config_v2.2.4.json"
 
 efc_sec_conf_path = os.environ['EFC_SEC_CONF_PATH']
 
