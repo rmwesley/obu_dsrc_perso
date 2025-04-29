@@ -17,7 +17,7 @@ from ASN.compiled_DSRC_instances import EFCv10_1 as EFC
 try:
     os.environ['EFC_SEC_CONF_PATH']
 except:
-    os.environ['EFC_SEC_CONF_PATH'] = r"..\efc_security_config_v2.2.2.json"
+    os.environ['EFC_SEC_CONF_PATH'] = r"..\efc_security_config_v2.2.3.json"
 
 efc_sec_conf_path = os.environ['EFC_SEC_CONF_PATH']
 
@@ -62,11 +62,16 @@ with open(efc_sec_conf_path) as json_file:
 
                 master_keys_by_toll_domain[toll_domain_name][device_contract_ref] = efc_security_config['keysets'][keyset_name]
 
-    toll_domain_security_profiles = efc_security_config['toll_domain_security_profiles']
+    # toll_domain_security_profiles = efc_security_config['toll_domain_security_profiles']
     del efc_security_config
 
 class TollDomainException(Exception):
     pass
+
+with open('settings/toll_domain_config.json') as json_file:
+    toll_domain_config_json = json.load(json_file)
+    default_toll_domain_name = toll_domain_config_json['default_toll_domain_name']
+    td_conf_by_td_name = toll_domain_config_json['td_conf_by_td_name']
 
 current_toll_domain_name = 'TIS'
 current_security_profile = 'TIS_decimal'
@@ -75,16 +80,14 @@ def set_toll_domain(toll_domain_name:str):
     global current_toll_domain_name
     global current_security_profile
     global master_keys_by_device_contract_ref
+
     if toll_domain_name not in master_keys_by_toll_domain:
         raise TollDomainException('NO MASTERKEYS FOUND FOR GIVEN TOLL DOMAIN')
     current_toll_domain_name = toll_domain_name
-    current_security_profile = toll_domain_security_profiles[current_toll_domain_name]
+    current_security_profile = td_conf_by_td_name[current_toll_domain_name]['security_profile']
     master_keys_by_device_contract_ref = master_keys_by_toll_domain[current_toll_domain_name]
 
-with open('settings/toll_domain_config.json') as json_file:
-    toll_domain_config_json = json.load(json_file)
-    default_toll_domain_name = toll_domain_config_json['default_toll_domain_name']
-    set_toll_domain(toll_domain_name=default_toll_domain_name)
+set_toll_domain(toll_domain_name=default_toll_domain_name)
 
 def get_master_keys(efc_cm_hex_str: str, manufacturer_id_hex_str:str, equipment_class_hex_str:str):
     """Get master keys through device (OBE) model data and EFC contract data
