@@ -39,14 +39,17 @@ def assemble_device_contract_ref_hex_str(efc_cm_hex_str: str, manufacturer_id_he
     device_contract_hex_ref = f'{efc_cm_hex_str}{manufacturer_id_hex_str}{equipment_class_hex_str}'
     return device_contract_hex_ref
 
+# Device name to Manufacturer Id + Equipment Class mapping (in hex!!)
 equipment_refs_by_device_names = {}
+with open('settings/obu_models.json', 'r') as json_file:
+    obu_models_data_by_name = json.load(json_file)
+    equipment_refs_by_device_names = obu_models_data_by_name['equipment_references_by_device_model_name']
+
+# Setting up EFC-CM + Equipment Class to Master Key mapping, by Toll Domain!
 master_keys_by_toll_domain = {}
 with open(efc_sec_conf_path) as json_file:
     efc_security_config = json.load(json_file)
-    # Device name to Manufacturer Id + Equipment Class mapping (in hex!!)
-    equipment_refs_by_device_names = efc_security_config['equipment_references_by_device_model_name']
 
-    # Setting up EFC-CM + Equipment Class to Master Key mapping, by Toll Domain!
     for toll_domain_name, contracts_by_manufacturer in efc_security_config['device_contracts_by_toll_domain'].items():
         # Assembling masterkeys for a Toll Domain!!
         master_keys_by_toll_domain[toll_domain_name] = {}
