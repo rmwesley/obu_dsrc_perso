@@ -1,13 +1,34 @@
 {
-    "default_toll_domain_name": "DE",
+    "default_toll_domain_name": "CH",
     "environment": "TEST",
-    "available_toll_domains": [
-        "TIS",
-        "VIA-T2",
-        "EasyGo",
-        "DE",
-        "CH",
-        "BE",
-        "IT"
-    ]
-}
+    "td_conf_by_td_name": {
+      "TIS": {
+        "td_name": "TIS",
+        "security_profile": "TIS_decimal"
+      },
+      "VIA-T2": {
+        "td_name": "VIA-T2",
+        "security_profile": "EN15509"
+      },
+      "EasyGo": {
+        "td_name": "EasyGo",
+        "security_profile": "EN15509"
+      },
+      "DE": {
+        "td_name": "DE",
+        "security_profile": "EN15509"
+      },
+      "CH": {
+        "td_name": "CH",
+        "security_profile": "EN15509"
+      },
+      "BE": {
+        "td_name": "BE",
+        "security_profile": "EN15509"
+      },
+      "IT": {
+        "td_name": "IT",
+        "security_profile": "EN15509"
+      }
+    }
+  }
