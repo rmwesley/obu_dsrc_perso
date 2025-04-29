@@ -1,4 +1,4 @@
-from dsrc_security import decrypt_access_key, decrypt_auth_key
+from dsrc_key_derivation import decrypt_access_key, decrypt_auth_key
 import logging
 logging.basicConfig(level=logging.DEBUG)
 

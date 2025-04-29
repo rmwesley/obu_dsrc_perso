@@ -7,6 +7,7 @@ from Crypto.Cipher import DES3
 from Crypto.Cipher import DES
 
 import logging
+import dsrc_mk_by_device_and_td_loader as dsrc_mk_by_device_and_td_loader
 
 key_derivation_logger = logging.getLogger(__name__)
 
@@ -21,120 +22,22 @@ except:
 
 efc_sec_conf_path = os.environ['EFC_SEC_CONF_PATH']
 
-def assemble_device_contract_ref_hex_str(efc_cm_hex_str: str, manufacturer_id_hex_str:str, equipment_class_hex_str:str):
-    if type(manufacturer_id_hex_str) is int:
-        manufacturer_id_hex_str = f'{manufacturer_id:04X}'
-    if type(equipment_class_hex_str) is int:
-        equipment_class_hex_str = f'{equipment_class_hex_str:04X}'
-    if type(efc_cm_hex_str) is int:
-        efc_cm_hex_str = f'{efc_cm_hex_str:12X}'
+master_keys_by_toll_domain = dsrc_mk_by_device_and_td_loader.load_master_keys_by_toll_domain()
 
-    if type(manufacturer_id_hex_str) is bytes:
-        manufacturer_id_hex_str = manufacturer_id_hex_str.hex().upper()
-    if type(equipment_class_hex_str) is bytes:
-        equipment_class_hex_str = equipment_class_hex_str.hex().upper()
-    if type(efc_cm_hex_str) is bytes:
-        efc_cm_hex_str = efc_cm_hex_str.hex().upper()
-
-    device_contract_hex_ref = f'{efc_cm_hex_str}{manufacturer_id_hex_str}{equipment_class_hex_str}'
-    return device_contract_hex_ref
-
-# Device name to Manufacturer Id + Equipment Class mapping (in hex!!)
-equipment_refs_by_device_names = {}
-with open('settings/obu_models.json', 'r') as json_file:
-    obu_models_data_by_name = json.load(json_file)
-    equipment_refs_by_device_names = obu_models_data_by_name['equipment_references_by_device_model_name']
-
-# Setting up EFC-CM + Equipment Class to Master Key mapping, by Toll Domain!
-master_keys_by_toll_domain = {}
-with open(efc_sec_conf_path) as json_file:
-    efc_security_config = json.load(json_file)
-
-    for toll_domain_name, contracts_by_manufacturer in efc_security_config['device_contracts_by_toll_domain'].items():
-        # Assembling masterkeys for a Toll Domain!!
-        master_keys_by_toll_domain[toll_domain_name] = {}
-        for manufacturer_id_hex, device_details_by_equipment_class in contracts_by_manufacturer.items():
-            for equipment_class_hex, device_details in device_details_by_equipment_class.items():
-                contract_data = device_details['EFC_contract_data']
-                keyset_name = contract_data['keyset_name']
-                efc_cm = contract_data['EFC-CM']
-
-                # This dictionary makes it easier to find a keyset!!
-                # The dictionary keys are a concatenation of the EFC-CM, Manufacturer Id and Equipment Class!!
-                device_contract_ref = assemble_device_contract_ref_hex_str(efc_cm, manufacturer_id_hex, equipment_class_hex)
-
-                master_keys_by_toll_domain[toll_domain_name][device_contract_ref] = efc_security_config['keysets'][keyset_name]
-
-    # toll_domain_security_profiles = efc_security_config['toll_domain_security_profiles']
-    del efc_security_config
-
-class TollDomainException(Exception):
+class TollDomainSecurityProfileInvalidException(Exception):
     pass
 
-with open('settings/toll_domain_config.json') as json_file:
-    toll_domain_config_json = json.load(json_file)
-    default_toll_domain_name = toll_domain_config_json['default_toll_domain_name']
-    td_conf_by_td_name = toll_domain_config_json['td_conf_by_td_name']
-
-current_toll_domain_name = 'TIS'
-current_security_profile = 'TIS_decimal'
-master_keys_by_device_contract_ref = {}
-def set_toll_domain(toll_domain_name:str):
-    global current_toll_domain_name
+def _force_set_security_profile(security_profile:str):
     global current_security_profile
-    global master_keys_by_device_contract_ref
+    if security_profile not in ['TIS_decimal', 'EN15509']:
+        raise TollDomainSecurityProfileInvalidException('The only valid security profile options are (TIS_decimal) or (EN15509)')
+    current_security_profile = security_profile
 
-    if toll_domain_name not in master_keys_by_toll_domain:
-        raise TollDomainException('NO MASTERKEYS FOUND FOR GIVEN TOLL DOMAIN')
-    current_toll_domain_name = toll_domain_name
-    current_security_profile = td_conf_by_td_name[current_toll_domain_name]['security_profile']
-    master_keys_by_device_contract_ref = master_keys_by_toll_domain[current_toll_domain_name]
+def update_security_profile():
+    global current_security_profile
+    current_security_profile = dsrc_mk_by_device_and_td_loader.get_current_security_profile()
 
-set_toll_domain(toll_domain_name=default_toll_domain_name)
-
-def get_master_keys(efc_cm_hex_str: str, manufacturer_id_hex_str:str, equipment_class_hex_str:str):
-    """Get master keys through device (OBE) model data and EFC contract data
-    All of these should be present in the OBE's VST!!!"""
-    global master_keys_by_device_contract_ref
-    try:
-        device_contract_ref = assemble_device_contract_ref_hex_str(efc_cm_hex_str, manufacturer_id_hex_str, equipment_class_hex_str)
-        master_keys_by_device_contract_ref[device_contract_ref]
-        # get_master_keys_through_device_contract_data(efc_cm_hex_str, manufacturer_id_hex_str, equipment_class_hex_str)
-    except KeyError:
-        # Try to get masterkeys through EFC-CM only!!
-        # Be careful if there are repeated EFC-CMs for different device models!!
-        return get_master_keys_with_efc_cm_only(efc_cm_hex_str)
-
-    return master_keys_by_device_contract_ref[device_contract_ref]
-
-def get_master_keys_with_efc_cm_only(efc_cm_hex_str: str):
-    """No device model provided, only an EFC-CM for the current Toll Domain!!"""
-    global master_keys_by_device_contract_ref
-    efc_cm_hex_str = efc_cm_hex_str.upper()
-    for device_contract_ref, master_keys in master_keys_by_device_contract_ref.items():
-        if device_contract_ref[0:12] == efc_cm_hex_str:
-            return master_keys
-    raise TollDomainException(f'Master Keys not found for EFC-CM {efc_cm_hex_str}!!!')
-
-def get_master_keys_with_device_model_only(device_model_name: str):
-    """No EFC-CM provided, only a device model name for the current Toll Domain!!"""
-    global master_keys_by_device_contract_ref
-    master_keyset_names_by_efc_cm = {}
-    try:
-        device_equipment_ref_list = equipment_refs_by_device_names[device_model_name]
-    except KeyError:
-        raise TollDomainException(f'Master Keys not found for device model with name {device_model_name}!!!')
-    for device_contract_ref, master_keys in master_keys_by_device_contract_ref.items():
-        equipment_reference = device_contract_ref[12:20]
-
-        # Found a keyset for the given device model in the current Toll Domain!!
-        if equipment_reference in device_equipment_ref_list:
-            efc_cm = device_contract_ref[0:12]
-            master_keyset_names_by_efc_cm[efc_cm] = master_keys
-    if not master_keyset_names_by_efc_cm:
-        raise TollDomainException(f'Master Keys not found for device model with name {device_model_name}!!!')
-    return master_keyset_names_by_efc_cm
-
+update_security_profile()
 
 def triple_des_decryption(ciphertext_hex:str, key_hex: str) -> str:
     key_bytes = bytes.fromhex(key_hex)
@@ -165,7 +68,7 @@ def compute_master_key_kcv(master_key: bytes) -> dict[int, str]:
 
 def compute_kcvs_for_efc_cm_keyset(efc_cm: str):
     kcv_dict = {}
-    for key_ref, master_key in get_master_keys_with_efc_cm_only(efc_cm).items():
+    for key_ref, master_key in dsrc_mk_by_device_and_td_loader.get_master_keys_with_efc_cm_only(efc_cm).items():
         kcv_dict[key_ref] = compute_master_key_kcv(bytes.fromhex(master_key)).hex().upper()
     return kcv_dict
 
@@ -305,6 +208,7 @@ def compute_authenticator_with_auk_ref(pan_bytes:bytes, efc_cm, attribute_list_b
 # Compact_PAN is defined in EN 15509
 # CODE FOR DERIVED AUTHENTICATION KEYS (Uses MasterKeys with ref 111 through 118)
 def compute_pan_8_msb(pan_bytes:bytes) -> bytes:
+    global current_security_profile
     if current_security_profile == 'TIS_decimal':
         return compute_pan_8_msb_tis(pan_bytes)
     elif current_security_profile == 'EN15509':
@@ -437,7 +341,8 @@ def compute_auk_with_key_ref_and_efc_cm(pan_8_msb: bytes, efc_cm: str, key_ref:i
 
     if key_ref not in range(111, 119):
         raise ValueError("Invalid master authentication key (MAuK) reference!")
-    mauk_hex = get_master_keys_with_efc_cm_only(efc_cm)[str(key_ref)]
+    master_hex_keyset = dsrc_mk_by_device_and_td_loader.get_master_keys_with_efc_cm_only(efc_cm)
+    mauk_hex = master_hex_keyset[str(key_ref)]
     mauk = bytes.fromhex(mauk_hex)
     # key_derivation_logger.info(f'FOUND MAUK: 0x{mauk_hex}')
     return compute_auk_with_mauk_value_and_plaintext(plaintext_bytes, mauk)
@@ -457,7 +362,7 @@ def compute_all_auth_keys(pan_8_msb: bytes, efc_cm: str, mauk_hex_dict: dict) ->
 def compute_all_auth_keys_with_efc_cm_only(pan_8_msb: bytes, efc_cm: str) -> dict[int, bytes]:
     plaintext_bytes = compute_auk_plaintext(pan_8_msb, efc_cm)
     
-    mauk_hex_dict = get_master_keys_with_efc_cm_only(efc_cm)
+    mauk_hex_dict = dsrc_mk_by_device_and_td_loader.get_master_keys_with_efc_cm_only(efc_cm)
     return compute_all_auth_keys(pan_8_msb, efc_cm, mauk_hex_dict)
 
 def compute_all_auth_keys_and_return_hex_dict(pan_8_msb:bytes, efc_cm:str):
@@ -476,7 +381,7 @@ def compute_all_derived_keys_and_return_hex_dict(pan_8_msb:bytes, efc_cm:str, ac
     return {key_ref: computed_auk.hex().upper() for (key_ref, computed_auk) in derived_keys_dict.items()}
 
 def compute_all_derived_keys_for_efc_cm_and_return_hex_dict(pan_8_msb:bytes, efc_cm:str, ac_cr_key_ref:int):
-    master_keys = get_master_keys_with_efc_cm_only(efc_cm)
+    master_keys = dsrc_mk_by_device_and_td_loader.get_master_keys_with_efc_cm_only(efc_cm)
     return compute_all_derived_keys_and_return_hex_dict(pan_8_msb, efc_cm, ac_cr_key_ref, master_keys)
 
 def compute_all_derived_keys_for_device_model(pan_8_msb:bytes, device_model_name:str, ac_cr_key_ref:int):
@@ -515,5 +420,5 @@ def decipher_auth_key_with_mauk_value(auth_key: str, mauk: str) -> bytes:
     return deciphered_plaintext_bytes
 
 def decipher_auth_key_with_efc_cm_and_mauk_ref_(auth_key: str, efc_cm: str, key_ref: int) -> bytes:
-    mauk = get_master_keys_with_efc_cm_only(efc_cm)[str(key_ref)]
+    mauk = dsrc_mk_by_device_and_td_loader.get_master_keys_with_efc_cm_only(efc_cm)[str(key_ref)]
     return decipher_auth_key_with_mauk_value(auth_key, mauk)
