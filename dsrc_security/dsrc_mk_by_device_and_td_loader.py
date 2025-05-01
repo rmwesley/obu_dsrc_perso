@@ -48,10 +48,12 @@ with open(f'{root_dir}/settings/obu_models.json', 'r') as json_file:
 
 def load_master_keys_by_toll_domain():
     global master_keys_by_toll_domain
+    global master_keysets
     # Setting up EFC-CM + Equipment Class to Master Key mapping, by Toll Domain!
     master_keys_by_toll_domain = {}
     with open(efc_sec_conf_path) as json_file:
         efc_security_config = json.load(json_file)
+        master_keysets = efc_security_config['keysets']
 
         for toll_domain_name, contracts_by_manufacturer in efc_security_config['device_contracts_by_toll_domain'].items():
             # Assembling masterkeys for a Toll Domain!!
@@ -66,7 +68,7 @@ def load_master_keys_by_toll_domain():
                     # The dictionary keys are a concatenation of the EFC-CM, Manufacturer Id and Equipment Class!!
                     device_contract_ref = assemble_device_contract_ref_hex_str(efc_cm, manufacturer_id_hex, equipment_class_hex)
 
-                    master_keys_by_toll_domain[toll_domain_name][device_contract_ref] = efc_security_config['keysets'][keyset_name]
+                    master_keys_by_toll_domain[toll_domain_name][device_contract_ref] = master_keysets[keyset_name]
 
         # toll_domain_security_profiles = efc_security_config['toll_domain_security_profiles']
         del efc_security_config
@@ -104,6 +106,10 @@ def set_toll_domain(toll_domain_name:str):
     current_security_profile = get_current_security_profile()
     if current_security_profile not in ['TIS_decimal', 'EN15509']:
         raise TollDomainSecurityProfileInvalidException('The only valid security profile options are (TIS_decimal) or (EN15509)')
+
+def get_all_master_keysets():
+    global master_keysets
+    return master_keysets
 
 def get_master_keys(efc_cm_hex_str: str, manufacturer_id_hex_str:str, equipment_class_hex_str:str):
     """Get master keys through device (OBE) model data and EFC contract data
