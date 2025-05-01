@@ -70,6 +70,24 @@ def triple_des_encryt(req_body: TripleDesEncryptionReq):
 def compute_kcvs_for_all_keysets():
     return dsrc_key_derivation.compute_kcvs_for_all_keysets()
 
+class ComputeKcvReq(BaseModel):
+    master_key: str
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "master_key": "0123456789ABCDEFFEDCBA9876543210"
+                }
+            ]
+        }
+    }
+@router.post("/compute_mk_kcv")
+def compute_mk_kcv(req_body: ComputeKcvReq):
+    master_key_bytes = bytes.fromhex(req_body.master_key)
+    kcv_bytes = dsrc_key_derivation.compute_master_key_kcv(master_key_bytes)
+    return kcv_bytes.hex().upper()
+
 class ComputeKcvsForEfccmReq(BaseModel):
     efc_cm: str
 
