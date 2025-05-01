@@ -156,14 +156,14 @@ class ComputeAllDerivedKeysReq(BaseModel):
             ]
         }
     }
-@router.post("/compute_all_derived_keys")
-def compute_key_checksum_values(req_body: ComputeAllDerivedKeysReq):
+@router.post("/compute_all_derived_keys_for_efc_cm")
+def compute_all_derived_keys_for_efc_cm(req_body: ComputeAllDerivedKeysReq):
     ac_cr_key_ref = int(req_body.ac_cr_key_ref, 16)
     pan_bytes = bytes.fromhex(req_body.pan_id)
     return dsrc_key_derivation.compute_all_derived_keys_for_efc_cm_and_return_hex_dict(pan_bytes, req_body.efc_cm, ac_cr_key_ref)
 
-@router.post("/compute_all_derived_keys_in_jer_format")
-def compute_key_checksum_values(req_body: ComputeAllDerivedKeysReq):
+@router.post("/compute_all_derived_keys_for_efc_cm_in_jer_format")
+def compute_all_derived_keys_for_efc_cm_in_jer_format(req_body: ComputeAllDerivedKeysReq):
     ac_cr_key_ref = int(req_body.ac_cr_key_ref, 16)
     pan_bytes = bytes.fromhex(req_body.pan_id)
     derived_keys_hex_dict = dsrc_key_derivation.compute_all_derived_keys_for_efc_cm_and_return_hex_dict(pan_bytes, req_body.efc_cm, ac_cr_key_ref)
@@ -174,8 +174,8 @@ def compute_key_checksum_values(req_body: ComputeAllDerivedKeysReq):
         }
     } for key_ref, derived_key_value in derived_keys_hex_dict.items()]
 
-@router.post("/compute_all_derived_keys_in_proxy_format")
-def compute_key_checksum_values(req_body: ComputeAllDerivedKeysReq):
+@router.post("/compute_all_derived_keys_for_efc_cm_in_proxy_format")
+def compute_all_derived_keys_for_efc_cm_in_proxy_format(req_body: ComputeAllDerivedKeysReq):
     ac_cr_key_ref = int(req_body.ac_cr_key_ref, 16)
     pan_bytes = bytes.fromhex(req_body.pan_id)
     derived_keys_hex_dict = dsrc_key_derivation.compute_all_derived_keys_for_efc_cm_and_return_hex_dict(pan_bytes, req_body.efc_cm, ac_cr_key_ref)
