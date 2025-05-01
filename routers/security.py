@@ -66,7 +66,7 @@ class TripleDesEncryptionReq(BaseModel):
 def triple_des_encryt(req_body: TripleDesEncryptionReq):
     return dsrc_key_derivation.triple_des_encryption(req_body.plaintext, req_body.key)
 
-class ComputeKCVsReq(BaseModel):
+class ComputeKcvsForEfccmReq(BaseModel):
     efc_cm: str
 
     model_config = {
@@ -79,8 +79,8 @@ class ComputeKCVsReq(BaseModel):
         }
     }
 
-@router.post("/compute_kcvs")
-def compute_key_checksum_values(req_body: ComputeKCVsReq):
+@router.post("/compute_kcvs_for_efc_cm_keyset")
+def compute_kcvs_for_efc_cm_keyset(req_body: ComputeKcvsForEfccmReq):
     return dsrc_key_derivation.compute_kcvs_for_efc_cm_keyset(req_body.efc_cm)
 
 class ComputeAllDerivedKeysForAllKeySetsReq(BaseModel):
