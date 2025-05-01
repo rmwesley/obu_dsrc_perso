@@ -66,11 +66,22 @@ def triple_des_encryption(plaintext_hex:str, key_hex: str) -> str:
 def compute_master_key_kcv(master_key: bytes) -> dict[int, str]:
     return DES3.new(master_key, DES3.MODE_ECB).encrypt(bytearray(8))[:3]
 
-def compute_kcvs_for_efc_cm_keyset(efc_cm: str):
+def compute_kcvs_for_hex_master_keyset(master_key_hex_dict:dict):
     kcv_dict = {}
-    for key_ref, master_key in dsrc_mk_by_device_and_td_loader.get_master_keys_with_efc_cm_only(efc_cm).items():
+    for key_ref, master_key in master_key_hex_dict.items():
         kcv_dict[key_ref] = compute_master_key_kcv(bytes.fromhex(master_key)).hex().upper()
     return kcv_dict
+
+def compute_kcvs_for_all_keysets():
+    keysets_kcvs_dict = {}
+    master_keysets = dsrc_mk_by_device_and_td_loader.get_all_master_keysets()
+    for keyset_name, master_key_hex_dict in master_keysets.items():
+        keysets_kcvs_dict[keyset_name] = compute_kcvs_for_hex_master_keyset(master_key_hex_dict)
+    return keysets_kcvs_dict
+
+def compute_kcvs_for_efc_cm_keyset(efc_cm: str):
+    master_key_hex_dict = dsrc_mk_by_device_and_td_loader.get_master_keys_with_efc_cm_only(efc_cm)
+    return compute_kcvs_for_hex_master_keyset(master_key_hex_dict)
 
 def get_master_key_with_key_ref_and_efc_cm_only(efc_cm:str, key_ref:str):
     # In case key_ref is passed as an int instead of string...
