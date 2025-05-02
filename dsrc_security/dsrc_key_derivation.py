@@ -405,20 +405,23 @@ def compute_all_derived_keys_for_device_model(pan_8_msb:bytes, device_model_name
         # efc_cm_to_derived_keys[efc_cm] = {key_ref: computed_auk.hex().upper() for (key_ref, computed_auk) in derived_keys_dict.items()}
     return efc_cm_to_derived_keys
 
-def compute_all_derived_keys_for_available_keysets_and_return_hex_dict(pan_8_msb:bytes, ac_cr_key_ref:int):
-    efc_cm_to_derived_keys = {}
-    for efc_cm, master_keys in dsrc_mk_by_device_and_td_loader.master_keys_by_device_contract_ref.items():
-        derived_keys_hex_dict = compute_all_derived_keys_and_return_hex_dict(pan_8_msb, efc_cm, ac_cr_key_ref, master_keys)
-        efc_cm_to_derived_keys[efc_cm] = derived_keys_hex_dict
-    return efc_cm_to_derived_keys
+def compute_all_derived_keys_by_device_contract_ref(pan_8_msb:bytes, ac_cr_key_ref:int):
+    derived_keys_by_device_contract_ref = {}
+    for device_contract_ref, master_keys in dsrc_mk_by_device_and_td_loader.master_keys_by_device_contract_ref.items():
+        efc_cm = device_contract_ref[0:12]
 
-# def compute_all_derived_keys_for_available_keysets_and_return_hex_dict(pan_8_msb:bytes, ac_cr_key_ref:int):
-#     efc_cm_to_derived_keys = {}
-#     for efc_cm in master_keys_by_device_contract_ref:
-#         derived_keys_dict = compute_all_auth_keys_with_efc_cm_only(pan_8_msb, efc_cm)
-#         derived_keys_dict[120] = compute_ack_with_efc_cm_only(efc_cm, ac_cr_key_ref)
-#         efc_cm_to_derived_keys[efc_cm] = {key_ref: computed_auk.hex().upper() for (key_ref, computed_auk) in derived_keys_dict.items()}
-#     return efc_cm_to_derived_keys
+        derived_keys_hex_dict = compute_all_derived_keys_and_return_hex_dict(pan_8_msb, efc_cm, ac_cr_key_ref, master_keys)
+        derived_keys_by_device_contract_ref[device_contract_ref] = derived_keys_hex_dict
+    return derived_keys_by_device_contract_ref
+
+def compute_all_derived_keys_by_keyset_name(pan_8_msb:bytes, efc_cm:str, ac_cr_key_ref:int):
+    derived_keys_by_keyset_name = {}
+    all_master_keysets = dsrc_mk_by_device_and_td_loader.get_all_master_keysets()
+
+    for keyset_name, master_keys_hex_dict in all_master_keysets:
+        derived_keys_hex_dict = compute_all_derived_keys_and_return_hex_dict(pan_8_msb, efc_cm, ac_cr_key_ref, master_keys_hex_dict)
+        derived_keys_by_keyset_name[keyset_name] = derived_keys_hex_dict
+    return derived_keys_by_keyset_name
 
 def decipher_auth_key_with_mauk_value(auth_key: str, mauk: str) -> bytes:
     bytes_master_key = bytes.fromhex(mauk)

@@ -123,7 +123,7 @@ class ComputeAllDerivedKeysForAllKeySetsReq(BaseModel):
 def compute_all_derived_keys_for_all_keysets(req_body: ComputeAllDerivedKeysForAllKeySetsReq):
     ac_cr_key_ref = int(req_body.ac_cr_key_ref, 16)
     pan_bytes = bytes.fromhex(req_body.pan_id)
-    return dsrc_key_derivation.compute_all_derived_keys_for_available_keysets_and_return_hex_dict(pan_bytes, ac_cr_key_ref)
+    return dsrc_key_derivation.compute_all_derived_keys_by_device_contract_ref(pan_bytes, ac_cr_key_ref)
 
 class ComputeAllDerivedKeysForDeviceTypeReq(BaseModel):
     pan_id: str = Field(min_length=16, max_length=20)
