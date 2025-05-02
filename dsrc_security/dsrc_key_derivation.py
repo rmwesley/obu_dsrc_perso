@@ -89,7 +89,7 @@ def get_master_key_with_key_ref_and_efc_cm_only(efc_cm:str, key_ref:str):
     efc_cm = efc_cm.upper()
     key_derivation_logger.debug(f"Getting the Master Key with ref {key_ref} for EFC-CM {efc_cm}")
     try :
-        master_key_bytes = bytes.fromhex(get_master_keys_with_efc_cm_only(efc_cm)[key_ref])
+        master_key_bytes = bytes.fromhex(dsrc_mk_by_device_and_td_loader.get_master_keys_with_efc_cm_only(efc_cm)[key_ref])
     except KeyError as e:
         key_derivation_logger.error(e)
         key_derivation_logger.error(f"We do not possess the masterkeys for EFC-CM {efc_cm}")
@@ -397,7 +397,7 @@ def compute_all_derived_keys_for_efc_cm_and_return_hex_dict(pan_8_msb:bytes, efc
 
 def compute_all_derived_keys_for_device_model(pan_8_msb:bytes, device_model_name:str, ac_cr_key_ref:int):
     efc_cm_to_derived_keys = {}
-    master_keys_by_efc_cm = get_master_keys_with_device_model_only(device_model_name)
+    master_keys_by_efc_cm = dsrc_mk_by_device_and_td_loader.get_master_keys_with_device_model_only(device_model_name)
     for efc_cm, master_keys in master_keys_by_efc_cm.items():
         efc_cm_to_derived_keys[efc_cm] = compute_all_derived_keys_and_return_hex_dict(pan_8_msb, efc_cm, ac_cr_key_ref, master_keys)
         # derived_keys_dict = compute_all_auth_keys(pan_8_msb, efc_cm, master_keys)
@@ -407,7 +407,7 @@ def compute_all_derived_keys_for_device_model(pan_8_msb:bytes, device_model_name
 
 def compute_all_derived_keys_for_available_keysets_and_return_hex_dict(pan_8_msb:bytes, ac_cr_key_ref:int):
     efc_cm_to_derived_keys = {}
-    for efc_cm, master_keys in master_keys_by_device_contract_ref.items():
+    for efc_cm, master_keys in dsrc_mk_by_device_and_td_loader.master_keys_by_device_contract_ref.items():
         derived_keys_hex_dict = compute_all_derived_keys_and_return_hex_dict(pan_8_msb, efc_cm, ac_cr_key_ref, master_keys)
         efc_cm_to_derived_keys[efc_cm] = derived_keys_hex_dict
     return efc_cm_to_derived_keys
