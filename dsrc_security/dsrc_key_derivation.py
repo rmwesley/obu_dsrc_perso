@@ -157,58 +157,7 @@ def decrypt_ack_with_efc_cm_only(efc_cm:str, access_key:bytes):
     key_derivation_logger.info(f"Plaintext (decrypted access key) in hex: {decrypted_ack_plaintext.hex().upper()}")
     return decrypted_ack_plaintext
 
-def compute_access_credentials(efc_cm:str, rnd_obe:int, ac_cr_key_ref:int):
-    # Compute the Access Key
-    access_key = compute_ack_with_efc_cm_only(efc_cm, ac_cr_key_ref)
-    # Compute the Access Credentials and return it
-    return compute_access_credentials_with_access_key(rnd_obe, access_key)
-
-def compute_access_credentials_from_t_apdu_with_vst_json(t_apdu_with_vst_json):
-    parameter_hex = t_apdu_with_vst_json['initialisation-response']['applications']['parameter']['octetstring']
-
-def compute_access_credentials_with_access_key(rnd_obe:int, access_key):
-    # Prepare the DES cipher with the MAcK
-    cipher = DES.new(access_key, DES.MODE_ECB)
-    # The padding is automatically added to the right of RndOBE for 3DES
-    # We add 4 bytes of padding to the right of RndOBE
-    output = cipher.encrypt(rnd_obe.to_bytes(4) + bytearray(4))
-
-    # We now truncate this output to the 4 left-most bytes
-    ac_cr = int.from_bytes(output[:4])
-    key_derivation_logger.debug(f"Access Credentials in hex: {ac_cr:08X}")
-    return ac_cr
-
-def compute_authenticator_with_auk_value(attribute_list_bytes, rnd_rse, auk_value:bytes):
-    # Prepare the DES cipher with the MAuK
-    cipher = DES.new(auk_value, DES.MODE_ECB)
-    des_output = b''
-    right_padding_size = (8 - (len(attribute_list_bytes) + 5)%8)%8
-    des_input_bytes = attribute_list_bytes + b'\x04' + rnd_rse.to_bytes(4) + bytearray(right_padding_size)
-    
-    key_derivation_logger.debug(f"DES input: {des_input_bytes.hex().upper()}")
-    for index in range(0, len(des_input_bytes)//8):
-        # XOR the 8 output bytes of the last iteration with the next 8 input bytes
-        block_of_8_bytes = int.from_bytes(des_input_bytes[index*8 : index*8 + 8])
-
-        key_derivation_logger.debug(f"Index: {index}, Current 8-bytes DES block: {block_of_8_bytes:16X}")
-        des_input = int.from_bytes(des_output, 'big') ^ block_of_8_bytes
-        des_output = cipher.encrypt(des_input.to_bytes(8))
-
-    attr_authenticator = des_output[0:4]
-    return attr_authenticator
-
-def compute_authenticator_with_auk_ref(pan_bytes:bytes, efc_cm, attribute_list_bytes, rnd_rse, auk_ref=115) -> bytes:
-    # Remember to set the key derivation settings for the Toll Domain!!
-    # 2 key derivation algorithms are implemented.
-    # One follows EN15509, and the other works for TIS.
-
-    authenticator_key = compute_auk_with_key_ref_and_efc_cm(pan_bytes, efc_cm, auk_ref)
-
-    attr_authenticator = compute_authenticator_with_auk_value(attribute_list_bytes, rnd_rse, auk_value=authenticator_key)
-    key_derivation_logger.info(f"[OBE AUTH] Authenticator computed by RSE (UPER hex): {attr_authenticator.hex().upper()}")
-    return attr_authenticator
-
-# def decrypt_auth_key(efc_cm, auth_key:bytes, auk_ref=115):
+# def decrypt_auk_with_auk_ref(efc_cm, auk_ref=115):
 #     key_derivation_logger.debug("Preparing the Master Authentication Key (MAuK) 3DES cipher")
 #     cipher = prepare_3DES_cipher_from_efc_cm(efc_cm, auk_ref)
 
