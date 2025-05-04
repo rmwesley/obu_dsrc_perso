@@ -1,28 +1,13 @@
 import os
-import json
 import iso3166
 import custom_its_per_decoders
 
 from Crypto.Cipher import DES3
-from Crypto.Cipher import DES
 
 import logging
-import dsrc_security.dsrc_mk_by_device_and_td_loader as dsrc_mk_by_device_and_td_loader
+from dsrc_security import dsrc_mk_by_device_and_td_loader
 
 key_derivation_logger = logging.getLogger(__name__)
-
-from ASN.compiled_DSRC_instances import EFCv10_1 as EFC
-
-# Loading the Master Keys from a JSON into a Python dict
-# This dict maps an EFC-CM in hex format to a MasterKeySet also in hex format
-try:
-    os.environ['EFC_SEC_CONF_PATH']
-except:
-    os.environ['EFC_SEC_CONF_PATH'] = r"..\efc_security_config_v2.2.3.json"
-
-efc_sec_conf_path = os.environ['EFC_SEC_CONF_PATH']
-
-master_keys_by_toll_domain = dsrc_mk_by_device_and_td_loader.load_master_keys_by_toll_domain()
 
 class TollDomainSecurityProfileInvalidException(Exception):
     pass
@@ -98,22 +83,6 @@ def get_master_key_with_key_ref_and_efc_cm_only(efc_cm:str, key_ref:str):
     key_derivation_logger.debug("Preparing the 3DES cipher with the provided Master Key")
     return master_key_bytes
 
-# def prepare_3DES_cipher_from_efc_cm(efc_cm:str, key_ref:str):
-#     # In case key_ref is passed as an int instead of string...
-#     key_ref = str(key_ref)
-#     efc_cm = efc_cm.upper()
-#     key_derivation_logger.debug(f"Getting the Master Key with ref {key_ref} for EFC-CM {efc_cm}")
-#     try :
-#         master_access_key = bytes.fromhex(get_master_keys_with_efc_cm_only(efc_cm)[key_ref])
-#     except KeyError as e:
-#         key_derivation_logger.error(e)
-#         key_derivation_logger.error(f"We do not possess the masterkeys for EFC-CM {efc_cm}")
-#         key_derivation_logger.info(f"Please note: TIS instances have security level 0. They are thus not really protected and can be read freely.")
-#         raise(e)
-#     key_derivation_logger.debug("Preparing the 3DES cipher with the provided Master Key")
-#     cipher = DES3.new(master_access_key, DES3.MODE_ECB)
-#     return cipher
-
 # CODE FOR DERIVED ACCESS KEY (Uses MasterKey with ref 120)
 def compute_ack(ac_cr_key_ref:int, mack_bytes:bytes):
     cipher = DES3.new(mack_bytes, DES3.MODE_ECB)
@@ -129,8 +98,6 @@ def compute_ack(ac_cr_key_ref:int, mack_bytes:bytes):
     return access_key
 
 def decrypt_ack(access_key: bytes, mack_bytes:bytes):
-    # key_derivation_logger.debug("Preparing the Master Access Key (MAcK) 3DES cipher")
-    # cipher = prepare_3DES_cipher_from_efc_cm(efc_cm, '120')    
     cipher = DES3.new(mack_bytes, DES3.MODE_ECB)
 
     decrypted_ack_plaintext = cipher.decrypt(access_key)
@@ -140,7 +107,6 @@ def decrypt_ack(access_key: bytes, mack_bytes:bytes):
 def compute_ack_with_efc_cm_only(efc_cm:str, ac_cr_key_ref:int):
     key_derivation_logger.debug("Preparing the Master Access Key (MAcK) 3DES cipher")
 
-    # cipher = prepare_3DES_cipher_from_efc_cm(efc_cm, '120')
     mack_bytes = get_master_key_with_key_ref_and_efc_cm_only(efc_cm, '120')
     access_key = compute_ack(ac_cr_key_ref, mack_bytes)
     
@@ -148,7 +114,7 @@ def compute_ack_with_efc_cm_only(efc_cm:str, ac_cr_key_ref:int):
 
 def decrypt_ack_with_efc_cm_only(efc_cm:str, access_key:bytes):
     key_derivation_logger.debug("Preparing the Master Access Key (MAcK) 3DES cipher")
-    # cipher = prepare_3DES_cipher_from_efc_cm(efc_cm, '120')
+
     mack_bytes = get_master_key_with_key_ref_and_efc_cm_only(efc_cm, '120')
     
     cipher = DES3.new(mack_bytes, DES3.MODE_ECB)
@@ -171,9 +137,6 @@ def compute_pan_8_msb_tis(pan_bytes:bytes) -> bytes:
     # Weird TIS 8 PAN MSB
     # The literal PAN here is treated as a decimal value, not HEX!!
 
-    # pan_8_msb_tis = int(pan_bytes[0:4].hex()).to_bytes(4) + int(pan_bytes[4:8].hex()).to_bytes(4)
-    # pan_8_msb_tis = bytes.fromhex(f'{high_cpan_int:08d}') + bytes.fromhex(f'{low_cpan_int:08d}')
-    # pan_8_msb_tis = bytes.fromhex(f'{pan_8_msb_tis.hex().upper()}')
     high_cpan_int = int(pan_bytes[0:4].hex(), 10)
     low_cpan_int = int(pan_bytes[4:8].hex(), 10)
 
@@ -344,9 +307,6 @@ def compute_all_derived_keys_for_device_model(pan_8_msb:bytes, device_model_name
     master_keys_by_efc_cm = dsrc_mk_by_device_and_td_loader.get_master_keys_with_device_model_only(device_model_name)
     for efc_cm, master_keys in master_keys_by_efc_cm.items():
         efc_cm_to_derived_keys[efc_cm] = compute_all_derived_keys_and_return_hex_dict(pan_8_msb, efc_cm, ac_cr_key_ref, master_keys)
-        # derived_keys_dict = compute_all_auth_keys(pan_8_msb, efc_cm, master_keys)
-        # derived_keys_dict[120] = compute_ack(efc_cm, ac_cr_key_ref, master_keys['120'])
-        # efc_cm_to_derived_keys[efc_cm] = {key_ref: computed_auk.hex().upper() for (key_ref, computed_auk) in derived_keys_dict.items()}
     return efc_cm_to_derived_keys
 
 def compute_all_derived_keys_by_device_contract_ref(pan_8_msb:bytes, ac_cr_key_ref:int):
