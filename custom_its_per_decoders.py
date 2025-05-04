@@ -101,3 +101,9 @@ def decode_vst_parameter_oct_str_bytes(parameter_bytes):
         raise Exception(f"Invalid Parameter length {parameter_size} in VST!!")
     custom_per_decoders_logger.debug(f"Decoded VST Parameter value: {decoded_vst_parameter}")
     return decoded_vst_parameter
+
+# def contract_provider_hex_str_to_iso3166_numeric(contract_provider:str) -> int:
+#     # first_5bits = (country_code >> 11) & 0b11111
+#     # second_5bits = (country_code >> 6) & 0b11111
+#     iso3166_alpha2 = custom_its_per_decoders.decode_baudot_country_code(contract_provider)
+#     iso3166_numeric3_dec_str = iso3166.countries_by_alpha2.get(iso3166_alpha2).numeric

@@ -206,12 +206,6 @@ def compute_compact_pan(pan_bytes:bytes) -> bytes:
         pass
     return compact_pan_bytes
 
-# def contract_provider_hex_str_to_iso3166_numeric(contract_provider:str) -> int:
-#     # first_5bits = (country_code >> 11) & 0b11111
-#     # second_5bits = (country_code >> 6) & 0b11111
-#     iso3166_alpha2 = custom_its_per_decoders.decode_baudot_country_code(contract_provider)
-#     iso3166_numeric3_dec_str = iso3166.countries_by_alpha2.get(iso3166_alpha2).numeric
-
 def compute_auk_plaintext_contract_provider_part(efc_cm:str) -> bytes:
     contract_provider_hex = efc_cm[0:6]
 
