@@ -12,9 +12,7 @@ efc_asn_compilation = AXXESv1_2
 from datetime import datetime
 import json
 import logging
-import threading
 import uuid
-import asyncio
 
 import typing
 
