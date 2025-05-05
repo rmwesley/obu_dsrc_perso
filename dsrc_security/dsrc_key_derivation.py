@@ -243,20 +243,20 @@ def decrypt_auk(auth_key:bytes, mauk_bytes: bytes):
     key_derivation_logger.info(f"AuK plaintext (decryption) in hex: {decrypted_auth_key.hex().upper()}")
     return decrypted_auth_key
 
-def compute_auk_with_key_ref_and_efc_cm(pan_8_msb: bytes, efc_cm: str, key_ref:int=115) -> bytes:
+def compute_auk_with_efc_cm_and_auk_ref(pan_8_msb: bytes, efc_cm: str, auk_ref:int=115) -> bytes:
     # key_derivation_logger.debug(f'Computing Authentication Key with KeyRef {key_ref} for PAN {pan_8_msb}...')
     # key_derivation_logger.debug(f'Getting the Contract Provider for EFC-CM 0x{efc_cm}. It is encodeed in the first 3 bytes of the EFC-CM...')
     plaintext_bytes = compute_auk_plaintext(pan_8_msb, efc_cm=efc_cm)
 
-    if key_ref not in range(111, 119):
+    if auk_ref not in range(111, 119):
         raise ValueError("Invalid master authentication key (MAuK) reference!")
     master_hex_keyset = dsrc_mk_by_device_and_td_loader.get_master_keys_with_efc_cm_only(efc_cm)
-    mauk_hex = master_hex_keyset[str(key_ref)]
+    mauk_hex = master_hex_keyset[str(auk_ref)]
     mauk_bytes = bytes.fromhex(mauk_hex)
     # key_derivation_logger.info(f'FOUND MAUK: 0x{mauk_hex}')
     return compute_auk_with_mauk_value_and_plaintext(plaintext_bytes, mauk_bytes)
 
-def decrypt_auk_with_key_ref_and_efc_cm(auth_key:bytes, efc_cm, auk_ref=115):
+def decrypt_auk_with_efc_cm_and_auk_ref(auth_key:bytes, efc_cm, auk_ref=115):
     if auk_ref not in range(111, 119):
         raise ValueError("Invalid master authentication key (MAuK) reference!")
     master_hex_keyset = dsrc_mk_by_device_and_td_loader.get_master_keys_with_efc_cm_only(efc_cm)
@@ -337,6 +337,6 @@ def decipher_auth_key_with_mauk_value(auth_key: str, mauk: str) -> bytes:
 
     return deciphered_plaintext_bytes
 
-def decipher_auth_key_with_efc_cm_and_mauk_ref_(auth_key: str, efc_cm: str, key_ref: int) -> bytes:
-    mauk = dsrc_mk_by_device_and_td_loader.get_master_keys_with_efc_cm_only(efc_cm)[str(key_ref)]
+def decipher_auth_key_with_efc_cm_and_auk_ref(auth_key: str, efc_cm: str, auk_ref: int) -> bytes:
+    mauk = dsrc_mk_by_device_and_td_loader.get_master_keys_with_efc_cm_only(efc_cm)[str(auk_ref)]
     return decipher_auth_key_with_mauk_value(auth_key, mauk)

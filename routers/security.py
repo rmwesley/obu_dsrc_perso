@@ -261,7 +261,7 @@ def compute_auth_keys(req_body: ComputeAuthKeyReq) -> dict[int, str]:
     if key_ref < 111:
         key_ref += 110
 
-    auth_key = dsrc_key_derivation.compute_auk_with_key_ref_and_efc_cm(pan_bytes, efc_cm, key_ref).hex().upper()
+    auth_key = dsrc_key_derivation.compute_auk_with_efc_cm_and_auk_ref(pan_bytes, efc_cm, key_ref).hex().upper()
     return {key_ref: auth_key}
 
 
@@ -271,5 +271,5 @@ def deciphAuthKey(req_body: AuthKeyDeciphReq):
     efc_cm = req_body.efc_cm
     key_ref = req_body.key_ref
 
-    deciphered_ciphertext = dsrc_key_derivation.decipher_auth_key_with_efc_cm_and_mauk_ref_(auth_key, efc_cm, key_ref).hex().upper()
+    deciphered_ciphertext = dsrc_key_derivation.decipher_auth_key_with_efc_cm_and_auk_ref(auth_key, efc_cm, key_ref).hex().upper()
     return deciphered_ciphertext

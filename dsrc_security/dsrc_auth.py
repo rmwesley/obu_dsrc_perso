@@ -50,7 +50,7 @@ def compute_authenticator_with_auk_ref(pan_bytes:bytes, efc_cm, attribute_list_b
     # 2 key derivation algorithms are implemented.
     # One follows EN15509, and the other works for TIS.
 
-    authenticator_key = dsrc_key_derivation.compute_auk_with_key_ref_and_efc_cm(pan_bytes, efc_cm, auk_ref)
+    authenticator_key = dsrc_key_derivation.compute_auk_with_efc_cm_and_auk_ref(pan_bytes, efc_cm, auk_ref)
 
     attr_authenticator = compute_authenticator_with_auk_value(attribute_list_bytes, rnd_rse, auk_value=authenticator_key)
     dsrc_auth_logger.info(f"[OBE AUTH] Authenticator computed by RSE (UPER hex): {attr_authenticator.hex().upper()}")
