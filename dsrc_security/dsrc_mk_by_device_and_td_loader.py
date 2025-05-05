@@ -47,6 +47,9 @@ def disassemble_device_contract_ref_hex_str(device_contract_ref: str) -> tuple[s
 
     return (efc_cm_hex, manufacturer_id_hex, equipment_class_hex)
 
+def get_efc_cm_from_device_contract_ref(device_contract_ref: str) -> str:
+    return device_contract_ref[0:12]
+
 # Device name to Manufacturer Id + Equipment Class mapping (in hex!!)
 equipment_refs_by_device_names = {}
 with open(f'{root_dir}/settings/obu_models.json', 'r') as json_file:
