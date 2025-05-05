@@ -566,6 +566,7 @@ async def send_get_stamped_request(
 
 def verify_obe_authenticity(get_stamped_action_response_value=None):
     global last_response_t_apdu_value
+    global last_vst_value
 
     if get_stamped_action_response_value is None:
         get_stamped_action_response_value = last_response_t_apdu_value[1]
@@ -604,13 +605,16 @@ def verify_obe_authenticity(get_stamped_action_response_value=None):
     bcm_logger.debug(f'[OBE AUTH] AttributeList: {attribute_list_bytes}')
     bcm_logger.debug(f'[OBE AUTH] RndRSE int: {rnd_rse_int}')
 
-    # Remember to set the key derivation settings for the Toll Domain!!
-    # 2 key derivation algorithms are implemented.
-    # One follows EN15509, and the other works for TIS.
-    authenticator = dsrc_auth.compute_authenticator_with_efc_cm_and_auk_ref(pan_bytes, efc_cm, attribute_list_bytes, rnd_rse_int, 115)
+    manufacturer_id_int = last_vst_value['obeConfiguration']['manufacturerID']
+    manufacturer_id_hex = f'{manufacturer_id_int:04X}'
+
+    equipment_class_int = last_vst_value['obeConfiguration']['equipmentClass']
+    equipment_class_hex = f'{equipment_class_int:04X}'
+
+    authenticator = dsrc_auth.compute_authenticator_with_device_info_and_auk_ref(pan_bytes, efc_cm, manufacturer_id_hex, equipment_class_hex, attribute_list_bytes, rnd_rse_int, 115)
 
     if provided_authenticator == authenticator:
-        bcm_logger.critical('[OBE AUTH] OK!!!')
+        bcm_logger.info('[OBE AUTH] OK!!!')
         return True
         # raise Exception('[OBE AUTH] Invalid OBE Auth!!')
     else:
