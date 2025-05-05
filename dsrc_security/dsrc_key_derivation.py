@@ -11,6 +11,8 @@ key_derivation_logger = logging.getLogger(__name__)
 
 class TollDomainSecurityProfileInvalidException(Exception):
     pass
+class InvalidAuthKeyRef(ValueError):
+    pass
 
 def _force_set_security_profile(security_profile:str):
     global current_security_profile
@@ -246,10 +248,11 @@ def decrypt_auk(auth_key:bytes, mauk_bytes: bytes):
 def compute_auk_with_efc_cm_and_auk_ref(pan_8_msb: bytes, efc_cm: str, auk_ref:int=115) -> bytes:
     # key_derivation_logger.debug(f'Computing Authentication Key with KeyRef {key_ref} for PAN {pan_8_msb}...')
     # key_derivation_logger.debug(f'Getting the Contract Provider for EFC-CM 0x{efc_cm}. It is encodeed in the first 3 bytes of the EFC-CM...')
+    if auk_ref not in range(111, 119):
+        raise InvalidAuthKeyRef("Invalid master authentication key (MAuK) reference!")
+
     plaintext_bytes = compute_auk_plaintext(pan_8_msb, efc_cm=efc_cm)
 
-    if auk_ref not in range(111, 119):
-        raise ValueError("Invalid master authentication key (MAuK) reference!")
     master_hex_keyset = dsrc_mk_by_device_and_td_loader.get_master_keys_with_efc_cm_only(efc_cm)
     mauk_hex = master_hex_keyset[str(auk_ref)]
     mauk_bytes = bytes.fromhex(mauk_hex)
@@ -258,7 +261,7 @@ def compute_auk_with_efc_cm_and_auk_ref(pan_8_msb: bytes, efc_cm: str, auk_ref:i
 
 def decrypt_auk_with_efc_cm_and_auk_ref(auth_key:bytes, efc_cm, auk_ref=115):
     if auk_ref not in range(111, 119):
-        raise ValueError("Invalid master authentication key (MAuK) reference!")
+        raise InvalidAuthKeyRef("Invalid master authentication key (MAuK) reference!")
     master_hex_keyset = dsrc_mk_by_device_and_td_loader.get_master_keys_with_efc_cm_only(efc_cm)
     mauk_hex = master_hex_keyset[str(auk_ref)]
     mauk_bytes = bytes.fromhex(mauk_hex)
