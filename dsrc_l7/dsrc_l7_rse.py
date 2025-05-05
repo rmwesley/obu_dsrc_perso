@@ -276,7 +276,6 @@ async def initialize_transaction(
 
     initialization_data["exchanged_data"] = []
     # Storing VST in field
-    last_vst_json = last_response_t_apdu_json['initialisationResponse']
     last_vst_value = last_response_t_apdu_value[1]
 
     with open(f'local_file_storage/transactions/{current_transaction_id}.json', 'w') as json_file:
