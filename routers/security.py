@@ -257,7 +257,7 @@ def compute_auth_keys(req_body: ComputeAuthKeyReq) -> dict[int, str]:
     pan_bytes = bytes.fromhex(req_body.pan_id)
 
     if not key_ref:
-        return dsrc_key_derivation.compute_all_auth_keys_and_return_hex_dict(pan_bytes, efc_cm)
+        return dsrc_key_derivation.compute_all_8_auth_keys_and_return_hex_dict(pan_bytes, efc_cm)
     if key_ref < 111:
         key_ref += 110
 

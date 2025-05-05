@@ -265,7 +265,7 @@ def decrypt_auk_with_efc_cm_and_auk_ref(auth_key:bytes, efc_cm, auk_ref=115):
 
     return decrypt_auk(auth_key=auth_key, mauk_bytes=mauk_bytes)
 
-def compute_all_auth_keys(pan_8_msb: bytes, efc_cm: str, mauk_hex_dict: dict) -> dict[int, bytes]:
+def compute_all_8_auth_keys(pan_8_msb: bytes, efc_cm: str, mauk_hex_dict: dict) -> dict[int, bytes]:
     key_derivation_logger.debug(f'Computing all 8 Authentication Keys for PAN {pan_8_msb}')
     key_derivation_logger.debug(f'Getting the Contract Provider. It is encodeed in the first 3 bytes of the EFC-CM...')
     plaintext_bytes = compute_auk_plaintext(pan_8_msb, efc_cm)
@@ -277,19 +277,19 @@ def compute_all_auth_keys(pan_8_msb: bytes, efc_cm: str, mauk_hex_dict: dict) ->
         auth_keys[key_ref] = compute_auk_with_mauk_value_and_plaintext(plaintext_bytes, mauk)
     return auth_keys
 
-def compute_all_auth_keys_with_efc_cm_only(pan_8_msb: bytes, efc_cm: str) -> dict[int, bytes]:
+def compute_all_8_auth_keys_with_efc_cm_only(pan_8_msb: bytes, efc_cm: str) -> dict[int, bytes]:
     plaintext_bytes = compute_auk_plaintext(pan_8_msb, efc_cm)
     
     mauk_hex_dict = dsrc_mk_by_device_and_td_loader.get_master_keys_with_efc_cm_only(efc_cm)
-    return compute_all_auth_keys(pan_8_msb, efc_cm, mauk_hex_dict)
+    return compute_all_8_auth_keys(pan_8_msb, efc_cm, mauk_hex_dict)
 
-def compute_all_auth_keys_and_return_hex_dict(pan_8_msb:bytes, efc_cm:str):
-    auth_keys_dict = compute_all_auth_keys_with_efc_cm_only(pan_8_msb, efc_cm)
+def compute_all_8_auth_keys_and_return_hex_dict(pan_8_msb:bytes, efc_cm:str):
+    auth_keys_dict = compute_all_8_auth_keys_with_efc_cm_only(pan_8_msb, efc_cm)
     return {key_ref: computed_auk.hex().upper() for (key_ref, computed_auk) in auth_keys_dict.items()}
 
 # COMPUTE ALL DERIVED KEYS
 def compute_all_derived_keys(pan_8_msb:bytes, efc_cm:str, ac_cr_key_ref:int, master_keys:dict):
-    derived_keys_dict = compute_all_auth_keys(pan_8_msb, efc_cm, master_keys)
+    derived_keys_dict = compute_all_8_auth_keys(pan_8_msb, efc_cm, master_keys)
     mack_bytes = bytes.fromhex(master_keys['120'])
     derived_keys_dict[120] = compute_ack(ac_cr_key_ref, mack_bytes)
     return derived_keys_dict
