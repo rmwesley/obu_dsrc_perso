@@ -118,7 +118,7 @@ def get_all_master_keysets():
     global master_keysets
     return master_keysets
 
-def get_master_keys(efc_cm_hex_str: str, manufacturer_id_hex_str:str, equipment_class_hex_str:str):
+def get_master_keys_with_device_info(efc_cm_hex_str: str, manufacturer_id_hex_str:str, equipment_class_hex_str:str):
     """Get master keys through device (OBE) model data and EFC contract data
     All of these should be present in the OBE's VST!!!"""
     global master_keys_by_device_contract_ref
