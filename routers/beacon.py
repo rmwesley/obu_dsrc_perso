@@ -24,6 +24,12 @@ def get_beacon_interface(request: Request):
 async def favicon():
     return FileResponse('static/beacon_interface/beacon.svg')
 
+@router.get('/beacon-config')
+async def get_beacon_config():
+    with open('settings/beacon_manager_config.json', 'r') as beacon_manager_config_file:
+        beacon_manager_config = json.load(beacon_manager_config_file)
+    return beacon_manager_config
+
 # Endpoint to initialize the Beacon Manager
 # It instantiates a BeaconManager object and keeps it as a global attribute
 # of the FastAPI application
