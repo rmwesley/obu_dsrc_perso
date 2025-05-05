@@ -156,7 +156,7 @@ async def safe_set_beacon(chosen_beacon_name):
 
     if chosen_beacon_name == 'OPS1955':
         beacon_bac_l7_wrapper = ops1955_bac_l7.Ops1955BacL7()
-        await beacon_bac_l7_wrapper._kapsch_set_config()
+        await beacon_bac_l7_wrapper.kapsch_set_config_from_settings()
 
         current_beacon_name = chosen_beacon_name
 

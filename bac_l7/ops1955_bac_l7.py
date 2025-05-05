@@ -10,7 +10,7 @@ class Ops1955BacL7(pertel_bac_l7.PertelBacL7):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    async def _kapsch_set_config(self):
+    async def kapsch_set_config_from_settings(self):
         # STOP the beacon first!!
         await self._pertel_set_beacon_mode(0x00)
         await self._pertel_monitor_beacon()
