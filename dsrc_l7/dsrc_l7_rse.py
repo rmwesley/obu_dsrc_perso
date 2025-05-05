@@ -564,7 +564,7 @@ async def send_get_stamped_request(
         bcm_logger.exception("OBE AUTH ERROR!!!", stack_info=True)
     return response_t_apdu_value
 
-def verify_obe_authenticity(get_stamped_action_response_value=None, efc_cm=None):
+def verify_obe_authenticity(get_stamped_action_response_value=None):
     global last_response_t_apdu_value
 
     if get_stamped_action_response_value is None:
@@ -577,10 +577,10 @@ def verify_obe_authenticity(get_stamped_action_response_value=None, efc_cm=None)
 
     # if 'get_stamped_response_value' not in locals():
     #     bcm_logger.error("No GET_STAMPED.response to verify!!")
-    if efc_cm is None:
-        eid = get_stamped_action_response_value['eid']
-        decoded_vst_param = decode_vst_parameter_from_eid(eid)
-        efc_cm = decoded_vst_param['EFC-ContextMark']
+    eid = get_stamped_action_response_value['eid']
+    decoded_vst_param = decode_vst_parameter_from_eid(eid)
+    efc_cm = decoded_vst_param['EFC-ContextMark']
+
     attributeList = get_stamped_rs['attributeList']
     bcm_logger.info(f'[OBE AUTH] attributeList value: {attributeList}')
 
