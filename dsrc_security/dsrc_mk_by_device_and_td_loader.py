@@ -134,6 +134,10 @@ def get_master_keys_with_device_info(efc_cm_hex_str: str, manufacturer_id_hex_st
         # Be careful if there are repeated EFC-CMs for different device models!!
         return get_master_keys_with_efc_cm_only(efc_cm_hex_str)
 
+def get_master_keys_with_device_contract_ref(device_contract_ref: str):
+    efc_cm_hex, manufacturer_id_hex, equipment_class_hex = disassemble_device_contract_ref_hex_str(device_contract_ref)
+    return get_master_keys_with_device_info(efc_cm_hex, manufacturer_id_hex, equipment_class_hex)
+
 def get_master_keys_with_efc_cm_only(efc_cm_hex_str: str):
     """No device model provided, only an EFC-CM for the current Toll Domain!!"""
     global master_keys_by_device_contract_ref
