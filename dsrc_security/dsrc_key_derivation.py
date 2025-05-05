@@ -245,6 +245,37 @@ def decrypt_auk(auth_key:bytes, mauk_bytes: bytes):
     key_derivation_logger.info(f"AuK plaintext (decryption) in hex: {decrypted_auth_key.hex().upper()}")
     return decrypted_auth_key
 
+def compute_auk_with_device_info_and_auk_ref(pan_8_msb: bytes, efc_cm_hex_str: str, manufacturer_id_hex_str:str, equipment_class_hex_str: str, auk_ref:int=115) -> bytes:
+    # key_derivation_logger.debug(f'Computing Authentication Key with KeyRef {auk_ref} for PAN {pan_8_msb}...')
+    # key_derivation_logger.debug(f'Getting the Contract Provider for EFC-CM 0x{efc_cm}. It is encodeed in the first 3 bytes of the EFC-CM...')
+    if auk_ref not in range(111, 119):
+        raise InvalidAuthKeyRef("Invalid master authentication key (MAuK) reference!")
+
+    plaintext_bytes = compute_auk_plaintext(pan_8_msb, efc_cm=efc_cm_hex_str)
+
+    master_hex_keyset = dsrc_mk_by_device_and_td_loader.get_master_keys_with_device_info(efc_cm_hex_str, manufacturer_id_hex_str, equipment_class_hex_str)
+    mauk_hex = master_hex_keyset[str(auk_ref)]
+    mauk_bytes = bytes.fromhex(mauk_hex)
+    # key_derivation_logger.info(f'FOUND MAuK: 0x{mauk_hex}')
+    return compute_auk_with_mauk_value_and_plaintext(plaintext_bytes, mauk_bytes)
+
+def compute_auk_with_device_contract_ref_and_auk_ref(pan_8_msb: bytes, device_contract_ref: str, auk_ref:int=115) -> bytes:
+    # key_derivation_logger.debug(f'Computing Authentication Key with KeyRef {auk_ref} for PAN {pan_8_msb}...')
+    # key_derivation_logger.debug(f'Getting the Contract Provider for EFC-CM 0x{efc_cm}. It is encodeed in the first 3 bytes of the EFC-CM...')
+    if auk_ref not in range(111, 119):
+        raise InvalidAuthKeyRef("Invalid master authentication key (MAuK) reference!")
+
+    efc_cm_hex = device_contract_ref[0:12]
+    # efc_cm_hex = dsrc_mk_by_device_and_td_loader.get_efc_cm_from_device_contract_ref(device_contract_ref)
+
+    plaintext_bytes = compute_auk_plaintext(pan_8_msb, efc_cm=efc_cm_hex)
+
+    master_hex_keyset = dsrc_mk_by_device_and_td_loader.get_master_keys_with_device_contract_ref(device_contract_ref)
+    mauk_hex = master_hex_keyset[str(auk_ref)]
+    mauk_bytes = bytes.fromhex(mauk_hex)
+    # key_derivation_logger.info(f'FOUND MAuK: 0x{mauk_hex}')
+    return compute_auk_with_mauk_value_and_plaintext(plaintext_bytes, mauk_bytes)
+
 def compute_auk_with_efc_cm_and_auk_ref(pan_8_msb: bytes, efc_cm: str, auk_ref:int=115) -> bytes:
     # key_derivation_logger.debug(f'Computing Authentication Key with KeyRef {key_ref} for PAN {pan_8_msb}...')
     # key_derivation_logger.debug(f'Getting the Contract Provider for EFC-CM 0x{efc_cm}. It is encodeed in the first 3 bytes of the EFC-CM...')
