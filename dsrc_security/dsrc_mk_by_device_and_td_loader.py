@@ -128,7 +128,7 @@ def get_master_keys(efc_cm_hex_str: str, manufacturer_id_hex_str:str, equipment_
         # get_master_keys_through_device_contract_data(efc_cm_hex_str, manufacturer_id_hex_str, equipment_class_hex_str)
     except:
         key_derivation_logger.critical('MasterKeys not found for device!!!', stack_info=True)
-        key_derivation_logger.critical(f'If you are communication with a device, check the EquipmentObuId (0x{equipment_class_hex_str}) and ManufacturerId (0x{manufacturer_id_hex_str}) values that the device sent in its VST')
+        key_derivation_logger.critical(f'If you are communicating with a device, check the EquipmentObuId (0x{equipment_class_hex_str}) and ManufacturerId (0x{manufacturer_id_hex_str}) values that the device sent in its VST')
 
         # Trying to get masterkeys through EFC-CM only by looking up all devices!
         # Be careful if there are repeated EFC-CMs for different device models!!
