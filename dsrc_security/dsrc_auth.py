@@ -5,6 +5,10 @@ from dsrc_security import dsrc_key_derivation
 
 dsrc_auth_logger = logging.getLogger(__name__)
 
+# Remember to set the key derivation settings for the Toll Domain!!
+# 2 key derivation algorithms are implemented.
+# One follows EN15509, and the other follow the TIS decimal profile.
+
 def compute_access_credentials(efc_cm:str, rnd_obe:int, ac_cr_key_ref:int):
     # Compute the Access Key
     access_key = dsrc_key_derivation.compute_ack_with_efc_cm_only(efc_cm, ac_cr_key_ref)
@@ -46,11 +50,24 @@ def compute_authenticator_with_auk_value(attribute_list_bytes, rnd_rse, auk_valu
     return attr_authenticator
 
 def compute_authenticator_with_auk_ref(pan_bytes:bytes, efc_cm, attribute_list_bytes, rnd_rse, auk_ref=115) -> bytes:
-    # Remember to set the key derivation settings for the Toll Domain!!
-    # 2 key derivation algorithms are implemented.
-    # One follows EN15509, and the other works for TIS.
-
+    # Obtaining AuK via EFC-CM only info (not ideal!!)
     authenticator_key = dsrc_key_derivation.compute_auk_with_efc_cm_and_auk_ref(pan_bytes, efc_cm, auk_ref)
+
+    attr_authenticator = compute_authenticator_with_auk_value(attribute_list_bytes, rnd_rse, auk_value=authenticator_key)
+    dsrc_auth_logger.info(f"[OBE AUTH] Authenticator computed by RSE (UPER hex): {attr_authenticator.hex().upper()}")
+    return attr_authenticator
+
+def compute_authenticator_with_device_contract_ref_and_auk_ref(pan_bytes:bytes, device_contract_ref:str, attribute_list_bytes, rnd_rse, auk_ref=115) -> bytes:
+    # Obtaining AuK via device_contract_ref
+    authenticator_key = dsrc_key_derivation.compute_auk_with_device_contract_ref_and_auk_ref(pan_bytes, device_contract_ref, auk_ref)
+
+    attr_authenticator = compute_authenticator_with_auk_value(attribute_list_bytes, rnd_rse, auk_value=authenticator_key)
+    dsrc_auth_logger.info(f"[OBE AUTH] Authenticator computed by RSE (UPER hex): {attr_authenticator.hex().upper()}")
+    return attr_authenticator
+
+def compute_authenticator_with_device_info_and_auk_ref(pan_bytes:bytes, efc_cm_hex_str: str, manufacturer_id_hex_str:str, equipment_class_hex_str: str, attribute_list_bytes, rnd_rse, auk_ref=115) -> bytes:
+    # Obtaining AuK via device info
+    authenticator_key = dsrc_key_derivation.compute_auk_with_device_info_and_auk_ref(pan_bytes, efc_cm_hex_str, manufacturer_id_hex_str, equipment_class_hex_str, auk_ref)
 
     attr_authenticator = compute_authenticator_with_auk_value(attribute_list_bytes, rnd_rse, auk_value=authenticator_key)
     dsrc_auth_logger.info(f"[OBE AUTH] Authenticator computed by RSE (UPER hex): {attr_authenticator.hex().upper()}")
