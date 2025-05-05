@@ -607,7 +607,7 @@ def verify_obe_authenticity(get_stamped_action_response_value=None, efc_cm=None)
     # Remember to set the key derivation settings for the Toll Domain!!
     # 2 key derivation algorithms are implemented.
     # One follows EN15509, and the other works for TIS.
-    authenticator = dsrc_auth.compute_authenticator_with_auk_ref(pan_bytes, efc_cm, attribute_list_bytes, rnd_rse_int, 115)
+    authenticator = dsrc_auth.compute_authenticator_with_efc_cm_and_auk_ref(pan_bytes, efc_cm, attribute_list_bytes, rnd_rse_int, 115)
 
     if provided_authenticator == authenticator:
         bcm_logger.critical('[OBE AUTH] OK!!!')

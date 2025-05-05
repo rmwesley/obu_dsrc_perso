@@ -49,7 +49,7 @@ def compute_authenticator_with_auk_value(attribute_list_bytes, rnd_rse, auk_valu
     attr_authenticator = des_output[0:4]
     return attr_authenticator
 
-def compute_authenticator_with_auk_ref(pan_bytes:bytes, efc_cm, attribute_list_bytes, rnd_rse, auk_ref=115) -> bytes:
+def compute_authenticator_with_efc_cm_and_auk_ref(pan_bytes:bytes, efc_cm, attribute_list_bytes, rnd_rse, auk_ref=115) -> bytes:
     # Obtaining AuK via EFC-CM only info (not ideal!!)
     authenticator_key = dsrc_key_derivation.compute_auk_with_efc_cm_and_auk_ref(pan_bytes, efc_cm, auk_ref)
 
