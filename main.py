@@ -45,7 +45,8 @@ async def simple_bcm_transactions():
     await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
 
     dsrc_l7_rse.set_beeping_state(beep_state=False)
-    await dsrc_l7_rse.cardme_transaction(4, mand_applications=[1, 20, 29], set_mmi=False)
+    # await dsrc_l7_rse.cardme_transaction(2, mand_applications=[1, 20, 29], set_mmi=False)
+    await dsrc_l7_rse.cardme_transaction(3, mand_applications=[29], set_mmi=False)
     # await dsrc_l7_rse.ccc_2023_transaction(2, mand_applications=[1, 20, 29], set_mmi=False)
     # await dsrc_l7_rse.ccc_2023_transaction(3, mand_applications=[1, 20, 29], set_mmi=False)
     # await dsrc_l7_rse.ccc_2023_transaction(3, mand_applications=[20], set_mmi=False)

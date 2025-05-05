@@ -1,5 +1,5 @@
 {
-    "default_toll_domain_name": "TIS",
+    "default_toll_domain_name": "IT",
     "environment": "TEST",
     "td_conf_by_td_name": {
       "TIS": {
