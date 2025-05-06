@@ -274,69 +274,6 @@ async def initialize_transaction(
 
     return (initialization_request_jval, last_response_t_apdu_json)
 
-async def update_beacon_state():
-    global current_beacon_name
-    await beacon_bac_l7_wrapper._pertel_get_communication_count()
-
-    if current_beacon_name == 'TGBV':
-        beacon_state = await beacon_bac_l7_wrapper.update_state()
-        if beacon_state[1] == pertel_bac_l7.BCM_MODE_Enum.PERTEL_MODE_Stopped:
-            raise BeaconManagerException("Beacon is in Stopped mode, not Transparent!!")
-        bcm_logger.debug(f"Last BeaconID: {beacon_bac_l7_wrapper.get_beacon_id().hex().upper()}")
-        return beacon_state
-    elif current_beacon_name == 'OPS1955':
-        pass
-
-def get_init_data():
-    global initialization_data
-
-    try:
-        return initialization_data
-    except:
-        return {}
-
-def find_eid_with_accepted_contract():
-    eid = None
-    return eid
-
-def get_efc_cm_for_eid(eid):
-    # Kapsch System Element: EID 0, no VST parameter
-    if eid == 0:
-        bcm_logger.info(f'Kapsch System Element has no Parameter in VST!!!')
-        return {}
-    return get_parameter_bytes_from_eid_on_vst_value(eid=eid)
-
-def decode_t_apdu_response_uper(t_apdu_with_response_bytes):
-    global TApdu_container
-    global last_response_t_apdu_value
-    global last_response_t_apdu_json
-
-    bcm_logger.debug(f"Decoding received response T-APDU...")
-    TApdu_container.from_uper(t_apdu_with_response_bytes)
-    last_response_t_apdu_value = TApdu_container._val
-    bcm_logger.debug(f"Response T-APDU value: {last_response_t_apdu_value}")
-
-    bcm_logger.info(f"Response T-APDU in ASN:\n{TApdu_container.to_asn1()}")
-    # bcm_logger.debug(f"Response T-APDU decoded with JER:\n{TApdu_container.to_jer()}")
-    last_response_t_apdu_json = TApdu_container._to_jval()
-    # bcm_logger.debug(f"Response T-APDU in JSON: {last_response_t_apdu_json}")
-
-    bcm_logger.debug(f"Checking if T-APDU contains a return (ret) value (error code)...")
-    try:
-        return_code = last_response_t_apdu_value[1]["ret"]
-        if return_code == 0:
-            bcm_logger.info(f"Return code is present and is 0! (No errors)")
-            bcm_logger.debug(f"ReturnStatus ASN1 decoding:\n{efc_asn_compilation.EfcDsrcGeneric.ReturnStatus.to_asn1()}")
-        else:
-            bcm_logger.error(f"Error code present! Return Code: {return_code}")
-            efc_asn_compilation.EfcDsrcGeneric.ReturnStatus.set_val(return_code)
-            bcm_logger.error(f"ReturnStatus ASN1 decoding:\n{efc_asn_compilation.EfcDsrcGeneric.ReturnStatus.to_asn1()}")
-            # if return_code == 1:
-            #     raise TApduResponseException(f"Return Status: {efc_asn_compilation.EfcDsrcGeneric.ReturnStatus.to_asn1()}")
-    except KeyError:
-        bcm_logger.info(f"No return code in T-APDU! (No errors)")
-    return last_response_t_apdu_value
-
 async def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close_transaction=False) -> dict:
     global TApdu_container
     if close_transaction:
@@ -441,6 +378,69 @@ def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jva
         transaction_data_json['last_update_timestamp'] = datetime.now().isoformat()
         json.dump(transaction_data_json, json_file, indent=2)
     return transaction_data_json
+
+async def update_beacon_state():
+    global current_beacon_name
+    await beacon_bac_l7_wrapper._pertel_get_communication_count()
+
+    if current_beacon_name == 'TGBV':
+        beacon_state = await beacon_bac_l7_wrapper.update_state()
+        if beacon_state[1] == pertel_bac_l7.BCM_MODE_Enum.PERTEL_MODE_Stopped:
+            raise BeaconManagerException("Beacon is in Stopped mode, not Transparent!!")
+        bcm_logger.debug(f"Last BeaconID: {beacon_bac_l7_wrapper.get_beacon_id().hex().upper()}")
+        return beacon_state
+    elif current_beacon_name == 'OPS1955':
+        pass
+
+def get_init_data():
+    global initialization_data
+
+    try:
+        return initialization_data
+    except:
+        return {}
+
+def find_eid_with_accepted_contract():
+    eid = None
+    return eid
+
+def get_efc_cm_for_eid(eid):
+    # Kapsch System Element: EID 0, no VST parameter
+    if eid == 0:
+        bcm_logger.info(f'Kapsch System Element has no Parameter in VST!!!')
+        return {}
+    return get_parameter_bytes_from_eid_on_vst_value(eid=eid)
+
+def decode_t_apdu_response_uper(t_apdu_with_response_bytes):
+    global TApdu_container
+    global last_response_t_apdu_value
+    global last_response_t_apdu_json
+
+    bcm_logger.debug(f"Decoding received response T-APDU...")
+    TApdu_container.from_uper(t_apdu_with_response_bytes)
+    last_response_t_apdu_value = TApdu_container._val
+    bcm_logger.debug(f"Response T-APDU value: {last_response_t_apdu_value}")
+
+    bcm_logger.info(f"Response T-APDU in ASN:\n{TApdu_container.to_asn1()}")
+    # bcm_logger.debug(f"Response T-APDU decoded with JER:\n{TApdu_container.to_jer()}")
+    last_response_t_apdu_json = TApdu_container._to_jval()
+    # bcm_logger.debug(f"Response T-APDU in JSON: {last_response_t_apdu_json}")
+
+    bcm_logger.debug(f"Checking if T-APDU contains a return (ret) value (error code)...")
+    try:
+        return_code = last_response_t_apdu_value[1]["ret"]
+        if return_code == 0:
+            bcm_logger.info(f"Return code is present and is 0! (No errors)")
+            bcm_logger.debug(f"ReturnStatus ASN1 decoding:\n{efc_asn_compilation.EfcDsrcGeneric.ReturnStatus.to_asn1()}")
+        else:
+            bcm_logger.error(f"Error code present! Return Code: {return_code}")
+            efc_asn_compilation.EfcDsrcGeneric.ReturnStatus.set_val(return_code)
+            bcm_logger.error(f"ReturnStatus ASN1 decoding:\n{efc_asn_compilation.EfcDsrcGeneric.ReturnStatus.to_asn1()}")
+            # if return_code == 1:
+            #     raise TApduResponseException(f"Return Status: {efc_asn_compilation.EfcDsrcGeneric.ReturnStatus.to_asn1()}")
+    except KeyError:
+        bcm_logger.info(f"No return code in T-APDU! (No errors)")
+    return last_response_t_apdu_value
 
 def decode_vst_parameter_from_eid(eid):
     bcm_logger.debug(f"Decoding VST parameter with EID {eid}...")
