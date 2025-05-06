@@ -23,8 +23,10 @@ from dsrc_security import dsrc_auth
 
 bcm_logger = logging.getLogger(__name__)
 
-# SETTING UP LOGGER FILE HANDLER
+local_transactions_storage_path_str = 'local_file_storage/transactions'
 date_prefix = datetime.now().strftime('%y%m%d')
+
+# SETTING UP LOGGER FILE HANDLER
 file_handler = logging.FileHandler(f'beacon_logs/{date_prefix}_rse_dsrc_l7.log')
 file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
 file_handler.setFormatter(file_formatter)
@@ -225,7 +227,6 @@ async def initialize_transaction(
     global last_vst_value
 
     global initialization_data
-    global current_transaction_id
 
     await update_beacon_state()
 
@@ -233,10 +234,6 @@ async def initialize_transaction(
         bcm_logger.error("Do not try to initilize a transaction! One is already in progress!")
         # bcm_logger.debug("We lock the thread until the opened transaction is closed!")
         raise BeaconManagerException("Transaction already in progress!!")
-
-    initialization_data = {}
-    current_transaction_id = uuid.uuid1()
-    initialization_data['_id'] = current_transaction_id.hex
 
     mand_applications = [{'aid': mandatory_aid} for mandatory_aid in mand_applications]
     bst_value = {
@@ -250,9 +247,7 @@ async def initialize_transaction(
         'profileList': profile_list
         }
 
-    # Adding initialisationRequest json to initialization_data dict
     initialization_request_jval = await start_bst_emission_and_await_vst(bst_value=bst_value)
-    initialization_data |= initialization_request_jval
 
     bcm_logger.info("A VST was received!")
     fragmented_t_apdu_init_resp_datagram = beacon_bac_l7_wrapper.get_vst()
@@ -271,18 +266,12 @@ async def initialize_transaction(
     last_response_t_apdu_json = TApdu_container._to_jval()
     last_response_t_apdu_value = TApdu_container._val
 
-    # Adding initialisationResponse json to initialization_data dict
-    initialization_data |= last_response_t_apdu_json
-
-    initialization_data["exchanged_data"] = []
-    # Storing VST in field
+    # Storing VST in global var
     last_vst_value = last_response_t_apdu_value[1]
 
-    with open(f'local_file_storage/transactions/{current_transaction_id}.json', 'w') as json_file:
-        initialization_data['creation_time'] = datetime.now().isoformat()
-        json.dump(initialization_data, json_file, indent=2)
+    create_transaction_data_file_from_init_phase_data(initialization_request_jval, last_response_t_apdu_json)
 
-    return initialization_data
+    return (initialization_request_jval, last_response_t_apdu_json)
 
 async def update_beacon_state():
     global current_beacon_name
@@ -349,7 +338,6 @@ def decode_t_apdu_response_uper(t_apdu_with_response_bytes):
 
 async def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close_transaction=False) -> dict:
     global TApdu_container
-    global current_transaction_id
     if close_transaction:
         bcm_logger.info(f"Closing Transaction!! Info: BAC L2 command for closing a transaction is 0x06.")
 
@@ -357,13 +345,12 @@ async def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, clos
     TApdu_container.set_val(asn1_request_t_apdu_value)
     bcm_logger.info(f"Request T-APDU value: {TApdu_container._val}")
 
-    current_exchanged_data_json = {}
-    # Adding T-APDU with request data to dict
+    # Needed to store transaction data as JSON!
     request_t_apdu_jval = TApdu_container._to_jval()
-    current_exchanged_data_json |= request_t_apdu_jval
-    # Sending command!!!
+
     fragmented_t_apdu_request = frag_header + TApdu_container.to_uper()
 
+    # Sending command!!!
     bac_l2_response = (await beacon_bac_l7_wrapper
         ._pertel_send_dsrc_l7_command_with_close_transaction_option(
             fragmented_t_apdu_request,
@@ -394,19 +381,61 @@ async def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, clos
         await send_close_transaction_echo(eid=eid)
         return
 
-    # Adding T-APDU with response data to transaction dict (dict merge)
-    current_exchanged_data_json |= response_t_apdu_jval
-
     # Storing transaction files T-APDUs locally as a JSON
-    with open(f'local_file_storage/transactions/{current_transaction_id}.json', 'r') as json_file:
+    add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jval)
+
+    return response_t_apdu_jval
+
+def create_transaction_data_file_from_init_phase_data(initialization_request_jval, initialization_response_jval):
+    global current_transaction_id
+
+    current_transaction_id = uuid.uuid1()
+    transaction_data_filename = f"local_file_storage/transactions/{current_transaction_id}.json"
+
+    # initialization_data dict is a merge of the init request and response JSON values
+    # initialization_data = initialization_request_jval | initialization_response_jval
+    initialization_data = {}
+    initialization_data['_id'] = current_transaction_id.hex
+
+    # Merging initialisationRequest json into initialization_data json dict
+    initialization_data |= initialization_request_jval
+
+    # Merging initialisationResponse json into initialization_data json dict
+    initialization_data |= initialization_response_jval
+
+    # Create an empty list for future data exchanges (ACTION/GET/SET requests...)
+    initialization_data["exchanged_data"] = []
+
+    with open(transaction_data_filename, 'w') as json_file:
+        initialization_data['creation_time'] = datetime.now().isoformat()
+        json.dump(initialization_data, json_file, indent=2)
+    return initialization_data
+
+def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jval):
+    global current_transaction_id
+    transaction_data_filename = f"local_file_storage/transactions/{current_transaction_id}.json"
+
+    # current_exchanged_data_json = {}
+    # Adding T-APDU with request data to current exchange dict
+    # current_exchanged_data_json |= request_t_apdu_jval
+
+    # Adding T-APDU with response data to current exchange dict (dict merge)
+    # current_exchanged_data_json |= response_t_apdu_jval
+
+    # current_exchanged_data_json dict is a merge of the T-APDU request and response JSON values
+    current_exchanged_data_json = request_t_apdu_jval | response_t_apdu_jval
+
+    # Getting previous data
+    with open(transaction_data_filename, 'r') as json_file:
         transaction_data_json = json.load(json_file)
         transaction_data_json['exchanged_data'].append(current_exchanged_data_json)
 
-    with open(f'local_file_storage/transactions/{current_transaction_id}.json', 'w') as json_file:
+    # Rewriting transaction data file with current exchange data added
+    # We also change the last_update_timestamp field
+    with open(transaction_data_filename, 'w') as json_file:
         transaction_data_json['last_update_timestamp'] = datetime.now().isoformat()
         json.dump(transaction_data_json, json_file, indent=2)
-
-    return response_t_apdu_jval
+    return transaction_data_json
 
 def decode_vst_parameter_from_eid(eid):
     bcm_logger.debug(f"Decoding VST parameter with EID {eid}...")
