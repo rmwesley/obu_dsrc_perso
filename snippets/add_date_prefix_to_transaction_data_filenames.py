@@ -1,16 +1,17 @@
 import pathlib
 import datetime
 
-local_transactions_storage_path_str = pathlib.Path('local_file_storage/temp')
+local_transactions_storage_path_str = pathlib.Path('local_file_storage/transactions')
 
 for file_path in local_transactions_storage_path_str.iterdir():
     # creation_time_float = file_path.stat().st_ctime
     modification_time_float = file_path.stat().st_mtime
     creation_date = datetime.datetime.fromtimestamp(modification_time_float)
-    date_prefix = creation_date.strftime('%y%m%d')
+    date_prefix = creation_date.strftime('%Y%m%dT%H%M%S')
 
     current_filename = file_path.name
-    prefixed_filename = f'{date_prefix}_{current_filename}'
+    unprefixed_filename = file_path.name.split('_')[1]
+    prefixed_filename = f'{date_prefix}_{unprefixed_filename}'
     # prefixed_filename = f'{date_prefix}_{current_filestem}.json'
     print(prefixed_filename)
 
