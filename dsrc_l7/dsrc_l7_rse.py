@@ -24,10 +24,11 @@ from dsrc_security import dsrc_auth
 bcm_logger = logging.getLogger(__name__)
 
 local_transactions_storage_path_str = 'local_file_storage/transactions'
-date_prefix = datetime.now().strftime('%y%m%d')
+startup_date = datetime.now()
+logs_date_prefix = startup_date.strftime('%y%m%d')
 
 # SETTING UP LOGGER FILE HANDLER
-file_handler = logging.FileHandler(f'beacon_logs/{date_prefix}_rse_dsrc_l7.log')
+file_handler = logging.FileHandler(f'beacon_logs/{logs_date_prefix}_rse_dsrc_l7.log')
 file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
 file_handler.setFormatter(file_formatter)
 bcm_logger.addHandler(file_handler)
@@ -388,9 +389,12 @@ async def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, clos
 
 def create_transaction_data_file_from_init_phase_data(initialization_request_jval, initialization_response_jval):
     global current_transaction_id
+    global current_transaction_datetime_prefix
 
     current_transaction_id = uuid.uuid1()
-    transaction_data_filename = f"local_file_storage/transactions/{current_transaction_id}.json"
+    current_transaction_start_date = datetime.now()
+    current_transaction_datetime_prefix = current_transaction_start_date.strftime("%Y%m%dT%H%M%S")
+    transaction_data_filename = f"local_file_storage/transactions/{current_transaction_datetime_prefix}_{current_transaction_id}.json"
 
     # initialization_data dict is a merge of the init request and response JSON values
     # initialization_data = initialization_request_jval | initialization_response_jval
@@ -413,7 +417,8 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
 
 def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jval):
     global current_transaction_id
-    transaction_data_filename = f"local_file_storage/transactions/{current_transaction_id}.json"
+    global current_transaction_datetime_prefix
+    transaction_data_filename = f"local_file_storage/transactions/{current_transaction_datetime_prefix}_{current_transaction_id}.json"
 
     # current_exchanged_data_json = {}
     # Adding T-APDU with request data to current exchange dict
