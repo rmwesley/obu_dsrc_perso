@@ -165,7 +165,6 @@ class PertelBacL7(bac_l2_host2beacon.BacHost):
 
         if response_content[1] != 0:
             bac_serial_wrapper_logger.critical(f'Error response when requesting for BST!! Could not initialize BST. Response message: 0x{response_content.hex().upper()}', stack_info=True)
-            raise PertelBacL7Exception(f'Error response when requesting for BST!! Could not initialize BST. Response message: 0x{response_content.hex().upper()}')
         # Removing Command ID 0x03 and error code
         self.t_apdu_containing_vst = response_content[2:]
         return response_content
