@@ -81,6 +81,9 @@ def unescape_dle_in_message_content(message_content:bytes) -> bytes:
             if char_int == DLE[0]:
                 unescaped_message_content.append(char_int)
                 escape_next = False
+            elif char_int == ETX[0]:
+                # Ignore DLE/ETX
+                continue
             else:
                 raise BacL2Exception(f'Forgot to escape DLE, or escaped (0x{char_int}), a non-DLE (0x10) character !')
             continue
@@ -338,6 +341,8 @@ class BacMsgReceiver():
 
     def _wait_for_message_start_header(self):
         received_char = self.serial_instance.read(1)
+        if received_char == ENQ:
+            bac_serial_wrapper_logger.debug('Received ENQ control char (0x05)')
         first_char = self._handle_repeated_transfer_requests(received_char)
 
         if first_char != DLE:
@@ -348,43 +353,69 @@ class BacMsgReceiver():
             control_sequence = bytes.join(first_char, second_char)
             bac_serial_wrapper_logger.error(f'Message did not start with DLE/STX = 0x10 02 control sequence!!: 0x{control_sequence.hex().upper()}')
             raise BacL2Exception(f'Message did not start with DLE/STX = 0x10 02 control sequence!!: 0x{control_sequence.hex().upper()}')
-        bac_serial_wrapper_logger.debug('[BAC L2] Message start control sequence DLE/STX = 0x10 02 received!!')
+        bac_serial_wrapper_logger.debug(f'[BAC L2] Message start control sequence DLE/STX = 0x10 02 received!! (0x{(DLE + STX).hex().upper()})')
         return True
 
-    def _check_received_msg_crc(self, message_content, crc_bytes) -> bool:
-        bac_serial_wrapper_logger.debug(f'[BAC L2] CRC-16: 0x{crc16_arc(message_content).hex()}')
-        return crc_bytes == crc16_arc(message_content)
+    def _check_received_msg_crc(self, message_content_with_dle_etx, crc_bytes) -> bool:
+        """message_content should contain the unescaped raw message content with the DLE/ETX control characters (footers) at the end.
+        We should not include the message start headers (DLE/STX).
+        That is, message_content is only the raw content + DLE/ETX."""
+        bac_serial_wrapper_logger.debug(f'[BAC L2] Received CRC-16: 0x{crc_bytes.hex().upper()}')
+        computed_crc16_bytes = crc16_arc(message_content_with_dle_etx)
+        bac_serial_wrapper_logger.debug(f'[BAC L2] Computed CRC-16: 0x{computed_crc16_bytes.hex().upper()}')
+        return crc_bytes == computed_crc16_bytes
 
-    def _read_message_content_and_acknowledge_it(self) -> bytes:
-        """Read message content and acknowledge it!
+    def _read_message_content_until_dle_etx(self) -> bytes:
+        """Read message content (response from beacon)!
         We read bytes until we get to the control sequence DLE/ETX"""
-        received_msg_content_with_etx = bytearray()
+        raw_received_msg_with_dle_etx = bytearray()
         current_char = b''
-        while current_char != DLE + ETX:
-            # Non-escaped character!
-            if current_char != DLE:
-                current_char = self.serial_instance.read(1)
-                received_msg_content_with_etx.append(current_char[0])
+        byte_count = 0
+        while byte_count < 128:
+            escape_current_char = (current_char == DLE)
+            current_char = self.serial_instance.read(1)
+            raw_received_msg_with_dle_etx.append(current_char[0])
+            byte_count += 1
+
             # Escaped character!!
-            if current_char == DLE:
-                current_char = self.serial_instance.read(1)
-                received_msg_content_with_etx.append(current_char[0])
-                # End of message control sequence!!
+            if escape_current_char:
                 if current_char == ETX:
+                    # End of message control sequence!!
+                    bac_serial_wrapper_logger.debug(f'End of message control sequence DLE/ETX (0x{(DLE + ETX).hex().upper()}) received!')
                     break
-        bac_serial_wrapper_logger.debug(f"[BAC L2] Response from beacon with ETX: 0x{received_msg_content_with_etx.hex().upper()}")
+                if current_char == DLE:
+                    escape_current_char = False
+                    # Double DLE, so no escaping for the next character!
+                    continue
 
-        crc_bytes = self.serial_instance.read(1) + self.serial_instance.read(1)
-        if self._check_received_msg_crc(received_msg_content_with_etx, crc_bytes):
-            self.serial_instance.write(ACK)
-        else:
-            self.serial_instance.write(NAK)
-            self.receive_message()
+        bac_serial_wrapper_logger.debug(f"[BAC L2] Raw response from beacon without DLE/STX: 0x{raw_received_msg_with_dle_etx.hex().upper()}")
+        return raw_received_msg_with_dle_etx
 
-        received_msg_content = received_msg_content_with_etx[:-2]
-        bac_serial_wrapper_logger.debug(f"[BAC L2] Response from beacon: 0x{received_msg_content.hex().upper()}")
+    def _read_raw_message_content_check_crc_and_acknowledge_it(self) -> bytes:
+        """Read message content and acknowledge it!
 
-        return received_msg_content_with_etx
+        We read bytes until we get to the control sequence DLE/ETX.
+        Then we compute the expected CRC16 of the message.
+        Then we compare the computed CRC16 with the one sent from the beacon.
+        If they match, we finally send an ACK control character!"""
+        for retries_count in range(0, 8):
+            self._wait_for_message_start_header()
+            raw_received_msg_with_dle_etx = self._read_message_content_until_dle_etx()
+
+            crc_bytes = self.serial_instance.read(1) + self.serial_instance.read(1)
+            if self._check_received_msg_crc(raw_received_msg_with_dle_etx, crc_bytes):
+                self.serial_instance.write(ACK)
+                break
+            else:
+                # Invalid CRC16!!
+                bac_serial_wrapper_logger.critical(f"Invalid CRC16 checksum value received!!!")
+                self.serial_instance.write(NAK)
+
+        # Remove two last bytes DLE/ETX marking the end of the message
+        raw_received_msg_content = raw_received_msg_with_dle_etx[:-2]
+        bac_serial_wrapper_logger.debug(f"[BAC L2] Raw unescaped response from beacon: 0x{raw_received_msg_content.hex().upper()}")
+
+        return raw_received_msg_content
 
     def _receive_eot_char(self):
         self.serial_instance.timeout = self.EOT_CHAR_TIMEOUT
@@ -395,9 +426,8 @@ class BacMsgReceiver():
         raise BacL2Exception(f'Received non-EOT char ({received_char}) after end of message reception!!')
 
     def receive_message(self):
-        self._wait_for_message_start_header()
-        source_msg_content_with_etx = self._read_message_content_and_acknowledge_it()
-        unescaped_source_msg_content = unescape_dle_in_message_content(source_msg_content_with_etx[:-2])
+        raw_received_msg_content = self._read_raw_message_content_check_crc_and_acknowledge_it()
+        unescaped_source_msg_content = unescape_dle_in_message_content(raw_received_msg_content)
         bac_serial_wrapper_logger.info(f'[BAC L2] Received message content: 0x{unescaped_source_msg_content.hex().upper()}')
 
         self._receive_eot_char()
