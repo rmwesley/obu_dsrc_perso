@@ -580,17 +580,7 @@ async def send_get_stamped_request(
     # ActionType is 0 for GET_STAMPED.request and Mode is True (Always expects a response)
     response_t_apdu_value = await send_action_request(True, eid, 0, accessCredentialsPresent, container_with_get_stamped_rq_value, close_transaction=close_transaction)
 
-    bcm_logger.debug("We now obtain the GET_STAMPED.response object from the T_APDU response!")
-    bcm_logger.debug("GET_STAMPED.response is a parameterized type, so we cannot encode/decode it, only the T_APDU!")
-
-    bcm_logger.debug("We now obtain the GetStampedRq object in the ACTION.Response's parameter!")
-    bcm_logger.debug("GET_STAMPED.response is a parameterized type, so we cannot encode/decode it, only the T_APDU!")
-
-    action_response_parameter = last_response_t_apdu_value[1]['responseParameter']
-    get_stamped_response_value = action_response_parameter[1]
-    bcm_logger.info(f'GetStampedRq value: {get_stamped_response_value}')
-
-    bcm_logger.debug(f"GET_STAMPED.response (Presentation response): {response_t_apdu_value['actionResponse']['responseParameter']}")
+    # custom_its_per_decoders.decode_get_response_param(response_t_apdu_value)
 
     try:
         verify_obe_authenticity()

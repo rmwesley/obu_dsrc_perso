@@ -4,6 +4,22 @@ import baudot
 import logging
 import io
 
+# DEPRECATED
+def decode_get_response_param(response_t_apdu_value):
+    custom_per_decoders_logger.debug("We now obtain the GET_STAMPED.response object from the T_APDU response!")
+    custom_per_decoders_logger.debug("GET_STAMPED.response is a parameterized type, so we cannot encode/decode it, only the T_APDU!")
+
+    custom_per_decoders_logger.debug("We now obtain the GetStampedRq object in the ACTION.Response's parameter!")
+    custom_per_decoders_logger.debug("GET_STAMPED.response is a parameterized type, so we cannot encode/decode it, only the T_APDU!")
+
+    action_response_parameter = response_t_apdu_value[1]['responseParameter']
+    get_stamped_response_value = action_response_parameter[1]
+    custom_per_decoders_logger.info(f'GetStampedRq value: {get_stamped_response_value}')
+
+    custom_per_decoders_logger.debug(f"GET_STAMPED.response (Presentation response): {response_t_apdu_value['actionResponse']['responseParameter']}")
+
+    return get_stamped_response_value
+
 def split_country_code_baudot_chars_in_bytes(country_code:int) -> bytes:
     first_5bits = (country_code >> 5) & 0b11111
     second_5bits = country_code & 0b11111
