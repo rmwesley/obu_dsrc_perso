@@ -284,7 +284,7 @@ class BacMsgTransfer():
 
     def _write_message(self, message_content:bytes):
         message_value = wrap_message(message_content)
-        bac_serial_wrapper_logger.debug(f'[BAC L2] Sent message content with STX: {message_value.hex().upper()}')
+        bac_serial_wrapper_logger.debug(f'[BAC L2] Sent message content with STX: 0x{message_value.hex().upper()}')
         self.serial_instance.write(message_value)
 
     # Source transfers a message to destination
@@ -319,16 +319,21 @@ class BacMsgReceiver():
         self.serial_instance = serial_instance
 
     def _handle_repeated_transfer_requests(self, received_char):
-        """Handles cases in which ACK for message transfer request was lost by source.
-        That is, the source sent an ENQ again."""
+        """Handles cases in which ACK for message transfer request was lost by the beacon (source).
+        That is, the source sent an ENQ multiple times, even after an ACK was sent."""
         transfer_request_counter = 0
         while received_char == ENQ:
+
             # ACK was lost by the source!!!
             if transfer_request_counter > MAX_TRANSFER_REQ_RETRIES - 1:
-                raise BacL2Exception('Maximum transfer request retries exceeded!!')
+                raise BacL2Exception('Beacon exceeded maximum transfer request retries!!')
+
+            bac_serial_wrapper_logger.debug('Sending ACK (0x06) in response to ENQ (0x05)...')
             self.serial_instance.write(ACK)
+
             received_char = self.serial_instance.read(1)
             transfer_request_counter += 1
+            bac_serial_wrapper_logger.debug(f'Received (0x{received_char.hex().upper()}) after sending ACK')
         return received_char
 
     def _wait_for_message_start_header(self):
