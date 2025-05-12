@@ -1,4 +1,4 @@
-from services.db import upload_transactions_data
+from services.db import transactions_data_sync
 
 if __name__ == '__main__':
-    upload_transactions_data.upload_local_data(size=None)
+    transactions_data_sync.upload_local_data(size=None)

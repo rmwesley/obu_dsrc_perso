@@ -1,0 +1,6 @@
+{
+  "mongodb_config": {
+    "connection_string": null,
+    "database_name": "bm_db"
+  }
+}
