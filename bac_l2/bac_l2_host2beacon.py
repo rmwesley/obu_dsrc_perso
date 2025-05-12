@@ -323,16 +323,16 @@ class BacMsgReceiver():
         That is, the source sent an ENQ multiple times, even after an ACK was sent."""
         transfer_request_counter = 0
         while received_char == ENQ:
+            transfer_request_counter += 1
 
             # ACK was lost by the source!!!
-            if transfer_request_counter > MAX_TRANSFER_REQ_RETRIES - 1:
+            if transfer_request_counter > MAX_TRANSFER_REQ_RETRIES:
                 raise BacL2Exception('Beacon exceeded maximum transfer request retries!!')
 
             bac_serial_wrapper_logger.debug('Sending ACK (0x06) in response to ENQ (0x05)...')
             self.serial_instance.write(ACK)
 
             received_char = self.serial_instance.read(1)
-            transfer_request_counter += 1
             bac_serial_wrapper_logger.debug(f'Received (0x{received_char.hex().upper()}) after sending ACK')
         return received_char
 
