@@ -355,6 +355,10 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
 def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jval):
     global current_transaction_id
     global current_transaction_datetime_prefix
+    if 'current_transaction_id' not in globals():
+        bcm_logger.error(f'Cannot add DSRC transaction data to file without transaction init data')
+        return
+
     transaction_data_filename = f"local_file_storage/transactions/{current_transaction_datetime_prefix}_{current_transaction_id}.json"
 
     # current_exchanged_data_json = {}
