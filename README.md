@@ -93,10 +93,16 @@ The main UI (HMI) is contained in the index.html file and it is served in the ro
 So just go to localhost:8000 in your browser to view the index.
 To view FastAPI's Swagger UI instead, visit localhost:8000/docs.
 
+# Deploying the Beacon Client API in development mode
+To deploy the RSE FastAPI on localhost:8000, just run:
+`.venv\Scripts\fastapi.exe dev .\beacon_client_api_main.py`
+This API includes the /beacon router as well as routers for the Beacon Proxy Server to
+use and communicate with to consult the state of the beacon/rse device or even synchronize data.
+
 # Deploying the RSE FastAPI in development mode
 To deploy the RSE FastAPI on localhost:8000, just run:
 `.venv\Scripts\fastapi.exe dev .\rse_api_main.py`
-or even `.venv\Scripts\fastapi.exe dev rse_api_main.py --port 8001` if the port 8000 is occupied.
+This API includes only the /beacon router only
 
 # Using PIP to install packages in the venv
 To install packages, just run:
