@@ -55,14 +55,5 @@
         "automatic_internal_beacon_bst": false
       }
     }
-  },
-  "database_config": {
-    "MongoDB":{
-      "connection_string": null,
-      "database_name": "bm_db"
-    },
-    "transaction_manager": {
-      "db_collection_name": "transactions"
-    }
   }
 }
