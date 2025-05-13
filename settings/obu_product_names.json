@@ -1,0 +1,28 @@
+{
+  "obe_name_by_device_model_ref": {
+    "0003": {
+      "manufacturer_name": "KAPSCH SE",
+      "obu_names": {
+        "7326": "TRP-4010-00A",
+        "7403": "OBU-5310",
+        "7404": "TRP-4010-20B"
+      }
+    },
+    "0007": {
+      "manufacturer_name": "YUNEX",
+      "obu_names": {
+        "0016": "OBU-C3081",
+        "0017": "OBU-C3081",
+        "0019": "OBU-C3081"
+      }
+    },
+    "0029": {
+      "manufacturer_name": "CONTINENTAL",
+      "obu_names": {
+        "0013": "OBU-5PLUS",
+        "0031": "OBU-5PLUS",
+        "0101": "VDOLink"
+      }
+    }
+  }
+}

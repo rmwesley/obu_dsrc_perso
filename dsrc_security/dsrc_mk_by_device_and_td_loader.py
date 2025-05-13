@@ -52,9 +52,17 @@ def get_efc_cm_from_device_contract_ref(device_contract_ref: str) -> str:
 
 # Device name to Manufacturer Id + Equipment Class mapping (in hex!!)
 equipment_refs_by_device_names = {}
-with open(f'{root_dir}/settings/obu_models.json', 'r') as json_file:
-    obu_models_data_by_name = json.load(json_file)
-    equipment_refs_by_device_names = obu_models_data_by_name['equipment_references_by_device_model_name']
+with open(f'{root_dir}/settings/obu_product_names.json', 'r') as json_file:
+    obu_models_data = json.load(json_file)
+    equipment_refs_by_device_names = {}
+    for manufacturer_id, manufacturer_data in obu_models_data['obe_name_by_device_model_ref'].items():
+        for equipment_class, device_model_name in manufacturer_data['obu_names'].items():
+            equipment_refs = equipment_refs_by_device_names.get(device_model_name, [])
+            device_model_ref = manufacturer_id + equipment_class
+
+            equipment_refs.append(device_model_ref)
+            equipment_refs_by_device_names[device_model_name] = equipment_refs
+    # print(equipment_refs_by_device_names)
 
 def load_master_keys_by_toll_domain():
     global master_keys_by_toll_domain
