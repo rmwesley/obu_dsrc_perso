@@ -28,7 +28,7 @@ startup_date = datetime.now()
 logs_date_prefix = startup_date.strftime('%y%m%d')
 
 # SETTING UP LOGGER FILE HANDLER
-file_handler = logging.FileHandler(f'beacon_logs/{logs_date_prefix}_rse_dsrc_l7.log')
+file_handler = logging.FileHandler(f'logs/beacon_logs/{logs_date_prefix}_rse_dsrc_l7.log')
 file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
 file_handler.setFormatter(file_formatter)
 bcm_logger.addHandler(file_handler)

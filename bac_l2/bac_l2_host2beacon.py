@@ -8,7 +8,7 @@ bac_serial_wrapper_logger = logging.getLogger(__name__)
 
 # SETTING UP LOGGER FILE HANDLER
 date_prefix = datetime.now().strftime('%y%m%d')
-file_handler = logging.FileHandler(f'beacon_logs/{date_prefix}_bac_l2.log')
+file_handler = logging.FileHandler(f'logs/beacon_logs/{date_prefix}_bac_l2.log')
 file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
 file_handler.setFormatter(file_formatter)
 bac_serial_wrapper_logger.addHandler(file_handler)
