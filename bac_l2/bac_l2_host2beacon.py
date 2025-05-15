@@ -41,6 +41,7 @@ EOT = bytes([0x04]) # End Of Transmission of message
 DLE = bytes([0x10]) # Escape character, to discriminate between special characters and message content
 STX = bytes([0x02]) # Start of message
 ETX = bytes([0x03]) # End of message
+CONTROL_CHARS = [ENQ, ACK, NAK, EOT, DLE, STX, ETX]
 
 MAX_TRANSFER_REQ_RETRIES = 255
 MAX_MSG_TRANSFER_RETRIES = 8
@@ -389,6 +390,8 @@ class BacMsgReceiver():
                     escape_next_char = False
                     # Double DLE, so no escaping for the next character!
                     continue
+                elif current_char not in CONTROL_CHARS:
+                    raise BacL2Exception('Beacon escaped a non-control character!!!')
 
             # If the current char is a DLE, we need to scape the next char! (Unless we have a double DLE)
             escape_next_char = (current_char == DLE)
