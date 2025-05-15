@@ -404,7 +404,14 @@ class BacMsgReceiver():
             self._wait_for_message_start_header()
             raw_received_msg_with_dle_etx = self._read_message_content_until_dle_etx()
 
-            crc_bytes = self.serial_instance.read(1) + self.serial_instance.read(1)
+            # crc1 = self.serial_instance.read(1) + self.serial_instance.read(1)
+            # crc1 = self.serial_instance.read(2)
+            # crc2 = self.serial_instance.read(1)
+            # crc_bytes = crc1 + crc2
+            # print(self.serial_instance.read(1))
+            crc_bytes = self.serial_instance.read(2)
+            bac_serial_wrapper_logger.debug(f'Received CRC16: 0x{crc_bytes.hex().upper()}')
+
             if self._check_received_msg_crc(raw_received_msg_with_dle_etx, crc_bytes):
                 self.serial_instance.write(ACK)
                 break
