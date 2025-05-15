@@ -399,10 +399,9 @@ async def update_beacon_state():
 def get_init_data():
     global initialization_data
 
-    try:
-        return initialization_data
-    except:
+    if 'initialization_data' not in globals():
         return {}
+    return initialization_data
 
 def find_eid_with_accepted_contract():
     eid = None
