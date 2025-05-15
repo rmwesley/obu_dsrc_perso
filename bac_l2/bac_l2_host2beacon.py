@@ -371,23 +371,27 @@ class BacMsgReceiver():
         We read bytes until we get to the control sequence DLE/ETX"""
         raw_received_msg_with_dle_etx = bytearray()
         current_char = b''
+        escape_next_char = False
         byte_count = 0
         while byte_count < 128:
-            escape_current_char = (current_char == DLE)
+            previous_char = current_char
             current_char = self.serial_instance.read(1)
             raw_received_msg_with_dle_etx.append(current_char[0])
             byte_count += 1
 
-            # Escaped character!!
-            if escape_current_char:
+            # Escape character!
+            if escape_next_char:
                 if current_char == ETX:
                     # End of message control sequence!!
                     bac_serial_wrapper_logger.debug(f'End of message control sequence DLE/ETX (0x{(DLE + ETX).hex().upper()}) received!')
                     break
                 if current_char == DLE:
-                    escape_current_char = False
+                    escape_next_char = False
                     # Double DLE, so no escaping for the next character!
                     continue
+
+            # If the current char is a DLE, we need to scape the next char! (Unless we have a double DLE)
+            escape_next_char = (current_char == DLE)
 
         bac_serial_wrapper_logger.debug(f"[BAC L2] Raw response from beacon with DLE/STX: 0x{raw_received_msg_with_dle_etx.hex().upper()}")
         return raw_received_msg_with_dle_etx
