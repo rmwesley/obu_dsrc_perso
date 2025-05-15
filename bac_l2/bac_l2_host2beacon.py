@@ -304,6 +304,7 @@ class BacMsgTransfer():
             self._write_message(message_content)
             message_transfer_counter += 1
 
+        bac_serial_wrapper_logger.debug(f'Sending EOT char (0x04) to beacon (End Of Transmission)...')
         self.serial_instance.write(EOT)
 
     # def transfer_and_receive_message(self, message_content:bytes) -> bytes:
@@ -346,14 +347,14 @@ class BacMsgReceiver():
         first_char = self._handle_repeated_transfer_requests(received_char)
 
         if first_char != DLE:
-            bac_serial_wrapper_logger.error(f'Message did not start with DLE/STX = 0x10 02 control sequence!!: 0x{first_char.hex().upper()}')
-            raise BacL2Exception(f'Message did not start with DLE/STX = 0x10 02 control sequence!!: 0x{first_char.hex().upper()}')
+            bac_serial_wrapper_logger.error(f'Message did not start with DLE/STX = 0x1002 control sequence!!: 0x{first_char.hex().upper()}')
+            raise BacL2Exception(f'Message did not start with DLE/STX = 0x1002 control sequence!!: 0x{first_char.hex().upper()}')
         second_char = self.serial_instance.read(1)
         if second_char != STX:
             control_sequence = bytes.join(first_char, second_char)
-            bac_serial_wrapper_logger.error(f'Message did not start with DLE/STX = 0x10 02 control sequence!!: 0x{control_sequence.hex().upper()}')
-            raise BacL2Exception(f'Message did not start with DLE/STX = 0x10 02 control sequence!!: 0x{control_sequence.hex().upper()}')
-        bac_serial_wrapper_logger.debug(f'[BAC L2] Message start control sequence DLE/STX = 0x10 02 received!! (0x{(DLE + STX).hex().upper()})')
+            bac_serial_wrapper_logger.error(f'Message did not start with DLE/STX = 0x1002 control sequence!!: 0x{control_sequence.hex().upper()}')
+            raise BacL2Exception(f'Message did not start with DLE/STX = 0x1002 control sequence!!: 0x{control_sequence.hex().upper()}')
+        bac_serial_wrapper_logger.debug(f'[BAC L2] Message start control sequence DLE/STX = 0x1002 received!! (0x{(DLE + STX).hex().upper()})')
         return True
 
     def _check_received_msg_crc(self, message_content_with_dle_etx, crc_bytes) -> bool:
@@ -388,7 +389,7 @@ class BacMsgReceiver():
                     # Double DLE, so no escaping for the next character!
                     continue
 
-        bac_serial_wrapper_logger.debug(f"[BAC L2] Raw response from beacon without DLE/STX: 0x{raw_received_msg_with_dle_etx.hex().upper()}")
+        bac_serial_wrapper_logger.debug(f"[BAC L2] Raw response from beacon with DLE/STX: 0x{raw_received_msg_with_dle_etx.hex().upper()}")
         return raw_received_msg_with_dle_etx
 
     def _read_raw_message_content_check_crc_and_acknowledge_it(self) -> bytes:
