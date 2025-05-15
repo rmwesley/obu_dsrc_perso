@@ -396,6 +396,7 @@ class BacMsgReceiver():
         """Read message content and acknowledge it!
 
         We read bytes until we get to the control sequence DLE/ETX.
+        Then we read 2 more bytes from the beacon (comprising the CRC16 checksum value)
         Then we compute the expected CRC16 of the message.
         Then we compare the computed CRC16 with the one sent from the beacon.
         If they match, we finally send an ACK control character!"""
@@ -419,6 +420,7 @@ class BacMsgReceiver():
         return raw_received_msg_content
 
     def _receive_eot_char(self):
+        """Receive EOT char just after end of tramission (all messages end with DLE/ETX + CRC16)"""
         self.serial_instance.timeout = self.EOT_CHAR_TIMEOUT
 
         received_char = self.serial_instance.read(1)
