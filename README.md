@@ -22,6 +22,10 @@ Required PIP packages for running beacon code:
 - logging
 - threading
 
+Required packages for beacon proxy MQTT communication:
+- paho-mqtt
+- aiomqtt
+
 Required dependencies for deploying FastAPI app:
 - fastapi[standard]
 
