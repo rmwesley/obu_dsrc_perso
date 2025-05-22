@@ -50,6 +50,20 @@ You can also directly set this environment variable in Python code like so:
 
 This is exactly the code that is executed in the `main.py` module to set the `MK_PATH` environment variable
 
+# MQTT setup
+Please start an MQTT broker and set up its connection info in the `settings/mqtt_broker_config.json` config file.
+For example, you can install the Eclipse Mosquitto MQTT broker on a machine and setup its connection info in the local config file.
+
+Just add the following to the `C:\Program Files\mosquitto\mosquitto.conf` config file on the remote machine:
+```
+# Plain MQTT protocol
+listener 8333
+# Enable logging
+log_dest file c:\ProgramData\mosquitto\log\mosquitto.log
+log_type all
+```
+And then use the 8333 port to communicate with the Mosquitto MQTT broker! :)
+
 # Usage exemples
 ## Doing a hardcoded DSRC reading by executing main.py
 To execute main.py on the windows command line (cmd) or on PowerShell, just run:
