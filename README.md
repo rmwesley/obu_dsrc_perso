@@ -64,6 +64,16 @@ log_type all
 ```
 And then use the 8333 port to communicate with the Mosquitto MQTT broker! :)
 
+You can also setup a password file for the broker with the `mosquitto_passwd` command-line utility:
+`mosquitto_passwd -c C:\ProgramData\mosquitto\password.txt beacon_proxy`
+Then simply enter the password twice (to confirm it).
+
+And then finally simply add a line to the `C:\Program Files\mosquitto\mosquitto.conf` file to
+reference the file containing the encrypted credentials that was just created:
+```
+password_file c:\ProgramData\mosquitto\password.txt
+```
+
 # Usage exemples
 ## Doing a hardcoded DSRC reading by executing main.py
 To execute main.py on the windows command line (cmd) or on PowerShell, just run:
