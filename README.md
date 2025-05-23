@@ -132,6 +132,10 @@ To deploy the RSE FastAPI on localhost:8000, just run:
 `.venv\Scripts\fastapi.exe dev .\rse_api_main.py`
 This API includes only the /beacon router only
 
+# Web and GUI front-end development
+All the files for the multiple Web and GUI frontends are located in the `fronts/` directory.
+They are split in `web/` and `gui/` directories for clarity.
+
 # Using PIP to install packages in the venv
 To install packages, just run:
 `.venv\Scripts\python.exe main.py`
