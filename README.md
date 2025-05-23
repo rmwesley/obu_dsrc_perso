@@ -113,10 +113,16 @@ So manually install dependencies with `pip`, which can be run via `python`.
 Exemple:
 `.venv\Scripts\python.exe -m pip install requests_pkcs12`
 
+# Deploying the Main FastAPI application with all 4 subapps
+For now deploy it with uvicorn:
+` .\.venv\Scripts\python.exe -m uvicorn main_app:root_app --host 127.0.0.1 --port 8001`
+For some reason, the `beacon_client_app` is deployed instead of `root_app` when deploying with FastAPI.
+
 # Deploying the EFC decoding FastAPI in development mode
 To deploy the EFC decoding FastAPI on localhost:8000, just run:
 `.venv\Scripts\fastapi.exe dev .\efc_decoding_api_main.py`
 or even `.venv\Scripts\fastapi.exe dev efc_decoding_api_main.py --port 8001` if the port 8000 is occupied.
+
 The main UI (HMI) is contained in the index.html file and it is served in the root.
 So just go to localhost:8000 in your browser to view the index.
 To view FastAPI's Swagger UI instead, visit localhost:8000/docs.
