@@ -8,10 +8,6 @@ import logging
 import dsrc_security.dsrc_key_derivation as dsrc_key_derivation
 
 security_router_logger = logging.getLogger(__name__)
-# urlpatterns = [
-#     path("", router.urls, name="uat-automation"),
-#     path("admin/", admin.site.urls, name="admin"),
-# ]
 
 router = APIRouter(
     prefix="/security",
