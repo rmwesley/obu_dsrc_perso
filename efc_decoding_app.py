@@ -1,8 +1,6 @@
 from fastapi import FastAPI
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-# from routers import beacon, security, efc_decoding
 from routers import efc_decoding
 
 import logging

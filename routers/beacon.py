@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import FileResponse
 
 from pydantic import BaseModel, Field
 
