@@ -114,9 +114,11 @@ Exemple:
 `.venv\Scripts\python.exe -m pip install requests_pkcs12`
 
 # Deploying the Main FastAPI application with all 4 subapps
-For now deploy it with uvicorn:
-` .\.venv\Scripts\python.exe -m uvicorn main_app:root_app --host 127.0.0.1 --port 8001`
-For some reason, the `beacon_client_app` is deployed instead of `root_app` when deploying with FastAPI.
+To deploy the Main FastAPI app on localhost:8000, just run:
+`.venv\Scripts\fastapi.exe dev .\efc_decoding_api_main.py`
+Or deploy it with uvicorn:
+` .\.venv\Scripts\python.exe -m uvicorn main_app:app --host 127.0.0.1 --port 8001`
+For some reason, the `beacon_client_app` is deployed if the main app is not named `app` when deploying with FastAPI.
 
 # Deploying the EFC decoding FastAPI in development mode
 To deploy the EFC decoding FastAPI on localhost:8000, just run:

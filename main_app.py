@@ -11,18 +11,18 @@ import logging
 root_logger = logging.getLogger()
 root_logger.setLevel(logging.DEBUG)
 
-root_app = FastAPI(title="Main app")
+app = FastAPI(title="Main FastAPI app")
 
-@root_app.get('/', include_in_schema=False)
+@app.get('/', include_in_schema=False)
 async def get_index():
     return FileResponse('fronts/web/tolling_testing_web_front/index.html')
 
-@root_app.get('/home.svg', include_in_schema=False)
+@app.get('/home.svg', include_in_schema=False)
 async def favicon():
     return FileResponse('fronts/web/tolling_testing_web_front/home.svg')
 
 # Mount the subapps
-root_app.mount("/decoding", efc_decoding_app)
-root_app.mount("/security", efc_security_app)
-root_app.mount("/beacon", beacon_client_app)
-root_app.mount("/transacation-data", transaction_data_app)
+app.mount("/decoding", efc_decoding_app)
+app.mount("/security", efc_security_app)
+app.mount("/beacon", beacon_client_app)
+app.mount("/transacation-data", transaction_data_app)
