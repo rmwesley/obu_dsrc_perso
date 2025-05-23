@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
-from fastapi.templating import Jinja2Templates
 
 from pydantic import BaseModel, Field
 
@@ -13,16 +12,6 @@ import dsrc_security.dsrc_key_derivation as dsrc_key_derivation
 router = APIRouter(
     prefix="/beacon",
     tags=["Beacon Interface"])
-
-templates = Jinja2Templates(directory="templates")
-@router.get('/', include_in_schema=False)
-def get_beacon_interface(request: Request):
-    return templates.TemplateResponse(
-        request=request,
-        name="beacon_interface.html")
-@router.get('/beacon.svg', include_in_schema=False)
-async def favicon():
-    return FileResponse('static/beacon_interface/beacon.svg')
 
 @router.get('/beacon-config')
 async def get_beacon_config():

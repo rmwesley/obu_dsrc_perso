@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import FileResponse
-from fastapi.templating import Jinja2Templates
 
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -8,7 +7,6 @@ from typing import Optional
 import logging
 import dsrc_security.dsrc_key_derivation as dsrc_key_derivation
 
-templates = Jinja2Templates(directory="templates")
 security_router_logger = logging.getLogger(__name__)
 # urlpatterns = [
 #     path("", router.urls, name="uat-automation"),
@@ -18,15 +16,6 @@ security_router_logger = logging.getLogger(__name__)
 router = APIRouter(
     prefix="/security",
     tags=["Security Interface"])
-
-@router.get("/")
-def home(request: Request):
-    return templates.TemplateResponse(
-        request,
-        name="security_interface.html")
-@router.get('/security.svg', include_in_schema=False)
-async def favicon():
-    return FileResponse('static/security_interface/security.svg')
 
 class TripleDesDecryptionReq(BaseModel):
     ciphertext: str
