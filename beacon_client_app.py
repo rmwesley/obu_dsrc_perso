@@ -11,15 +11,6 @@ root_logger.setLevel(logging.DEBUG)
 
 beacon_client_app = FastAPI(title="Beacon Client API")
 
-# @beacon_client_app.get('/', include_in_schema=False)
-# async def get_index():
-#     return FileResponse('fronts/beacon_client_web_front/static/index.html')
-
-# @beacon_client_app.get('/home.svg', include_in_schema=False)
-# async def favicon():
-#     return FileResponse('fronts/beacon_client_web_front/static/home.svg')
-
-# root_app.include_router(dsrc_transaction_data.router)
 beacon_client_app.include_router(beacon.router)
 
 # Serve the static HTML files for this app

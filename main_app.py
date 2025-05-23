@@ -26,5 +26,3 @@ root_app.mount("/decoding", efc_decoding_app)
 root_app.mount("/security", efc_security_app)
 root_app.mount("/beacon", beacon_client_app)
 root_app.mount("/transacation-data", transaction_data_app)
-
-# root_app.mount("/", StaticFiles(directory="fronts/tolling_testing_web_front", html=True), name="efc_test_static_files")

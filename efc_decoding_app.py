@@ -11,15 +11,6 @@ root_logger.setLevel(logging.DEBUG)
 
 efc_decoding_app = FastAPI(title="EFC Decoding API")
 
-# @efc_decoding_app.get('/', include_in_schema=False)
-# async def get_index():
-#     return FileResponse('index.html')
-
-# @efc_decoding_app.get('/home.svg', include_in_schema=False)
-# async def favicon():
-#     return FileResponse('fronts/efc_decoding_front/static/home.svg')
-
-# efc_decoding_app.include_router(beacon.router)
 efc_decoding_app.include_router(efc_decoding.router)
 
 # Serve the static HTML files for this app
