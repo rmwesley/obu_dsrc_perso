@@ -14,4 +14,4 @@ efc_security_app = FastAPI(title="EFC Testing API")
 efc_security_app.include_router(security.router)
 
 # Serve the static HTML files for this app
-efc_security_app.mount("/", StaticFiles(directory="fronts/security_interface_web_front", html=True), name="sec_if_static_files")
+efc_security_app.mount("/", StaticFiles(directory="fronts/web/security_interface_web_front", html=True), name="sec_if_static_files")

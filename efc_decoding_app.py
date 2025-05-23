@@ -14,4 +14,4 @@ efc_decoding_app = FastAPI(title="EFC Decoding API")
 efc_decoding_app.include_router(efc_decoding.router)
 
 # Serve the static HTML files for this app
-efc_decoding_app.mount("/", StaticFiles(directory="fronts/efc_decoder_web_front", html=True), name="efc_decoder_web_front_files")
+efc_decoding_app.mount("/", StaticFiles(directory="fronts/web/efc_decoder_web_front", html=True), name="efc_decoder_web_front_files")

@@ -14,4 +14,4 @@ beacon_client_app = FastAPI(title="Beacon Client API")
 beacon_client_app.include_router(beacon.router)
 
 # Serve the static HTML files for this app
-beacon_client_app.mount("/", StaticFiles(directory="fronts/rse_web_front", html=True), name="rse_web_front_files")
+beacon_client_app.mount("/", StaticFiles(directory="fronts/web/rse_web_front", html=True), name="rse_web_front_files")
