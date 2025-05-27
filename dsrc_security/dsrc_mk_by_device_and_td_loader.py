@@ -14,30 +14,30 @@ efc_sec_conf_path = os.environ['EFC_SEC_CONF_PATH']
 class TollDomainMasterKeysNotFoundException(Exception):
     pass
 
-def assemble_device_contract_ref_hex_str(efc_cm_hex_str: str, manufacturer_id_hex_str:str, equipment_class_hex_str:str):
-    if type(manufacturer_id_hex_str) is int:
-        manufacturer_id_hex_str = f'{manufacturer_id:04X}'
-    if type(equipment_class_hex_str) is int:
-        equipment_class_hex_str = f'{equipment_class_hex_str:04X}'
-    if type(efc_cm_hex_str) is int:
-        efc_cm_hex_str = f'{efc_cm_hex_str:12X}'
+def assemble_device_contract_ref_hex_str(efc_cm: bytes|int|str, manufacturer_id:bytes|int|str, equipment_class:bytes|int|str):
+    if type(manufacturer_id) is int:
+        manufacturer_id = f'{manufacturer_id:04X}'
+    if type(equipment_class) is int:
+        equipment_class = f'{equipment_class:04X}'
+    if type(efc_cm) is int:
+        efc_cm = f'{efc_cm:12X}'
 
-    if type(manufacturer_id_hex_str) is bytes:
-        manufacturer_id_hex_str = manufacturer_id_hex_str.hex().upper()
-    if type(equipment_class_hex_str) is bytes:
-        equipment_class_hex_str = equipment_class_hex_str.hex().upper()
-    if type(efc_cm_hex_str) is bytes:
-        efc_cm_hex_str = efc_cm_hex_str.hex().upper()
+    if type(manufacturer_id) is bytes:
+        manufacturer_id = manufacturer_id.hex().upper()
+    if type(equipment_class) is bytes:
+        equipment_class = equipment_class.hex().upper()
+    if type(efc_cm) is bytes:
+        efc_cm = efc_cm.hex().upper()
 
     # Pad to the left if too short, cut down if too long
-    if type(manufacturer_id_hex_str) is str:
-        manufacturer_id_hex_str = manufacturer_id_hex_str.zfill(4)[-4:]
-    if type(equipment_class_hex_str) is str:
-        equipment_class_hex_str = equipment_class_hex_str.zfill(4)[-4:]
-    if type(efc_cm_hex_str) is str:
-        efc_cm_hex_str = efc_cm_hex_str.zfill(12)[-12:]
+    if type(manufacturer_id) is str:
+        manufacturer_id = manufacturer_id.zfill(4)[-4:].upper()
+    if type(equipment_class) is str:
+        equipment_class = equipment_class.zfill(4)[-4:].upper()
+    if type(efc_cm) is str:
+        efc_cm = efc_cm.zfill(12)[-12:].upper()
 
-    device_contract_hex_ref = f'{efc_cm_hex_str}{manufacturer_id_hex_str}{equipment_class_hex_str}'
+    device_contract_hex_ref = f'{efc_cm}{manufacturer_id}{equipment_class}'
     return device_contract_hex_ref
 
 def disassemble_device_contract_ref_hex_str(device_contract_ref: str) -> tuple[str, str, str]:
@@ -129,21 +129,21 @@ def get_all_master_keysets():
     global master_keysets
     return master_keysets
 
-def get_master_keys_with_device_info(efc_cm_hex_str: str, manufacturer_id_hex_str:str, equipment_class_hex_str:str):
+def get_master_keys_with_device_info(efc_cm: bytes|int|str, manufacturer_id:bytes|int|str, equipment_class:bytes|int|str):
     """Get master keys through device (OBE) model data and EFC contract data
     All of these should be present in the OBE's VST!!!"""
     global master_keys_by_device_contract_ref
+    device_contract_ref = assemble_device_contract_ref_hex_str(efc_cm, manufacturer_id, equipment_class)
     try:
-        device_contract_ref = assemble_device_contract_ref_hex_str(efc_cm_hex_str, manufacturer_id_hex_str, equipment_class_hex_str)
         return master_keys_by_device_contract_ref[device_contract_ref]
         # get_master_keys_through_device_contract_data(efc_cm_hex_str, manufacturer_id_hex_str, equipment_class_hex_str)
     except:
-        key_derivation_logger.critical('MasterKeys not found for device!!!', stack_info=True)
-        key_derivation_logger.critical(f'If you are communicating with a device, check the EquipmentObuId (0x{equipment_class_hex_str}) and ManufacturerId (0x{manufacturer_id_hex_str}) values that the device sent in its VST')
+        key_derivation_logger.critical(f'MasterKeys not found for device contract {device_contract_ref}!!!', stack_info=True)
+        key_derivation_logger.critical(f'If you are communicating with a device, check the EquipmentObuId ({equipment_class}) and ManufacturerId ({manufacturer_id}) values that the device sent in its VST')
 
         # Trying to get masterkeys through EFC-CM only by looking up all devices!
         # Be careful if there are repeated EFC-CMs for different device models!!
-        return get_master_keys_with_efc_cm_only(efc_cm_hex_str)
+        return get_master_keys_with_efc_cm_only(efc_cm)
 
 def get_master_keys_with_device_contract_ref(device_contract_ref: str):
     efc_cm_hex, manufacturer_id_hex, equipment_class_hex = disassemble_device_contract_ref_hex_str(device_contract_ref)
