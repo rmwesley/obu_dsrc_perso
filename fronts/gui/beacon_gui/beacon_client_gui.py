@@ -138,7 +138,7 @@ def _cb_new_toll_domain_config_window():
     create_new_toll_domain_config_window_at_cursor_position()
 
 def new_beacon_config_window():
-    beacon_config_window = tkinter.Toplevel()
+    beacon_config_window = create_window_at_cursor_position()
     btn_change_default_beacon = tkinter.Button(
         master=beacon_config_window,
         text="Change default Beacon",
@@ -161,7 +161,7 @@ def new_beacon_config_window():
 
 def new_rse_commands_window():
     global rse_event_loop
-    rse_commands_window = tkinter.Toplevel()
+    rse_commands_window = create_window_at_cursor_position()
 
     btn_rse_set_config = tkinter.Button(
         master=rse_commands_window,
