@@ -465,6 +465,10 @@ def compute_access_credentials_for_eid(eid:int) -> bytes:
     bcm_logger.debug(f"Computing Access Credentials for EID {eid}...")
     decoded_vst_param = decode_vst_parameter_from_eid(eid)
 
+    if len(decoded_vst_param) == 1:
+        # VST parameter contains EFC-CM only, no AC_CR-KeyRef or RndOBE present
+        # As such, we do not need any access credentials!
+        return bytes(4)
     efc_cm = decoded_vst_param['EFC-ContextMark']
     ac_cr_key_ref = decoded_vst_param['AC_CR-KeyReference']
     rnd_obe = decoded_vst_param['RndOBE']
