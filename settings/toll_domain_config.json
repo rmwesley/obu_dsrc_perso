@@ -30,5 +30,6 @@
         "td_name": "IT",
         "security_profile": "EN15509"
       }
-    }
+    },
+    "try_looking_up_master_keys_for_other_obes_with_same_efc_cm": false
   }
