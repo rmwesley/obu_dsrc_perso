@@ -9,7 +9,9 @@ def crc16_arc(data : bytearray):
                 crc = int(crc / 2)
     return crc & 0xFFFF
 
-message_frame = bytes.fromhex('01 10 03')
+# Message end sequence is DLE/ETX = 0x1003
+# message_frame = bytes.fromhex('01 10 03')
+message_frame = bytes.fromhex('030091900003C101021010B28002002902020200630204542DB6C5DD0302101003')
 msg_crc16 = crc16_arc(message_frame)
 crc16_bytes = int.to_bytes(msg_crc16, length=2, byteorder='little')
 print(crc16_bytes.hex())
