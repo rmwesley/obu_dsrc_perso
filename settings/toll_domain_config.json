@@ -1,5 +1,5 @@
 {
-    "default_toll_domain_name": "IT",
+    "default_toll_domain_name": "VIA-T2",
     "environment": "TEST",
     "td_conf_by_td_name": {
       "TIS": {
