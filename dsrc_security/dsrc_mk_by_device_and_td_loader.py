@@ -137,9 +137,8 @@ def get_master_keys_with_device_info(efc_cm: bytes|int|str, manufacturer_id:byte
     try:
         return master_keys_by_device_contract_ref[device_contract_ref]
         # get_master_keys_through_device_contract_data(efc_cm_hex_str, manufacturer_id_hex_str, equipment_class_hex_str)
-    except:
-        key_derivation_logger.critical(f'MasterKeys not found for device contract {device_contract_ref}!!!', stack_info=True)
-        key_derivation_logger.critical(f'If you are communicating with a device, check the EquipmentObuId ({equipment_class}) and ManufacturerId ({manufacturer_id}) values that the device sent in its VST')
+    except KeyError:
+        key_derivation_logger.critical(f'If you are communicating with a device, check the EquipmentObuId ({equipment_class}) and ManufacturerId ({manufacturer_id}) values that the device sent in its VST', stack_info=True)
 
         if toll_domain_config_json['try_looking_up_master_keys_for_other_obes_with_same_efc_cm']:
             # Trying to get masterkeys through EFC-CM only by looking up all devices!
