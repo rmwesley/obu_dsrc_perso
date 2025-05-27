@@ -461,7 +461,7 @@ def get_parameter_bytes_from_eid_on_vst_value(eid:int, vst_value=None) -> bytes:
     bcm_logger.error(f"EID {eid} is not present!")
     raise EIDNotFoundException(f'L7: EID {eid} not present!')
 
-def compute_access_credentials(eid:int) -> bytes:
+def compute_access_credentials_for_eid(eid:int) -> bytes:
     bcm_logger.debug(f"Computing Access Credentials for EID {eid}...")
     decoded_vst_param = decode_vst_parameter_from_eid(eid)
 
@@ -477,7 +477,7 @@ def compute_access_credentials(eid:int) -> bytes:
 
 async def send_get_request(eid, accessCredentialsPresent:bool = False, attrIdList=None, close_transaction = False) -> AXXESv1_2.SEQ:
     if accessCredentialsPresent:
-        accessCredentials = compute_access_credentials(eid)
+        accessCredentials = compute_access_credentials_for_eid(eid)
     else:
         accessCredentials = None
     # Get.Request is filled with 1 bit valued at 0
@@ -514,7 +514,7 @@ async def send_action_request(
     global TApdu_container
 
     if accessCredentialsPresent:
-        accessCredentials = compute_access_credentials(eid)
+        accessCredentials = compute_access_credentials_for_eid(eid)
     else:
         accessCredentials = None
     if not actionParameter:
