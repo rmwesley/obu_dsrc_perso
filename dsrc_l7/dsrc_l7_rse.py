@@ -20,6 +20,7 @@ from bac_l7 import ops1955_bac_l7, pertel_bac_l7, tgbv_bac_l7
 
 import custom_its_per_decoders
 from dsrc_security import dsrc_auth
+from dsrc_security import dsrc_contracts
 
 bcm_logger = logging.getLogger(__name__)
 
@@ -727,7 +728,8 @@ async def send_close_transaction_setmmi(eid=0):
     return await set_mmi(eid, close_transaction=True)
 
 async def cardme_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
-    await initialize_transaction(mand_applications=mand_applications)
+    _, last_vst_value = await initialize_transaction(mand_applications=mand_applications)
+    eid = dsrc_contracts.get_eid_in_vst_with_valid_contract(vst_value=last_vst_value)
     if force_eid is not None:
         eid = force_eid
     # Getting payment info!! (Core part)
@@ -764,7 +766,8 @@ async def tis_vl_transaction(force_eid=None, mand_applications=[1, 20, 29], acce
     CIP: Commission Interautoroutes Péage
     VL: Véhicule Léger
     """
-    await initialize_transaction(mand_applications=mand_applications)
+    _, last_vst_value = await initialize_transaction(mand_applications=mand_applications)
+    eid = dsrc_contracts.get_eid_in_vst_with_valid_contract(vst_value=last_vst_value)
     if force_eid is not None:
         eid = force_eid
     await presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
@@ -795,7 +798,8 @@ async def test_ccc_2009_transaction(force_eid=None, mand_applications=[1, 20, 29
     # Compiled CCC 2015 specs
     efc_asn_compilation = CCCv1
 
-    await initialize_transaction(mand_applications=mand_applications)
+    _, last_vst_value = await initialize_transaction(mand_applications=mand_applications)
+    eid = dsrc_contracts.get_eid_in_vst_with_valid_contract(vst_value=last_vst_value)
     if force_eid is not None:
         eid = force_eid
     await presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
@@ -829,7 +833,8 @@ async def test_ccc_2009_transaction_old(force_eid=None, mand_applications=[1, 20
     # Compiled CCC 2015 specs
     efc_asn_compilation = CCCv1
 
-    await initialize_transaction(mand_applications=mand_applications)
+    _, last_vst_value = await initialize_transaction(mand_applications=mand_applications)
+    eid = dsrc_contracts.get_eid_in_vst_with_valid_contract(vst_value=last_vst_value)
     if force_eid is not None:
         eid = force_eid
     await presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
@@ -863,7 +868,8 @@ async def ccc_2015_status_history_transaction(force_eid=None, mand_applications=
     # Compiled CCC 2015 specs
     efc_asn_compilation = EFCv5
 
-    await initialize_transaction(mand_applications=mand_applications)
+    _, last_vst_value = await initialize_transaction(mand_applications=mand_applications)
+    eid = dsrc_contracts.get_eid_in_vst_with_valid_contract(vst_value=last_vst_value)
     if force_eid is not None:
         eid = force_eid
     await presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
@@ -891,7 +897,8 @@ async def test_ccc_2015_transaction(force_eid=None, mand_applications=[1, 20, 29
     # Compiled CCC 2015 specs
     efc_asn_compilation = EFCv5
 
-    await initialize_transaction(mand_applications=mand_applications)
+    _, last_vst_value = await initialize_transaction(mand_applications=mand_applications)
+    eid = dsrc_contracts.get_eid_in_vst_with_valid_contract(vst_value=last_vst_value)
     if force_eid is not None:
         eid = force_eid
     await presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
@@ -928,7 +935,8 @@ async def test_ccc_2015_transaction(force_eid=None, mand_applications=[1, 20, 29
     efc_asn_compilation = AXXESv1_2
 
 async def ccc_2023_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
-    await initialize_transaction(mand_applications=mand_applications)
+    _, last_vst_value = await initialize_transaction(mand_applications=mand_applications)
+    eid = dsrc_contracts.get_eid_in_vst_with_valid_contract(vst_value=last_vst_value)
     if force_eid is not None:
         eid = force_eid
 
@@ -956,7 +964,7 @@ async def ccc_2023_transaction(force_eid=None, mand_applications=[1, 20, 29], ac
         await send_close_transaction_echo(eid=eid)
 
 async def kapsch_system_element_transaction(force_eid=0, mand_applications=[0], accessCredentialsPresent=True, set_mmi=True):
-    await initialize_transaction(mand_applications=mand_applications)
+    _, last_vst_value = await initialize_transaction(mand_applications=mand_applications)
     if force_eid is not None:
         eid = force_eid
 
@@ -979,7 +987,7 @@ async def kapsch_system_element_transaction(force_eid=0, mand_applications=[0], 
         await send_close_transaction_echo(eid=eid)
 
 async def test_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
-    await initialize_transaction(mand_applications=mand_applications)
+    _, last_vst_value = await initialize_transaction(mand_applications=mand_applications)
     if force_eid is not None:
         eid = force_eid
 
@@ -1013,7 +1021,7 @@ async def get_attributes_in_list(eid, accessCredentialsPresent=True, attrIdList=
     global last_response_t_apdu_json
 
     # Initialize transaction
-    await initialize_transaction(mand_applications=mand_applications)
+    _, last_vst_value = await initialize_transaction(mand_applications=mand_applications)
 
     # Send GET.requests
     obtained_attrs = set()
