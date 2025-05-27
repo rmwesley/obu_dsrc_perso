@@ -36,7 +36,7 @@ def refresh_td_config():
     with open('settings/toll_domain_config.json', 'r') as json_file:
         toll_domains_config = json.load(json_file)
     # Should be a list of str!!
-    available_toll_domains = toll_domains_config["td_conf_by_td_name"].keys()
+    available_toll_domains = list(toll_domains_config["td_conf_by_td_name"].keys())
 
     _set_current_toll_domain(toll_domains_config["default_toll_domain_name"])
 
