@@ -1,6 +1,9 @@
 from dsrc_security import dsrc_mk_by_device_and_td_loader
 import logging
 
+class NoValidObeEfcmFoundInVst(Exception):
+    pass
+
 dsrc_contracts_logger = logging.getLogger(__name__)
 # Remember to set the current_toll_domain_name global variable in the dsrc_mk_by_device_and_td_loader module!!!
 def is_device_info_valid(efc_cm: str|int|bytes, manufacturer_id:str|int|bytes, equipment_class:str|int|bytes) -> bool:
@@ -23,5 +26,7 @@ def get_eid_in_vst_with_valid_contract(vst_value: dict = None) -> int:
         equipment_class = obe_config['equipmentClass']
         manufacturer_id = obe_config['manufacturerID']
 
+        
         if is_device_info_valid(efc_cm_bytes, manufacturer_id, equipment_class):
             return application_data['eid']
+    raise NoValidObeEfcmFoundInVst(f'No valid EFC-CM (contract) found for the OBE with VST: {vst_value}')
