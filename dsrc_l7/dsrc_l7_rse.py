@@ -762,8 +762,8 @@ async def tis_vl_transaction(eid, mand_applications=[1, 20, 29], accessCredentia
     CIP: Commission Interautoroutes Péage
     VL: Véhicule Léger
     """
-    initialize_transaction(mand_applications=mand_applications)
-    presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+    await initialize_transaction(mand_applications=mand_applications)
+    await presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16])
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[17, 18, 19, 20, 22])
@@ -823,8 +823,8 @@ async def test_ccc_2009_transaction_old(eid, mand_applications=[1, 20, 29], acce
     # Compiled CCC 2015 specs
     efc_asn_compilation = CCCv1
 
-    initialize_transaction(mand_applications=mand_applications)
-    presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+    await initialize_transaction(mand_applications=mand_applications)
+    await presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
 
@@ -855,8 +855,8 @@ async def ccc_2015_status_history_transaction(eid, mand_applications=[1, 20, 29]
     # Compiled CCC 2015 specs
     efc_asn_compilation = EFCv5
 
-    initialize_transaction(mand_applications=mand_applications)
-    presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+    await initialize_transaction(mand_applications=mand_applications)
+    await presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
     # OBU ID
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[24])
@@ -881,8 +881,8 @@ async def test_ccc_2015_transaction(eid, mand_applications=[1, 20, 29], accessCr
     # Compiled CCC 2015 specs
     efc_asn_compilation = EFCv5
 
-    initialize_transaction(mand_applications=mand_applications)
-    presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+    await initialize_transaction(mand_applications=mand_applications)
+    await presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
 
@@ -941,7 +941,7 @@ async def ccc_2023_transaction(eid, mand_applications=[1, 20, 29], accessCredent
         await send_close_transaction_echo(eid=eid)
 
 async def kapsch_system_element_transaction(eid=0, mand_applications=[0], accessCredentialsPresent=True, set_mmi=True):
-    initialize_transaction(mand_applications=mand_applications)
+    await initialize_transaction(mand_applications=mand_applications)
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[1, 2, 3])
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[6, 7])
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[10])
@@ -961,8 +961,8 @@ async def kapsch_system_element_transaction(eid=0, mand_applications=[0], access
         await send_close_transaction_echo(eid=eid)
 
 async def test_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
-    initialize_transaction(mand_applications=mand_applications)
-    presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+    await initialize_transaction(mand_applications=mand_applications)
+    await presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
 
@@ -992,7 +992,7 @@ async def get_attributes_in_list(eid, accessCredentialsPresent=True, attrIdList=
     global last_response_t_apdu_json
 
     # Initialize transaction
-    initialize_transaction(mand_applications=mand_applications)
+    await initialize_transaction(mand_applications=mand_applications)
 
     # Send GET.requests
     obtained_attrs = set()
