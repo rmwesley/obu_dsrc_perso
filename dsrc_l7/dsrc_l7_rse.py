@@ -403,11 +403,7 @@ def get_init_data():
         return {}
     return initialization_data
 
-def find_eid_with_accepted_contract():
-    eid = None
-    return eid
-
-def get_efc_cm_for_eid(eid):
+def get_parameter_for_eid(eid):
     # Kapsch System Element: EID 0, no VST parameter
     if eid == 0:
         bcm_logger.info(f'Kapsch System Element has no Parameter in VST!!!')
@@ -447,7 +443,7 @@ def decode_t_apdu_response_uper(t_apdu_with_response_bytes):
 
 def decode_vst_parameter_from_eid(eid):
     bcm_logger.debug(f"Decoding VST parameter with EID {eid}...")
-    parameter_bytes = get_efc_cm_for_eid(eid)
+    parameter_bytes = get_parameter_for_eid(eid)
 
     decoded_parameter = custom_its_per_decoders.decode_vst_parameter_oct_str_bytes(parameter_bytes)
     return decoded_parameter
