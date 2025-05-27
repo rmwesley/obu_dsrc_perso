@@ -272,7 +272,7 @@ async def initialize_transaction(
 
     create_transaction_data_file_from_init_phase_data(initialization_request_jval, last_response_t_apdu_json)
 
-    return (initialization_request_jval, last_response_t_apdu_json)
+    return (bst_value, last_vst_value)
 
 async def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close_transaction=False) -> dict:
     global TApdu_container
