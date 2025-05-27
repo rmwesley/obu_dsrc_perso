@@ -726,8 +726,10 @@ async def send_close_transaction_echo(eid=0, text="Hello, World!"):
 async def send_close_transaction_setmmi(eid=0):
     return await set_mmi(eid, close_transaction=True)
 
-async def cardme_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
+async def cardme_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
     await initialize_transaction(mand_applications=mand_applications)
+    if force_eid is not None:
+        eid = force_eid
     # Getting payment info!! (Core part)
     await presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
@@ -755,7 +757,7 @@ async def cardme_transaction(eid, mand_applications=[1, 20, 29], accessCredentia
     else:
         await send_close_transaction_echo(eid=eid)
 
-async def tis_vl_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
+async def tis_vl_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
     """
     Used in the context of TIS VL CIP CARDME/Liber-t transactions.
     TIS: Télépéage Inter Sociétés
@@ -763,6 +765,8 @@ async def tis_vl_transaction(eid, mand_applications=[1, 20, 29], accessCredentia
     VL: Véhicule Léger
     """
     await initialize_transaction(mand_applications=mand_applications)
+    if force_eid is not None:
+        eid = force_eid
     await presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16])
@@ -786,12 +790,14 @@ async def tis_vl_transaction(eid, mand_applications=[1, 20, 29], accessCredentia
     else:
         await send_close_transaction_echo(eid=eid)
 
-async def test_ccc_2009_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
+async def test_ccc_2009_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
     global efc_asn_compilation
     # Compiled CCC 2015 specs
     efc_asn_compilation = CCCv1
 
     await initialize_transaction(mand_applications=mand_applications)
+    if force_eid is not None:
+        eid = force_eid
     await presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
@@ -818,12 +824,14 @@ async def test_ccc_2009_transaction(eid, mand_applications=[1, 20, 29], accessCr
         await send_close_transaction_echo(eid=eid)
     efc_asn_compilation = AXXESv1_2
 
-async def test_ccc_2009_transaction_old(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
+async def test_ccc_2009_transaction_old(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
     global efc_asn_compilation
     # Compiled CCC 2015 specs
     efc_asn_compilation = CCCv1
 
     await initialize_transaction(mand_applications=mand_applications)
+    if force_eid is not None:
+        eid = force_eid
     await presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
@@ -850,12 +858,14 @@ async def test_ccc_2009_transaction_old(eid, mand_applications=[1, 20, 29], acce
         await send_close_transaction_echo(eid=eid)
     efc_asn_compilation = AXXESv1_2
 
-async def ccc_2015_status_history_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
+async def ccc_2015_status_history_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
     global efc_asn_compilation
     # Compiled CCC 2015 specs
     efc_asn_compilation = EFCv5
 
     await initialize_transaction(mand_applications=mand_applications)
+    if force_eid is not None:
+        eid = force_eid
     await presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
     # OBU ID
@@ -876,12 +886,14 @@ async def ccc_2015_status_history_transaction(eid, mand_applications=[1, 20, 29]
         await send_close_transaction_echo(eid=eid)
     efc_asn_compilation = AXXESv1_2
 
-async def test_ccc_2015_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
+async def test_ccc_2015_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
     global efc_asn_compilation
     # Compiled CCC 2015 specs
     efc_asn_compilation = EFCv5
 
     await initialize_transaction(mand_applications=mand_applications)
+    if force_eid is not None:
+        eid = force_eid
     await presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
@@ -915,8 +927,11 @@ async def test_ccc_2015_transaction(eid, mand_applications=[1, 20, 29], accessCr
         await send_close_transaction_echo(eid=eid)
     efc_asn_compilation = AXXESv1_2
 
-async def ccc_2023_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
+async def ccc_2023_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
     await initialize_transaction(mand_applications=mand_applications)
+    if force_eid is not None:
+        eid = force_eid
+
     await presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
@@ -940,8 +955,11 @@ async def ccc_2023_transaction(eid, mand_applications=[1, 20, 29], accessCredent
     else:
         await send_close_transaction_echo(eid=eid)
 
-async def kapsch_system_element_transaction(eid=0, mand_applications=[0], accessCredentialsPresent=True, set_mmi=True):
+async def kapsch_system_element_transaction(force_eid=0, mand_applications=[0], accessCredentialsPresent=True, set_mmi=True):
     await initialize_transaction(mand_applications=mand_applications)
+    if force_eid is not None:
+        eid = force_eid
+
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[1, 2, 3])
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[6, 7])
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[10])
@@ -960,8 +978,11 @@ async def kapsch_system_element_transaction(eid=0, mand_applications=[0], access
     else:
         await send_close_transaction_echo(eid=eid)
 
-async def test_transaction(eid, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
+async def test_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
     await initialize_transaction(mand_applications=mand_applications)
+    if force_eid is not None:
+        eid = force_eid
+
     await presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
