@@ -26,6 +26,10 @@
             "Technology": "VLI",
             "Subtechnology": "VL4P"
         },
+        "PK4PA": {
+            "Technology": "VLI",
+            "Subtechnology": "VL4P"
+        },
         "PK034": {
             "Technology": "GPS",
             "Subtechnology": "LKW"
