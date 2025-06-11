@@ -37,8 +37,10 @@ Required dependencies for DSRC security interface:
 - iso3166
 - baudot
 
-Required dependencies for DM tests:
+Required dependencies for DM API tests:
 - azure-cosmos
+- aiohttp
+- requests_oauthlib
 
 # Rememeber to copy the `master_keys.json` file!
 TODO: Securely handle secrets instead of keeping them in plaintext on a json file!!
