@@ -41,6 +41,7 @@ Required dependencies for DM API tests:
 - azure-cosmos
 - aiohttp
 - requests_oauthlib
+- jsondiff
 
 # Rememeber to copy the `master_keys.json` file!
 TODO: Securely handle secrets instead of keeping them in plaintext on a json file!!
@@ -149,3 +150,8 @@ They are split in `web/` and `gui/` directories for clarity.
 # Using PIP to install packages in the venv
 To install packages, just run:
 `.venv\Scripts\python.exe main.py`
+
+# Test BacL2 Beacon
+The `Test_BacL2_beacon` beacon, shown in the `beacon_manager_config.json` config file uses a Virtual COM port.
+To set it up in Windows, use the Null-modem emulator (com0com) serial port driver.
+Use its `setupg` utility to manage the virtual COM ports.
