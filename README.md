@@ -107,6 +107,13 @@ python3 devices/perso_comparer/dm_api_client_auth.py
 And then copy-paste the redirect-uri in the terminal.
 The access_token will be stored in the `devices/perso_comparer/last_dm_jwt.txt` local file
 
+## Non-regression tests execution
+After all the setup is done and the access_token is updated, run the main module in the `devices/perso_comparer/` directory.
+Example:
+```
+python3 ./devices/perso_comparer/main.py
+```
+
 # Usage exemples
 ## Doing a hardcoded DSRC reading by executing main.py
 To execute main.py on the windows command line (cmd) or on PowerShell, just run:
