@@ -85,6 +85,10 @@ password_file c:\ProgramData\mosquitto\password.txt
 ### DM database (Azure CosmosDB)
 Remember to set the connection settings for the DM Database in the `../conn_settings/dm_db/dm_db_creds.json` config file.
 
+### Microsoft Identity Platform OAuth 2.0 Web Application grant flow
+Do the same for the config for the MIP access_token obtention for the DM API.
+It is set on the `../conn_settings/dm_api/dm_api_auth_server_data.json` config file.
+
 # Usage exemples
 ## Doing a hardcoded DSRC reading by executing main.py
 To execute main.py on the windows command line (cmd) or on PowerShell, just run:
