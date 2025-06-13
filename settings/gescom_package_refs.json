@@ -1,66 +1,232 @@
 {
-    "Yunex": {
-        "PKYUN": {
-            "Technology": "GPS",
-            "Subtechnology": "C3081"
-        },
-        "PKYAD": {
-            "Technology": "GPS",
-            "Subtechnology": "C3081"
-        }
+  "TEST": {
+    "Kapsch": {
+      "PKITA": {
+        "technology": "GPS",
+        "subTechnology": "UNI"
+      },
+      "PK029": {
+        "technology": "VLI",
+        "subTechnology": ""
+      },
+      "PKUNI": {
+        "technology": "UNICE",
+        "subTechnology": ""
+      },
+      "PK034": {
+        "technology": "GPS",
+        "subTechnology": "LKW"
+      },
+      "PKTMF": {
+        "technology": "VIRTU",
+        "subTechnology": "CRVHL"
+      },
+      "PK018": {
+        "technology": "KAPL2",
+        "subTechnology": ""
+      },
+      "PK4P1": {
+        "technology": "VLI",
+        "subTechnology": "VL4P"
+      },
+      "PK006": {
+        "technology": "KAVTX",
+        "subTechnology": ""
+      },
+      "PK033": {
+        "technology": "VLI",
+        "subTechnology": ""
+      },
+      "CDEQF": {
+        "technology": "DSRC",
+        "subTechnology": ""
+      },
+      "PK4P2": {
+        "technology": "VLI",
+        "subTechnology": "VL4P"
+      },
+      "PK4P4": {
+        "technology": "VLI",
+        "subTechnology": "VL4P"
+      },
+      "PK042": {
+        "technology": "GPS",
+        "subTechnology": "UNI"
+      },
+      "CDECS": {
+        "technology": "DSRC",
+        "subTechnology": ""
+      },
+      "CDETG": {
+        "technology": "DSRC",
+        "subTechnology": ""
+      },
+      "PK001": {
+        "technology": "VLI",
+        "subTechnology": ""
+      },
+      "PK026": {
+        "technology": "VLI",
+        "subTechnology": ""
+      },
+      "PK028": {
+        "technology": "VLI",
+        "subTechnology": ""
+      },
+      "PK027": {
+        "technology": "VLI",
+        "subTechnology": ""
+      },
+      "PK013": {
+        "technology": "VLI",
+        "subTechnology": ""
+      },
+      "PK035": {
+        "technology": "KAPL2",
+        "subTechnology": ""
+      },
+      "PK031": {
+        "technology": "KAPL2",
+        "subTechnology": ""
+      },
+      "PK041": {
+        "technology": "GPS",
+        "subTechnology": "UNI"
+      },
+      "PK032": {
+        "technology": "KAVTX",
+        "subTechnology": ""
+      },
+      "PK020": {
+        "technology": "GPS",
+        "subTechnology": ""
+      }
     },
-    "Kapsch":{
-        "PKUNI": {
-            "Technology": "UNICE",
-            "Subtechnology": ""
-        },
-        "PKITA": {
-            "Technology": "GPS",
-            "Subtechnology": "UNI"
-        },
-        "PK4P1": {
-            "Technology": "VLI",
-            "Subtechnology": "VL4P"
-        },
-        "PK4P4": {
-            "Technology": "VLI",
-            "Subtechnology": "VL4P"
-        },
-        "PK4PA": {
-            "Technology": "VLI",
-            "Subtechnology": "VL4P"
-        },
-        "PK034": {
-            "Technology": "GPS",
-            "Subtechnology": "LKW"
-        },
-        "PK026": {
-            "Technology": "VLI",
-            "Subtechnology": ""
-        },
-        "PK027": {
-            "Technology": "VLI",
-            "Subtechnology": ""
-        },
-        "PK028": {
-            "Technology": "VLI",
-            "Subtechnology": ""
-        },
-        "PK031": {
-            "Technology": "KAPL2",
-            "Subtechnology": ""
-        },
-        "PK032": {
-            "Technology": "KAVTX",
-            "Subtechnology": ""
-        },
-        "PK035": {
-            "Technology": "KAPL2",
-            "Subtechnology": ""
-        },
-        "PK041": {
-            "Technology": "GPS",
-            "Subtechnology": "UNI"
-        }
-    }
+    "Yunex": {
+      "PKYUN": {
+        "technology": "GPS",
+        "subTechnology": "C3081"
+      },
+      "PKYAD": {
+        "technology": "GPS",
+        "subTechnology": "C3081"
+      }
+    },
+    "Continental": {}
+  },
+  "PROD": {
+    "Kapsch": {
+      "PKITA": {
+        "technology": "GPS",
+        "subTechnology": "UNI"
+      },
+      "PK029": {
+        "technology": "VLI",
+        "subTechnology": ""
+      },
+      "PKUNI": {
+        "technology": "UNICE",
+        "subTechnology": ""
+      },
+      "PK034": {
+        "technology": "GPS",
+        "subTechnology": "LKW"
+      },
+      "PKTMF": {
+        "technology": "VIRTU",
+        "subTechnology": "CRVHL"
+      },
+      "PK018": {
+        "technology": "KAPL2",
+        "subTechnology": ""
+      },
+      "PK4P1": {
+        "technology": "VLI",
+        "subTechnology": "VL4P"
+      },
+      "PK006": {
+        "technology": "KAVTX",
+        "subTechnology": ""
+      },
+      "PK033": {
+        "technology": "VLI",
+        "subTechnology": ""
+      },
+      "CDEQF": {
+        "technology": "DSRC",
+        "subTechnology": ""
+      },
+      "PK4P2": {
+        "technology": "VLI",
+        "subTechnology": "VL4P"
+      },
+      "PK4P4": {
+        "technology": "VLI",
+        "subTechnology": "VL4P"
+      },
+      "PK042": {
+        "technology": "GPS",
+        "subTechnology": "UNI"
+      },
+      "CDECS": {
+        "technology": "DSRC",
+        "subTechnology": ""
+      },
+      "CDETG": {
+        "technology": "DSRC",
+        "subTechnology": ""
+      },
+      "PK001": {
+        "technology": "VLI",
+        "subTechnology": ""
+      },
+      "PK026": {
+        "technology": "VLI",
+        "subTechnology": ""
+      },
+      "PK028": {
+        "technology": "VLI",
+        "subTechnology": ""
+      },
+      "PK027": {
+        "technology": "VLI",
+        "subTechnology": ""
+      },
+      "PK013": {
+        "technology": "VLI",
+        "subTechnology": ""
+      },
+      "PK035": {
+        "technology": "KAPL2",
+        "subTechnology": ""
+      },
+      "PK031": {
+        "technology": "KAPL2",
+        "subTechnology": ""
+      },
+      "PK041": {
+        "technology": "GPS",
+        "subTechnology": "UNI"
+      },
+      "PK032": {
+        "technology": "KAVTX",
+        "subTechnology": ""
+      },
+      "PK020": {
+        "technology": "GPS",
+        "subTechnology": ""
+      }
+    },
+    "Yunex": {
+      "PKYUN": {
+        "technology": "GPS",
+        "subTechnology": "C3081"
+      },
+      "PKYAD": {
+        "technology": "GPS",
+        "subTechnology": "C3081"
+      }
+    },
+    "Continental": {}
+  }
 }
