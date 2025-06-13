@@ -114,6 +114,11 @@ Example:
 python3 ./devices/perso_comparer/main.py
 ```
 
+## Non-regression tests validation/verification
+Go to the `local_file_storage/dm_api_non_reg/comparison_results` folder and get the latest file.
+Check the symmetric diffs for the personalization data for each GESCOM Package/OBU model perso sample (1 PAN for each).
+Validate that no breaking or imcompatible changes occurred after API's deployment.
+
 # Usage exemples
 ## Doing a hardcoded DSRC reading by executing main.py
 To execute main.py on the windows command line (cmd) or on PowerShell, just run:
