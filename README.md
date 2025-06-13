@@ -99,19 +99,19 @@ In a further update, it would be ideal to make these 4 separate dates, with end 
 We use the `requests_oauthlib` Python package to get the access_token:
 https://requests-oauthlib.readthedocs.io/en/latest/oauth2_workflow.html#web-application-flow
 
-After the configuration is done, get the access_token JWT by running the `devices/perso_comparer/dm_api_client_auth.py` module and following the CLI instructions.
+After the configuration is done, get the access_token JWT by running the `devices/dm_api_tester/dm_api_client_auth.py` module and following the CLI instructions.
 For example, run:
 ```
-python3 devices/perso_comparer/dm_api_client_auth.py
+python3 devices/dm_api_tester/dm_api_client_auth.py
 ```
 And then copy-paste the redirect-uri in the terminal.
-The access_token will be stored in the `devices/perso_comparer/last_dm_jwt.txt` local file
+The access_token will be stored in the `devices/dm_api_tester/last_dm_jwt.txt` local file
 
 ## Non-regression tests execution
-After all the setup is done and the access_token is updated, run the main module in the `devices/perso_comparer/` directory.
+After all the setup is done and the access_token is updated, run the main module in the `devices/dm_api_tester/` directory.
 Example:
 ```
-python3 ./devices/perso_comparer/main.py
+python3 ./devices/dm_api_tester/main.py
 ```
 
 ## Non-regression tests validation/verification
