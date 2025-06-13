@@ -89,6 +89,18 @@ Remember to set the connection settings for the DM Database in the `../conn_sett
 Do the same for the config for the MIP access_token obtention for the DM API.
 It is set on the `../conn_settings/dm_api/dm_api_auth_server_data.json` config file.
 
+## DM JWT Access token obtention/update
+We use the `requests_oauthlib` Python package to get the access_token:
+https://requests-oauthlib.readthedocs.io/en/latest/oauth2_workflow.html#web-application-flow
+
+After the configuration is done, get the access_token JWT by running the `devices/perso_comparer/dm_api_client_auth.py` module and following the CLI instructions.
+For example, run:
+```
+python3 devices/perso_comparer/dm_api_client_auth.py
+```
+And then copy-paste the redirect-uri in the terminal.
+The access_token will be stored in the `devices/perso_comparer/last_dm_jwt.txt` local file
+
 # Usage exemples
 ## Doing a hardcoded DSRC reading by executing main.py
 To execute main.py on the windows command line (cmd) or on PowerShell, just run:
