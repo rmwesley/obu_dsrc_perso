@@ -90,7 +90,7 @@ Do the same for the config for the MIP access_token obtention for the DM API.
 It is set on the `../conn_settings/dm_api/dm_api_auth_server_data.json` config file.
 
 ### DM API deployment date and benchmark lookup date settings for non-reg tests
-To do the comparison non-regression tests, you need to manually set two dates in the `settings/dm_api_tester_config.json` config file.
+To do the comparison non-regression tests, you need to manually set two dates in the `settings/deployment_dates/dm_api_tester_config.json` config file.
 The first is the start date for the Kapsch T6 benchmarks lookup.
 The second is the end date for the benchmarks lookup and also the deployment date of the new DM version.
 In a further update, it would be ideal to make these 4 separate dates, with end dates for the new DM version and for the benchmark lookups being optional (2 required).
