@@ -9,20 +9,29 @@ from dsrc_security import dsrc_mk_by_device_and_td_loader
 
 key_derivation_logger = logging.getLogger(__name__)
 
-class TollDomainSecurityProfileInvalidException(Exception):
+class UnknownTdSecurityProfile(Exception):
+    pass
+class UnconfiguredTdSecurityProfile(Exception):
     pass
 class InvalidAuthKeyRef(ValueError):
     pass
 
+# If you ever want to implement handling of a new security profile, remember to update the following methods:
+# 1 - .compute_pan_8_msb()
+# These profiles (EN15509 and the custom "TIS decimal") are all in fact based on EN15509 (levels 0 and 1).
+AVAILBLE_SECURITY_PROFILES = ['TIS_decimal', 'EN15509']
 def _force_set_security_profile(security_profile:str):
     global current_security_profile
-    if security_profile not in ['TIS_decimal', 'EN15509']:
-        raise TollDomainSecurityProfileInvalidException('The only valid security profile options are (TIS_decimal) or (EN15509)')
+    if security_profile not in AVAILBLE_SECURITY_PROFILES:
+        raise UnknownTdSecurityProfile(f'The security profile options are: {AVAILBLE_SECURITY_PROFILES}')
     current_security_profile = security_profile
 
 def update_security_profile():
     global current_security_profile
     current_security_profile = dsrc_mk_by_device_and_td_loader.get_current_security_profile()
+
+    if current_security_profile not in AVAILBLE_SECURITY_PROFILES:
+        raise UnknownTdSecurityProfile(f'The security profile options are: {AVAILBLE_SECURITY_PROFILES}')
 
 update_security_profile()
 
@@ -134,6 +143,8 @@ def compute_pan_8_msb(pan_bytes:bytes) -> bytes:
     elif current_security_profile == 'EN15509':
         pan_8_msb = pan_bytes[0:8]
         return pan_8_msb
+    else:
+        raise UnconfiguredTdSecurityProfile(f"Please properly update the methods for handling the current security profile ({current_security_profile})")
 
 def compute_pan_8_msb_tis(pan_bytes:bytes) -> bytes:
     # Weird TIS 8 PAN MSB

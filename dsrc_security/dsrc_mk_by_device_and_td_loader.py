@@ -121,10 +121,6 @@ def set_toll_domain(toll_domain_name:str):
     else:
         raise TollDomainMasterKeysNotFoundException('NO MASTERKEYS FOUND FOR GIVEN TOLL DOMAIN')
 
-    current_security_profile = get_current_security_profile()
-    if current_security_profile not in ['TIS_decimal', 'EN15509']:
-        raise TollDomainSecurityProfileInvalidException('The only valid security profile options are (TIS_decimal) or (EN15509)')
-
 def get_all_master_keysets():
     global master_keysets
     return master_keysets
