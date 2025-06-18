@@ -145,14 +145,17 @@ def decrypt_ack_with_efc_cm_only(efc_cm:str, access_key:bytes):
 def compute_pan_8_msb(pan_bytes:bytes) -> bytes:
     global current_security_profile
     if is_tis_decimal(current_security_profile):
-        return compute_pan_8_msb_tis(pan_bytes)
+        return tis_compute_pan_8_msb(pan_bytes)
     if is_en15509(current_security_profile):
-        pan_8_msb = pan_bytes[0:8]
-        return pan_8_msb
+        en15509_compute_pan_8_msb(pan_bytes)
     else:
         raise UnconfiguredTdSecurityProfile(f"Please properly update the methods for handling the current security profile ({current_security_profile})")
 
-def compute_pan_8_msb_tis(pan_bytes:bytes) -> bytes:
+def en15509_compute_pan_8_msb(pan_bytes:bytes) -> bytes:
+    pan_8_msb = pan_bytes[0:8]
+    return pan_8_msb
+
+def tis_compute_pan_8_msb(pan_bytes:bytes) -> bytes:
     # Weird TIS 8 PAN MSB
     # The literal PAN here is treated as a decimal value, not HEX!!
 
