@@ -19,7 +19,7 @@ class InvalidAuthKeyRef(ValueError):
 # If you ever want to implement handling of a new security profile, remember to update the following methods:
 # 1 - .compute_pan_8_msb()
 # These profiles (EN15509 and the custom "TIS decimal") are all in fact based on EN15509 (levels 0 and 1).
-AVAILBLE_SECURITY_PROFILES = ['TIS_decimal', 'EN15509']
+AVAILBLE_SECURITY_PROFILES = ['TIS_decimal_level_0', 'TIS_decimal_level_1', 'EN15509_level_0', 'EN15509_level_1']
 def _force_set_security_profile(security_profile:str):
     global current_security_profile
     if security_profile not in AVAILBLE_SECURITY_PROFILES:
@@ -34,6 +34,12 @@ def update_security_profile():
         raise UnknownTdSecurityProfile(f'The security profile options are: {AVAILBLE_SECURITY_PROFILES}')
 
 update_security_profile()
+
+def is_en15509(td_security_profile_name: str):
+    return td_security_profile_name == 'EN15509_level_0' or td_security_profile_name == 'EN15509_level_1'
+
+def is_tis_decimal(td_security_profile_name: str):
+    return td_security_profile_name == 'TIS_decimal_level_0' or td_security_profile_name == 'TIS_decimal_level_1'
 
 def triple_des_decryption(ciphertext_hex:str, key_hex: str) -> str:
     key_bytes = bytes.fromhex(key_hex)
@@ -138,9 +144,9 @@ def decrypt_ack_with_efc_cm_only(efc_cm:str, access_key:bytes):
 # CODE FOR DERIVED AUTHENTICATION KEYS (Uses MasterKeys with ref 111 through 118)
 def compute_pan_8_msb(pan_bytes:bytes) -> bytes:
     global current_security_profile
-    if current_security_profile == 'TIS_decimal':
+    if is_tis_decimal(current_security_profile):
         return compute_pan_8_msb_tis(pan_bytes)
-    elif current_security_profile == 'EN15509':
+    if is_en15509(current_security_profile):
         pan_8_msb = pan_bytes[0:8]
         return pan_8_msb
     else:
