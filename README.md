@@ -43,6 +43,10 @@ Required dependencies for DM API tests:
 - requests_oauthlib
 - jsondiff
 
+Required dependencies for EM API tests:
+- azure-storage-blob
+- csv
+
 # Rememeber to copy the `master_keys.json` file!
 TODO: Securely handle secrets instead of keeping them in plaintext on a json file!!
 
@@ -113,6 +117,10 @@ Example:
 ```
 python3 ./devices/dm_api_tester/main.py
 ```
+
+# EM API tester
+The access_token used is the same as the one for DM.
+So we use the same auth server client. Just execute the `dm_api_tester.dm_auth_client` Python module.
 
 ## Non-regression tests validation/verification
 Go to the `local_file_storage/dm_api_non_reg/comparison_results` folder and get the latest file.
