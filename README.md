@@ -85,7 +85,9 @@ reference the file containing the encrypted credentials that was just created:
 password_file c:\ProgramData\mosquitto\password.txt
 ```
 
-# DM API tester setup
+# DM API tester
+Please rewrite the Database SQL queries with prepared statements for safety.
+## DM API tester setup
 ### DM database (Azure CosmosDB)
 Remember to set the connection settings for the DM Database in the `../conn_settings/dm_db/dm_db_creds.json` config file.
 
@@ -119,6 +121,7 @@ python3 ./devices/dm_api_tester/main.py
 ```
 
 # EM API tester
+Please rewrite the Database SQL queries with prepared statements for safety.
 The access_token used is the same as the one for DM.
 So we use the same auth server client. Just execute the `dm_api_tester.dm_auth_client` Python module.
 
