@@ -1,5 +1,5 @@
 {
-    "current_environment": "PROD",
+    "current_environment": "TEST",
     "TEST": {
         "dm_api_base_url" : "https://dm-test.axxes.fr"
     },
