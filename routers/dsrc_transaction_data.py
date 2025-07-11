@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from typing import Literal, Optional
 from enum import IntEnum
 
-from services.db import transactions_data_sync
+from services.db import transactions_data_db_operations
 
 router = APIRouter(
     prefix="/transactions-data",
@@ -26,5 +26,5 @@ class SyncTransactionDataReq(BaseModel):
     }
 @router.post('/sync-local-files-to-remote-db')
 async def sync_local_data_to_remote_db(request: SyncTransactionDataReq):
-    upload_result = transactions_data_sync.upload_local_data_since_date(request.start_date)
+    upload_result = transactions_data_db_operations.upload_local_data_since_date(request.start_date)
     return upload_result
