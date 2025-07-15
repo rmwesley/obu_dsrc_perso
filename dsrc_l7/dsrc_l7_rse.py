@@ -328,14 +328,8 @@ async def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, clos
 
 def create_transaction_data_file_from_init_phase_data(initialization_request_jval, initialization_response_jval):
     global current_transaction_id
-    global current_transaction_datetime_prefix
-
+    global transaction_data_filepath
     current_transaction_id = uuid.uuid1()
-    current_transaction_start_date = datetime.now()
-    current_transaction_datetime_prefix = current_transaction_start_date.strftime("%Y%m%dT%H%M%S")
-
-    transaction_data_filename = f"{current_transaction_datetime_prefix}_{current_transaction_id}.json"
-    transaction_data_filepath = pathlib.Path(f"local_file_storage/transactions/{transaction_data_filename}")
 
     # initialization_data dict is a merge of the init request and response JSON values
     # initialization_data = initialization_request_jval | initialization_response_jval
@@ -351,37 +345,52 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     # Create an empty list for future data exchanges (ACTION/GET/SET requests...)
     initialization_data["exchanged_data"] = []
 
+    manufacturerID = initialization_data['initialisationResponse']['obeConfiguration']['manufacturerID']
+    equipmentClass = initialization_data['initialisationResponse']['obeConfiguration']['equipmentClass']
+    # equOBUId = 0
+
+    current_transaction_start_date = datetime.now()
+    current_transaction_datetime_prefix = current_transaction_start_date.strftime("%Y%m%dT%H%M%S")
+
+    transaction_data_filename = f"{current_transaction_datetime_prefix}_{manufacturerID:04X}_{equipmentClass:04X}_00000000_{current_transaction_id}.json"
+    transaction_data_filepath = pathlib.Path(f"local_file_storage/transactions/{transaction_data_filename}")
+
     with transaction_data_filepath.open('w') as json_file:
         initialization_data['creation_time'] = datetime.now().isoformat()
         json.dump(initialization_data, json_file, indent=2)
     return initialization_data
 
 def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jval):
-    global current_transaction_id
-    global current_transaction_datetime_prefix
+    global transaction_data_filepath
     if 'current_transaction_id' not in globals():
         bcm_logger.error(f'Cannot add DSRC transaction data to file without transaction init data')
         return
 
-    transaction_data_filename = f"{current_transaction_datetime_prefix}_{current_transaction_id}.json"
-    transaction_data_filepath = pathlib.Path(f"local_file_storage/transactions/{transaction_data_filename}")
+    # new_exchanged_data_json dict is a merge of the T-APDU request and response JSON values
+    new_exchanged_data_json = request_t_apdu_jval | response_t_apdu_jval
 
-    # current_exchanged_data_json = {}
-    # Adding T-APDU with request data to current exchange dict
-    # current_exchanged_data_json |= request_t_apdu_jval
-
-    # Adding T-APDU with response data to current exchange dict (dict merge)
-    # current_exchanged_data_json |= response_t_apdu_jval
-
-    # current_exchanged_data_json dict is a merge of the T-APDU request and response JSON values
-    current_exchanged_data_json = request_t_apdu_jval | response_t_apdu_jval
-
-    # Getting previous data
+    # Getting previous (initialization phase) transaction data
     with transaction_data_filepath.open('r') as json_file:
         transaction_data_json = json.load(json_file)
-        transaction_data_json['exchanged_data'].append(current_exchanged_data_json)
+        transaction_data_json['exchanged_data'].append(new_exchanged_data_json)
 
-    # Rewriting transaction data file with current exchange data added
+    if 'getRequest' in request_t_apdu_jval and 24 in request_t_apdu_jval['getRequest']['attrIdList']:
+        try:
+            for attribute_data in response_t_apdu_jval['getResponse']['attributelist']:
+                if attribute_data['attributeId'] == 24:
+                    equOBUId_hex = attribute_data['attributeValue']['equOBUId'].upper()
+            # Rename output file to include equOBUId!!
+            original_obuidless_filename = transaction_data_filepath.name
+            filename_parts_list = original_obuidless_filename.split('_')
+            # Equipment OBU Id is in the third part of the string!
+            filename_parts_list[3] = equOBUId_hex
+            new_filename = '_'.join(filename_parts_list)
+            new_filepath = transaction_data_filepath.with_name(new_filename)
+            transaction_data_filepath = transaction_data_filepath.rename(new_filepath)
+        except:
+            bcm_logger.error('Error in response to GET request for equOBUId value (Attribute Id 24)!!')
+
+    # Rewriting transaction data file with new exchange data added
     # We also change the last_update_timestamp field
     with transaction_data_filepath.open('w') as json_file:
         transaction_data_json['last_update_timestamp'] = datetime.now().isoformat()
