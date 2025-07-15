@@ -336,6 +336,10 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     initialization_data = {}
     initialization_data['_id'] = current_transaction_id.hex
 
+    # Equipment OBU ID and PAN at the top!
+    initialization_data['equOBUId'] = ""
+    initialization_data['personalAccountNumber'] = ""
+
     # Merging initialisationRequest json into initialization_data json dict
     initialization_data |= initialization_request_jval
 
@@ -392,11 +396,11 @@ def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jva
                 try:
                     for attribute_data in response_t_apdu_jval['responseParameter']['responseParameter']['gstrs']['attributeList']:
                         if attribute_data['attributeId'] == 24:
-                        equOBUId_hex = attribute_data['attributeValue']['equOBUId'].upper()
-                        rename_transaction_data_file(equOBUId_hex)
+                            equOBUId_hex = attribute_data['attributeValue']['equOBUId'].upper()
+                            transaction_data_json['equOBUId'] = equOBUId_hex
+                            rename_transaction_data_file(equOBUId_hex)
                 except:
-            except:
-                bcm_logger.error('Error in response to ACTION with gstrs for equOBUId value (Attribute Id 24)!!')
+                    bcm_logger.error('Error in response to ACTION with gstrs for equOBUId value (Attribute Id 24)!!')
 
     if 'getRequest' in request_t_apdu_jval:
         if 24 in request_t_apdu_jval['getRequest']['attrIdList']:
@@ -404,6 +408,7 @@ def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jva
                 for attribute_data in response_t_apdu_jval['getResponse']['attributelist']:
                     if attribute_data['attributeId'] == 24:
                         equOBUId_hex = attribute_data['attributeValue']['equOBUId'].upper()
+                        transaction_data_json['equOBUId'] = equOBUId_hex
                         rename_transaction_data_file(equOBUId_hex)
             except:
                 bcm_logger.error('Error in response to GET request for equOBUId value (Attribute Id 24)!!')
