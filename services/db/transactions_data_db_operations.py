@@ -28,6 +28,11 @@ local_transactions_storage_path_str = 'local_file_storage/transactions'
 local_transactions_storage_path = pathlib.Path(local_transactions_storage_path_str)
 
 def db_connect_to_transactions_coll() -> pymongo.collection.Collection:
+    global dsrc_transactions_db_coll
+
+    if 'dsrc_transactions_db_coll' in globals():
+        return dsrc_transactions_db_coll
+
     dsrc_transaction_sync_logger.info('Connection to (dsrc_transactions) collection of (bm_db) MongoDB database...')
     mongodb_connection_string = mongodb_config['connection_string']
     mongodb_client = pymongo.MongoClient(mongodb_connection_string)
@@ -37,6 +42,18 @@ def db_connect_to_transactions_coll() -> pymongo.collection.Collection:
 
     dsrc_transactions_db_coll = database_connection['dsrc_transactions']
     return dsrc_transactions_db_coll
+
+def get_transactions_aggregation_cursor_for_equ_obu_id(equ_obu_id:str, skip=0, limit=10):
+    dsrc_transactions_db_coll = db_connect_to_transactions_coll()
+
+    pymongo_cursor = dsrc_transactions_db_coll.aggregate([{'$match': {"equOBUId": equ_obu_id}}, {'$skip':  skip}, {'$limit':  limit}])
+    return pymongo_cursor
+
+def get_transactions_data_for_equ_obu_id(equ_obu_id:str, skip=0, limit=10):
+    pymongo_cursor = get_transactions_aggregation_cursor_for_equ_obu_id(equ_obu_id, skip, limit)
+    for transaction_data in pymongo_cursor:
+        print(transaction_data)
+        yield transaction_data
 
 def upload_local_data(size=0):
     db_transactions_collection = db_connect_to_transactions_coll()
