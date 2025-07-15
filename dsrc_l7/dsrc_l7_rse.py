@@ -332,7 +332,7 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     current_transaction_id = uuid.uuid1()
     current_transaction_start_date = datetime.now()
     current_transaction_datetime_prefix = current_transaction_start_date.strftime("%Y%m%dT%H%M%S")
-    transaction_data_filename = f"local_file_storage/transactions/{current_transaction_datetime_prefix}_{current_transaction_id}.json"
+    transaction_data_filepath_str = f"local_file_storage/transactions/{current_transaction_datetime_prefix}_{current_transaction_id}.json"
 
     # initialization_data dict is a merge of the init request and response JSON values
     # initialization_data = initialization_request_jval | initialization_response_jval
@@ -348,7 +348,7 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     # Create an empty list for future data exchanges (ACTION/GET/SET requests...)
     initialization_data["exchanged_data"] = []
 
-    with open(transaction_data_filename, 'w') as json_file:
+    with open(transaction_data_filepath_str, 'w') as json_file:
         initialization_data['creation_time'] = datetime.now().isoformat()
         json.dump(initialization_data, json_file, indent=2)
     return initialization_data
@@ -360,7 +360,7 @@ def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jva
         bcm_logger.error(f'Cannot add DSRC transaction data to file without transaction init data')
         return
 
-    transaction_data_filename = f"local_file_storage/transactions/{current_transaction_datetime_prefix}_{current_transaction_id}.json"
+    transaction_data_filepath_str = f"local_file_storage/transactions/{current_transaction_datetime_prefix}_{current_transaction_id}.json"
 
     # current_exchanged_data_json = {}
     # Adding T-APDU with request data to current exchange dict
@@ -373,13 +373,13 @@ def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jva
     current_exchanged_data_json = request_t_apdu_jval | response_t_apdu_jval
 
     # Getting previous data
-    with open(transaction_data_filename, 'r') as json_file:
+    with open(transaction_data_filepath_str, 'r') as json_file:
         transaction_data_json = json.load(json_file)
         transaction_data_json['exchanged_data'].append(current_exchanged_data_json)
 
     # Rewriting transaction data file with current exchange data added
     # We also change the last_update_timestamp field
-    with open(transaction_data_filename, 'w') as json_file:
+    with open(transaction_data_filepath_str, 'w') as json_file:
         transaction_data_json['last_update_timestamp'] = datetime.now().isoformat()
         json.dump(transaction_data_json, json_file, indent=2)
     return transaction_data_json
