@@ -360,6 +360,18 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
         json.dump(initialization_data, json_file, indent=2)
     return initialization_data
 
+def rename_transaction_data_file(equOBUId_hex:str='00000000'):
+    global transaction_data_filepath
+
+    # Rename output file to include equOBUId!!
+    original_obuidless_filename = transaction_data_filepath.name
+    filename_parts_list = original_obuidless_filename.split('_')
+    # Equipment OBU Id is in the third part of the string!
+    filename_parts_list[4] = equOBUId_hex
+    new_filename = '_'.join(filename_parts_list)
+    new_filepath = transaction_data_filepath.with_name(new_filename)
+    transaction_data_filepath = transaction_data_filepath.rename(new_filepath)
+
 def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jval):
     global transaction_data_filepath
     if 'current_transaction_id' not in globals():
@@ -374,21 +386,27 @@ def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jva
         transaction_data_json = json.load(json_file)
         transaction_data_json['exchanged_data'].append(new_exchanged_data_json)
 
-    if 'getRequest' in request_t_apdu_jval and 24 in request_t_apdu_jval['getRequest']['attrIdList']:
-        try:
-            for attribute_data in response_t_apdu_jval['getResponse']['attributelist']:
-                if attribute_data['attributeId'] == 24:
-                    equOBUId_hex = attribute_data['attributeValue']['equOBUId'].upper()
-            # Rename output file to include equOBUId!!
-            original_obuidless_filename = transaction_data_filepath.name
-            filename_parts_list = original_obuidless_filename.split('_')
-            # Equipment OBU Id is in the third part of the string!
-            filename_parts_list[3] = equOBUId_hex
-            new_filename = '_'.join(filename_parts_list)
-            new_filepath = transaction_data_filepath.with_name(new_filename)
-            transaction_data_filepath = transaction_data_filepath.rename(new_filepath)
-        except:
-            bcm_logger.error('Error in response to GET request for equOBUId value (Attribute Id 24)!!')
+    if 'actionRequest' in request_t_apdu_jval:
+        if 'gstrq' in request_t_apdu_jval['actionRequest']['actionParameter']
+            if 24 in request_t_apdu_jval['actionRequest']['actionParameter']['gstrq']['attributeIdList']:
+                try:
+                    for attribute_data in response_t_apdu_jval['responseParameter']['responseParameter']['gstrs']['attributeList']:
+                        if attribute_data['attributeId'] == 24:
+                        equOBUId_hex = attribute_data['attributeValue']['equOBUId'].upper()
+                        rename_transaction_data_file(equOBUId_hex)
+                except:
+            except:
+                bcm_logger.error('Error in response to ACTION with gstrs for equOBUId value (Attribute Id 24)!!')
+
+    if 'getRequest' in request_t_apdu_jval:
+        if 24 in request_t_apdu_jval['getRequest']['attrIdList']:
+            try:
+                for attribute_data in response_t_apdu_jval['getResponse']['attributelist']:
+                    if attribute_data['attributeId'] == 24:
+                        equOBUId_hex = attribute_data['attributeValue']['equOBUId'].upper()
+                        rename_transaction_data_file(equOBUId_hex)
+            except:
+                bcm_logger.error('Error in response to GET request for equOBUId value (Attribute Id 24)!!')
 
     # Rewriting transaction data file with new exchange data added
     # We also change the last_update_timestamp field
