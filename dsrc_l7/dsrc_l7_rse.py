@@ -377,24 +377,27 @@ def rename_transaction_data_file(equOBUId_hex:str='00000000'):
     transaction_data_filepath = transaction_data_filepath.rename(new_filepath)
 
 def search_json_action_transaction_data_for_attribute_data(action_request_jval, action_response_jval, attribute_id:int):
-    if 'gstrq' in action_request_jval['actionParameter']
+    if 'gstrq' in action_request_jval['actionParameter']:
         if attribute_id in action_request_jval['actionParameter']['gstrq']['attributeIdList']:
             try:
-                for attribute_data in action_response_jval['responseParameter']['responseParameter']['gstrs']['attributeList']:
+                for attribute_data in action_response_jval['responseParameter']['gstrs']['attributeList']:
                     if attribute_data['attributeId'] == attribute_id:
                         return attribute_data['attributeValue']
             except:
                 bcm_logger.error(f'ACTION response does not contain data for Attribute Id ({attribute_id})!!')
                 return {}
+    return {}
 
 def search_json_get_transaction_data_for_attribute_data(get_request_jval, get_response_jval, attribute_id:int):
-    if 24 in get_request_jval['attrIdList']:
+    if attribute_id in get_request_jval['attrIdList']:
         try:
             for attribute_data in get_response_jval['attributelist']:
                 if attribute_data['attributeId'] == attribute_id:
-            except:
-                bcm_logger.error(f'GET response does not contain data for Attribute Id ({attribute_id})!!')
-                return {}
+                    return attribute_data['attributeValue']
+        except:
+            bcm_logger.error(f'GET response does not contain data for Attribute Id ({attribute_id})!!')
+            return {}
+    return {}
 
 def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jval):
     global transaction_data_filepath
@@ -412,8 +415,7 @@ def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jva
 
     if 'actionRequest' in request_t_apdu_jval:
         action_req_jval = request_t_apdu_jval['actionRequest']
-        action_resp_jval = request_t_apdu_jval['actionResponse']
-        response_t_apdu_jval['actionResponse']
+        action_resp_jval = response_t_apdu_jval['actionResponse']
 
         attribute_value = search_json_action_transaction_data_for_attribute_data(action_req_jval, action_resp_jval, attribute_id=24)
         if 'equOBUId' in attribute_value:
@@ -423,13 +425,13 @@ def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jva
             # bcm_logger.error('Error in response to ACTION with gstrs for equOBUId value (Attribute Id 24)!!')
 
         attribute_value = search_json_action_transaction_data_for_attribute_data(action_req_jval, action_resp_jval, attribute_id=32)
-        if 'personalAccountNumber' in attribute_value:
+        if 'paymeans' in attribute_value:
             personalAccountNumber = attribute_value['paymeans']['personalAccountNumber'].upper()
             transaction_data_json['personalAccountNumber'] = personalAccountNumber
             # bcm_logger.error('Error in response to ACTION with gstrs for paymeans (Attribute Id 16)!!')
 
     if 'getRequest' in request_t_apdu_jval:
-        get_req_jval = response_t_apdu_jval['getRequest']
+        get_req_jval = request_t_apdu_jval['getRequest']
         get_resp_jval = response_t_apdu_jval['getResponse']
 
         attribute_value = search_json_get_transaction_data_for_attribute_data(get_req_jval, get_resp_jval, attribute_id=24)
@@ -440,7 +442,7 @@ def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jva
             # bcm_logger.error('Error in response to GET request for equOBUId value (Attribute Id 24)!!')
 
         attribute_value = search_json_get_transaction_data_for_attribute_data(get_req_jval, get_resp_jval, attribute_id=32)
-        if 'personalAccountNumber' in attribute_value:
+        if 'paymeans' in attribute_value:
             personalAccountNumber = attribute_value['paymeans']['personalAccountNumber'].upper()
             transaction_data_json['personalAccountNumber'] = personalAccountNumber
             # bcm_logger.error('Error in response to ACTION with gstrs for paymeans (Attribute Id 16)!!')
