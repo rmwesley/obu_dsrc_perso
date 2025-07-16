@@ -7,7 +7,16 @@
   </input>
   <button id="search-button" onclick="get_device_details()">
   </button>
-  <table id="transactions-list">
+  <table id="transactions-list" style="border: 1px">
+    <thead>
+      <tr style="background-color: green">
+        <th scope="col">Transaction ID</th>
+        <th scope="col">personalAccountNumber</th>
+        <th scope="col">equOBUId</th>
+        <th scope="col">creation_time</th>
+        <th scope="col">last_update_timestamp</th>
+      </tr>
+    </thead>
   </table>
   <script>
     function get_device_details(){
@@ -17,11 +26,20 @@
       fetch(obu_transaction_data_req)
         .then((response) => response.json())
         .then((response_body) => {
-          console.log(response_body)
+          // console.log(response_body)
           response_body.forEach(transaction_data => {
-            let new_row = transactions_table.insertRow(0)
-            Object.entries(transaction_data).forEach(([key, value]) => {
-              new_cell = new_row.insertCell(0)
+            let new_row = transactions_table.insertRow(-1)
+            key_list = [
+              '_id',
+              'personalAccountNumber',
+              'equOBUId',
+              'creation_time',
+              'last_update_timestamp',
+            ]
+            key_list.forEach((key) => {
+              value = transaction_data[key]
+
+              new_cell = new_row.insertCell(-1)
               text_value = document.createTextNode(value)
               new_cell.appendChild(text_value)
             })
