@@ -331,27 +331,28 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     global transaction_data_filepath
     current_transaction_id = uuid.uuid1()
 
+    transaction_data = {}
+    transaction_data['_id'] = current_transaction_id.hex
+
+    # Equipment OBU ID and PAN at the top!
+    transaction_data['equOBUId'] = ""
+    transaction_data['personalAccountNumber'] = ""
+
     # initialization_data dict is a merge of the init request and response JSON values
     # initialization_data = initialization_request_jval | initialization_response_jval
     initialization_data = {}
-    initialization_data['_id'] = current_transaction_id.hex
-
-    # Equipment OBU ID and PAN at the top!
-    initialization_data['equOBUId'] = ""
-    initialization_data['personalAccountNumber'] = ""
-
     # Merging initialisationRequest json into initialization_data json dict
     initialization_data |= initialization_request_jval
-
     # Merging initialisationResponse json into initialization_data json dict
     initialization_data |= initialization_response_jval
-
-    # Create an empty list for future data exchanges (ACTION/GET/SET requests...)
-    initialization_data["exchanged_data"] = []
 
     manufacturerID = initialization_data['initialisationResponse']['obeConfiguration']['manufacturerID']
     equipmentClass = initialization_data['initialisationResponse']['obeConfiguration']['equipmentClass']
     # equOBUId = 0
+
+    transaction_data['data'] = {'initialization_phase': initialization_data}
+    # Create an empty list for future data exchanges (ACTION/GET/SET requests...)
+    transaction_data['data'] = {'transaction_phase':  []}
 
     current_transaction_start_date = datetime.now()
     current_transaction_datetime_prefix = current_transaction_start_date.strftime("%Y%m%dT%H%M%S")
@@ -360,9 +361,9 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     transaction_data_filepath = pathlib.Path(f"local_file_storage/transactions/{transaction_data_filename}")
 
     with transaction_data_filepath.open('w') as json_file:
-        initialization_data['creation_time'] = datetime.now().isoformat()
-        json.dump(initialization_data, json_file, indent=2)
-    return initialization_data
+        transaction_data['creation_time'] = datetime.now().isoformat()
+        json.dump(transaction_data, json_file, indent=2)
+    return transaction_data
 
 def rename_transaction_data_file(equOBUId_hex:str='00000000'):
     global transaction_data_filepath
@@ -405,13 +406,13 @@ def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jva
         bcm_logger.error(f'Cannot add DSRC transaction data to file without transaction init data')
         return
 
-    # new_exchanged_data_json dict is a merge of the T-APDU request and response JSON values
-    new_exchanged_data_json = request_t_apdu_jval | response_t_apdu_jval
+    # new_transaction_phase_data_json dict is a merge of the T-APDU request and response JSON values
+    new_transaction_phase_data_json = request_t_apdu_jval | response_t_apdu_jval
 
     # Getting previous (initialization phase) transaction data
     with transaction_data_filepath.open('r') as json_file:
         transaction_data_json = json.load(json_file)
-        transaction_data_json['exchanged_data'].append(new_exchanged_data_json)
+        transaction_data_json['data']['transaction_phase'].append(new_transaction_phase_data_json)
 
     if 'actionRequest' in request_t_apdu_jval:
         action_req_jval = request_t_apdu_jval['actionRequest']
