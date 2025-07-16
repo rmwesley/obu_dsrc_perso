@@ -334,9 +334,11 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     transaction_data = {}
     transaction_data['_id'] = current_transaction_id.hex
 
-    # Equipment OBU ID and PAN at the top!
+    # Equipment OBU ID, PAN and timestamps at the top!
     transaction_data['equOBUId'] = ""
     transaction_data['personalAccountNumber'] = ""
+    transaction_data['creation_time'] = ""
+    transaction_data['last_update_timestamp'] = ""
 
     # initialization_data dict is a merge of the init request and response JSON values
     # initialization_data = initialization_request_jval | initialization_response_jval
@@ -350,6 +352,7 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     equipmentClass = initialization_data['initialisationResponse']['obeConfiguration']['equipmentClass']
     # equOBUId = 0
 
+    # Actual data at the bottom!
     transaction_data['data'] = {'initialization_phase': initialization_data}
     # Create an empty list for future data exchanges (ACTION/GET/SET requests...)
     transaction_data['data'] = {'transaction_phase':  []}
