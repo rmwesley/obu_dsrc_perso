@@ -35,6 +35,13 @@ async def get_transaction_info_for_obu_id(equOBUId:str, skip:int=0, limit:int=10
 
     return transactions_data_db_operations.get_transactions_info_for_equ_obu_id(equOBUId)
 
+@router.get('/transactions/{transaction_id}')
+async def get_transaction_data(transaction_id:str):
+    """
+    Query transactions database for the data of a spefic transaction by its ID.
+    """
+    return transactions_data_db_operations.get_transaction_data(transaction_id)
+
 @router.post('/sync/sync-local-files-to-remote-db')
 async def sync_local_data_to_remote_db(request: SyncTransactionDataReq):
     upload_result = transactions_data_db_operations.upload_local_data_since_date(request.start_date)
