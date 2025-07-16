@@ -9,7 +9,7 @@ from enum import IntEnum
 from services.db import transactions_data_db_operations
 
 router = APIRouter(
-    prefix="/transactions-data",
+    prefix="/data",
     tags=["DSRC Transaction Data Management Interface"])
 
 class SyncTransactionDataReq(BaseModel):
