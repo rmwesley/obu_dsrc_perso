@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from efc_decoding_app import efc_decoding_app
 from efc_security_app import efc_security_app
 from beacon_client_app import beacon_client_app
-from transaction_data_app import transaction_data_app
+from dsrc_transaction_data_app import transaction_data_app
 
 import logging
 root_logger = logging.getLogger()
