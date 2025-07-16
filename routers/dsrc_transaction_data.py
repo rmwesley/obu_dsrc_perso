@@ -25,15 +25,15 @@ class SyncTransactionDataReq(BaseModel):
         }
     }
 
-@router.get('/obus/{equOBUId}')
-async def get_transaction_data_for_obu_id(equOBUId:str, skip:int=0, limit:int=10):
+@router.get('/obus/{equOBUId}/')
+async def get_transaction_info_for_obu_id(equOBUId:str, skip:int=0, limit:int=10):
     """
     Query transactions database for data related to a specific OBU ID.
     The OBU ID must be in hexadecimal format.
     """
     equOBUId = equOBUId.lower()
 
-    return transactions_data_db_operations.get_transactions_data_for_equ_obu_id(equOBUId)
+    return transactions_data_db_operations.get_transactions_info_for_equ_obu_id(equOBUId)
 
 @router.post('/sync/sync-local-files-to-remote-db')
 async def sync_local_data_to_remote_db(request: SyncTransactionDataReq):

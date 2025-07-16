@@ -46,10 +46,15 @@ def db_connect_to_transactions_coll() -> pymongo.collection.Collection:
 def get_transactions_aggregation_cursor_for_equ_obu_id(equ_obu_id:str, skip=0, limit=10):
     dsrc_transactions_db_coll = db_connect_to_transactions_coll()
 
-    pymongo_cursor = dsrc_transactions_db_coll.aggregate([{'$match': {"equOBUId": equ_obu_id}}, {'$skip':  skip}, {'$limit':  limit}])
+    pymongo_cursor = dsrc_transactions_db_coll.aggregate([
+        {'$match': {"equOBUId": equ_obu_id}},
+        {'$project': {'data': 0}},
+        {'$skip':  skip},
+        {'$limit':  limit}
+    ])
     return pymongo_cursor
 
-def get_transactions_data_for_equ_obu_id(equ_obu_id:str, skip=0, limit=10):
+def get_transactions_info_for_equ_obu_id(equ_obu_id:str, skip=0, limit=10):
     pymongo_cursor = get_transactions_aggregation_cursor_for_equ_obu_id(equ_obu_id, skip, limit)
     for transaction_data in pymongo_cursor:
         print(transaction_data)
