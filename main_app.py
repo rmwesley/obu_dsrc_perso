@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from fastapi.responses import FileResponse
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from efc_decoding_app import efc_decoding_app
@@ -14,15 +14,14 @@ root_logger.setLevel(logging.DEBUG)
 app = FastAPI(title="Main FastAPI app")
 
 @app.get('/', include_in_schema=False)
-async def get_index():
-    return FileResponse('fronts/web/tolling_testing_web_front/index.html')
+async def redirect_index_to_hmi():
+    return RedirectResponse('/hmi')
 
-@app.get('/home.svg', include_in_schema=False)
-async def favicon():
-    return FileResponse('fronts/web/tolling_testing_web_front/home.svg')
+# Mount the webapp (frontend static files)
+app.mount("/hmi", StaticFiles(directory="fronts/web/tolling_testing_web_front", html=True), name="tolling_testing_web_front_files")
 
 # Mount the subapps
 app.mount("/decoding", efc_decoding_app)
 app.mount("/security", efc_security_app)
 app.mount("/beacon", beacon_client_app)
-app.mount("/transacation-data", transaction_data_app)
+app.mount("/transaction-data", transaction_data_app)
