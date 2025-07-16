@@ -13,7 +13,7 @@ transaction_data_app.include_router(dsrc_transaction_data.router)
 
 @transaction_data_app.get('/', include_in_schema=False)
 async def redirect_index_to_hmi():
-    return RedirectResponse('/transaction-data/hmi')
+    return RedirectResponse('/dsrc-transactions/hmi')
 
 # Serve the static HTML files for this app
 transaction_data_app.mount(

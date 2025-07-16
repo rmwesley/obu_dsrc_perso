@@ -24,4 +24,4 @@ app.mount("/hmi", StaticFiles(directory="fronts/web/tolling_testing_web_front", 
 app.mount("/decoding", efc_decoding_app)
 app.mount("/security", efc_security_app)
 app.mount("/beacon", beacon_client_app)
-app.mount("/transaction-data", transaction_data_app)
+app.mount("/dsrc-transactions/", transaction_data_app)
