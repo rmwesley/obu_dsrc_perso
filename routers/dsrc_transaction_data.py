@@ -26,7 +26,7 @@ class SyncTransactionDataReq(BaseModel):
     }
 
 @router.get('/obus/{equOBUId}')
-async def get_transaction_data_for_obu_id(equOBUId:str, skip:str=0, limit:str=10):
+async def get_transaction_data_for_obu_id(equOBUId:str, skip:int=0, limit:int=10):
     """
     Query transactions database for data related to a specific OBU ID.
     The OBU ID must be in hexadecimal format.
