@@ -1,0 +1,32 @@
+<head>
+  <title>Search OBU Transactions</title>
+  <link rel="icon" href="pass-fail-icon-scorecard-icon-svg.png">
+</head>
+<body>
+  <input id="device-identifier">
+  </input>
+  <button id="search-button" onclick="get_device_details()">
+  </button>
+  <table id="transactions-list">
+  </table>
+  <script>
+    function get_device_details(){
+      transactions_table = document.getElementById("transactions-list")
+      obu_id = document.getElementById('device-identifier').value
+      obu_transaction_data_req = new Request('/dsrc-transactions/data/obus/' + obu_id)
+      fetch(obu_transaction_data_req)
+        .then((response) => response.json())
+        .then((response_body) => {
+          console.log(response_body)
+          response_body.forEach(transaction_data => {
+            let new_row = transactions_table.insertRow(0)
+            Object.entries(transaction_data).forEach(([key, value]) => {
+              new_cell = new_row.insertCell(0)
+              text_value = document.createTextNode(value)
+              new_cell.appendChild(text_value)
+            })
+          });
+        })
+    }
+  </script>
+</body>
