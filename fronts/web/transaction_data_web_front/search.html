@@ -5,7 +5,7 @@
 <body>
   <div>
     <input id="device-identifier" type="search"></input>
-    <button id="search-button" onclick="get_device_details()">Search</button>
+    <button id="search-button" onclick="trigger_search_from_input()">Search</button>
   </div>
   <table id="transactions-list" style="border: 1px">
     <thead>
@@ -26,12 +26,19 @@
       }
     });
 
-    function get_device_details(){
+    function trigger_search_from_input(){
       transactions_table = document.getElementById("transactions-list")
       obu_id = document.getElementById('device-identifier').value
+      send_http_req_to_display_data(obu_id)
+    }
+
+    function send_http_req_to_get_data(obu_id){
       obu_transaction_data_req = new Request('/dsrc-transactions/data/obus/' + obu_id)
-      fetch(obu_transaction_data_req)
+      return fetch(obu_transaction_data_req)
         .then((response) => response.json())
+    }
+    function send_http_req_to_display_data(obu_id){
+      send_http_req_to_get_data(obu_id)
         .then((response_body) => {
           // console.log(response_body)
           response_body.forEach(transaction_data => {
@@ -51,7 +58,8 @@
               new_cell.appendChild(text_value)
             })
           });
-        })
+        }
+      )
     }
   </script>
 </body>
