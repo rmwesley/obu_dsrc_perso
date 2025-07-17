@@ -1,6 +1,6 @@
 {
     "efc_sec_conf_path": "C:\\Users\\wesley.rodrigues\\AXXES\\OBU Proxy - Documents\\16 - Automatisation des Tests\\efc_security_config_v2.5.2.json",
-    "default_toll_domain_name": "TIS",
+    "default_toll_domain_name": "CH",
     "environment": "TEST",
     "td_conf_by_td_name": {
       "TIS": {
