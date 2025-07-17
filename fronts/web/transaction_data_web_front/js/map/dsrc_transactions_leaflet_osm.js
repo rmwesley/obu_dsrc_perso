@@ -61,14 +61,15 @@ function create_circle_from_gnss_status_data(gnss_status_data){
 }
 
 function add_transaction_info_to_map(transaction_info){
+    console.log(transaction_info['position_info'])
     try{
         circle = create_circle_from_gnss_status_data(transaction_info['position_info']);
         circle.addTo(map);
     }
     catch(error){
-        // console.log('Transaction without position_info!')
-        // console.log(error)
-        // console.error(transaction_info)
+        console.log('Transaction without position_info!')
+        console.log(error)
+        console.error(transaction_info)
     }
 }
 
