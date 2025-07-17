@@ -12,7 +12,6 @@ function send_http_req_to_get_transaction_info(obu_id){
 function send_http_req_and_display_transaction_info(obu_id){
     send_http_req_to_get_transaction_info(obu_id)
     .then((response_body) => {
-        // console.log(response_body)
         response_body.forEach(transaction_info => {
         let new_row = transactions_table.insertRow(-1)
         key_list = [
@@ -31,7 +30,6 @@ function send_http_req_and_display_transaction_info(obu_id){
         })
         new_row.addEventListener('click', (event) => {
             console.log("Row evt: " + event);
-            // transaction_id = transaction_info[_id]
             transaction_id = new_row.cells[0].innerText;
             display_transaction_data_dialog_box(transaction_id);
             event.stopPropagation();
