@@ -1,5 +1,5 @@
 // Setup OpenStreetMap
-zoom = 13;
+zoom = 18;
 axxes_position = [45.7593685, 4.8557787]
 
 // var map = L.map('map');
