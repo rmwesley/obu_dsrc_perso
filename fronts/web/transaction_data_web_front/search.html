@@ -17,17 +17,22 @@
     </script>
   </div>
 
-  <table id="transactions_table" style="border: 1px">
-    <thead>
-      <tr style="background-color: green">
-        <th scope="col">Transaction ID</th>
-        <th scope="col">personalAccountNumber</th>
-        <th scope="col">equOBUId</th>
-        <th scope="col">creation_time</th>
-        <th scope="col">last_update_timestamp</th>
-      </tr>
-    </thead>
-  </table>
+  <div id="transactions_info">
+    <table id="transactions_table" style="border: 1px">
+      <thead>
+        <tr style="background-color: green">
+          <th scope="col">Transaction ID</th>
+          <th scope="col">personalAccountNumber</th>
+          <th scope="col">equOBUId</th>
+          <th scope="col">creation_time</th>
+          <th scope="col">last_update_timestamp</th>
+        </tr>
+      </thead>
+    </table>
+    <dialog id="transaction_data_display">
+      <pre id="transaction_data_dialog_display_content"></pre>
+    </dialog>
+  </div>
 
   <script id="get_transaction_info_script">
     function trigger_search_from_input(){
