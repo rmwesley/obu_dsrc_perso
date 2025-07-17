@@ -53,8 +53,9 @@ def get_transactions_aggregation_cursor_for_equ_obu_id(equ_obu_id:str, skip=0, l
     pymongo_cursor = dsrc_transactions_db_coll.aggregate([
         {'$match': {"equOBUId": equ_obu_id}},
         {'$project': {'data': 0}},
+        {'$sort': {'creation_time': -1}},
         {'$skip':  skip},
-        {'$limit':  limit}
+        {'$limit':  limit},
     ])
     return pymongo_cursor
 
