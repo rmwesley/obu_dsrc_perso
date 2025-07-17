@@ -1027,10 +1027,6 @@ async def ccc_2023_transaction(force_eid=None, mand_applications=[1, 20, 29], ac
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[100])
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[101])
 
-    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[116])
-    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[124])
-    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[127])
-
     # Close the transaction
     if set_mmi == True:
         await send_close_transaction_setmmi(eid=eid)
