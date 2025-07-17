@@ -1022,6 +1022,7 @@ async def ccc_2023_transaction(force_eid=None, mand_applications=[1, 20, 29], ac
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[24])
 
     # Getting CCC attributes...
+    await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[50])
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[53])
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[99])
     await send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[100])
