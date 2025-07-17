@@ -15,14 +15,18 @@ def ugly_decode_jer_absolute_position_2d(absolute_position_2d):
     return {key : ugly_decode_jer_geodata_lat_long(value) for key, value in absolute_position_2d.items()}
 
 def ugly_decode_jer_geodata_lat_long(signed_lat_long_int:int):
+    # signed_lat_long_int += 2 << 30
     signed_lat_long_int += 2**31
     
+    # print(f'LatLong joined int: {signed_lat_long_int}')
     # Horrible 8 decimal chars encoding/decoding...
     lat_long_joined_str = f"{signed_lat_long_int:08d}"
+    print(f'LatLong joined padded int str: {lat_long_joined_str}')
     
     before_decimal_point = lat_long_joined_str[:2]
     after_decimal_point = lat_long_joined_str[2:]
     lat_long_float_str = before_decimal_point + '.' + after_decimal_point
+    # print(f'LatLong float str: {lat_long_float_str}')
 
     return lat_long_float_str
 
