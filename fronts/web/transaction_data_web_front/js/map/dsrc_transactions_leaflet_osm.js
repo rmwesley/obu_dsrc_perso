@@ -47,7 +47,7 @@ function decode_jer_dsrc_wgs_84_position(gnss_status_data){
 
 function create_circle_from_gnss_status_data(gnss_status_data){
     position = decode_jer_dsrc_wgs_84_position(gnss_status_data)
-    console.log(position)
+    // console.log(position)
     unix_ts = gnss_status_data['lastGnssFixTime']
     hdop = gnss_status_data['currentHdop']['hDop']
 
@@ -61,12 +61,21 @@ function create_circle_from_gnss_status_data(gnss_status_data){
     })
 }
 
+function add_transaction_info_to_map(transaction_info){
+    try{
+        circle = create_circle_from_gnss_status_data(transaction_info['position_info']);
+        circle.addTo(map);
+    }
+    catch(error){
+        // console.log('Transaction without position_info!')
+        // console.log(error)
+        // console.error(transaction_info)
+    }
+}
+
 function send_http_req_and_display_transaction_info(obu_id){
     send_http_req_to_get_transaction_info(obu_id)
     .then((response_body) => {
-        response_body.forEach(transaction_info => {
-            circle = create_circle_from_gnss_status_data(transaction_info['position_info'])
-            circle.addTo(map)
-        });
+        response_body.forEach(add_transaction_info_to_map);
     });
 }
