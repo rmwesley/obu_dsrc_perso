@@ -35,8 +35,8 @@ latitude_str = ugly_decode_jer_geodata_lat_long(latitude)
 print(latitude_str, longitude_str)
 
 example_position = {
-"gnssLon": -2142627990,
-"gnssLat": -2101724964
+    "lastGnssFixLon": -2142627826,
+    "lastGnssFixLat": -2101724794,
 }
 # inttt = ugly_decode_jer_geodata_lat_long(-2142627990)
 # print(inttt)
