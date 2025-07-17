@@ -403,6 +403,44 @@ def search_json_get_transaction_data_for_attribute_data(get_request_jval, get_re
             return {}
     return {}
 
+def search_for_obu_id_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval):
+    if 'actionRequest' in request_t_apdu_jval:
+        action_req_jval = request_t_apdu_jval['actionRequest']
+        action_resp_jval = response_t_apdu_jval['actionResponse']
+
+        attribute_value = search_json_action_transaction_data_for_attribute_data(action_req_jval, action_resp_jval, attribute_id=24)
+        if 'equOBUId' in attribute_value:
+            equOBUId_hex = attribute_value['equOBUId'].upper()
+            return equOBUId_hex
+
+    if 'getRequest' in request_t_apdu_jval:
+        get_req_jval = request_t_apdu_jval['getRequest']
+        get_resp_jval = response_t_apdu_jval['getResponse']
+
+        attribute_value = search_json_get_transaction_data_for_attribute_data(get_req_jval, get_resp_jval, attribute_id=24)
+        if 'equOBUId' in attribute_value:
+            equOBUId_hex = attribute_value['equOBUId'].upper()
+            return equOBUId_hex
+
+def search_for_pan_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval):
+    if 'actionRequest' in request_t_apdu_jval:
+        action_req_jval = request_t_apdu_jval['actionRequest']
+        action_resp_jval = response_t_apdu_jval['actionResponse']
+
+        attribute_value = search_json_action_transaction_data_for_attribute_data(action_req_jval, action_resp_jval, attribute_id=32)
+        if 'paymeans' in attribute_value:
+            personalAccountNumber = attribute_value['paymeans']['personalAccountNumber'].upper()
+            return personalAccountNumber
+
+    if 'getRequest' in request_t_apdu_jval:
+        get_req_jval = request_t_apdu_jval['getRequest']
+        get_resp_jval = response_t_apdu_jval['getResponse']
+
+        attribute_value = search_json_get_transaction_data_for_attribute_data(get_req_jval, get_resp_jval, attribute_id=32)
+        if 'paymeans' in attribute_value:
+            personalAccountNumber = attribute_value['paymeans']['personalAccountNumber'].upper()
+            return personalAccountNumber
+
 def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jval):
     global transaction_data_filepath
     if 'current_transaction_id' not in globals():
@@ -417,39 +455,11 @@ def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jva
         transaction_data_json = json.load(json_file)
         transaction_data_json['data']['transaction_phase'].append(new_transaction_phase_data_json)
 
-    if 'actionRequest' in request_t_apdu_jval:
-        action_req_jval = request_t_apdu_jval['actionRequest']
-        action_resp_jval = response_t_apdu_jval['actionResponse']
-
-        attribute_value = search_json_action_transaction_data_for_attribute_data(action_req_jval, action_resp_jval, attribute_id=24)
-        if 'equOBUId' in attribute_value:
-            equOBUId_hex = attribute_value['equOBUId'].upper()
-            transaction_data_json['equOBUId'] = equOBUId_hex
-            rename_transaction_data_file(equOBUId_hex)
-            # bcm_logger.error('Error in response to ACTION with gstrs for equOBUId value (Attribute Id 24)!!')
-
-        attribute_value = search_json_action_transaction_data_for_attribute_data(action_req_jval, action_resp_jval, attribute_id=32)
-        if 'paymeans' in attribute_value:
-            personalAccountNumber = attribute_value['paymeans']['personalAccountNumber'].upper()
-            transaction_data_json['personalAccountNumber'] = personalAccountNumber
-            # bcm_logger.error('Error in response to ACTION with gstrs for paymeans (Attribute Id 16)!!')
-
-    if 'getRequest' in request_t_apdu_jval:
-        get_req_jval = request_t_apdu_jval['getRequest']
-        get_resp_jval = response_t_apdu_jval['getResponse']
-
-        attribute_value = search_json_get_transaction_data_for_attribute_data(get_req_jval, get_resp_jval, attribute_id=24)
-        if 'equOBUId' in attribute_value:
-            equOBUId_hex = attribute_value['equOBUId'].upper()
-            transaction_data_json['equOBUId'] = equOBUId_hex
-            rename_transaction_data_file(equOBUId_hex)
-            # bcm_logger.error('Error in response to GET request for equOBUId value (Attribute Id 24)!!')
-
-        attribute_value = search_json_get_transaction_data_for_attribute_data(get_req_jval, get_resp_jval, attribute_id=32)
-        if 'paymeans' in attribute_value:
-            personalAccountNumber = attribute_value['paymeans']['personalAccountNumber'].upper()
-            transaction_data_json['personalAccountNumber'] = personalAccountNumber
-            # bcm_logger.error('Error in response to ACTION with gstrs for paymeans (Attribute Id 16)!!')
+    equOBUId_hex = search_for_obu_id_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
+    if equOBUId_hex is not None:
+        rename_transaction_data_file(equOBUId_hex)
+        transaction_data_json['equOBUId'] = equOBUId_hex
+    transaction_data_json['personalAccountNumber'] = search_for_pan_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
 
     # Rewriting transaction data file with new exchange data added
     # We also change the last_update_timestamp field
