@@ -449,7 +449,9 @@ def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jva
     if equOBUId_hex is not None:
         rename_transaction_data_file(equOBUId_hex)
         transaction_data_json['equOBUId'] = equOBUId_hex
-    transaction_data_json['personalAccountNumber'] = search_for_pan_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
+    pan_hex = search_for_pan_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
+    if pan_hex:
+        transaction_data_json['personalAccountNumber'] = pan_hex
 
     # Rewriting transaction data file with new exchange data added
     # We also change the last_update_timestamp field
