@@ -1,4 +1,4 @@
-function trigger_search_from_input(){
+function trigger_search_transaction_info_from_input(){
     obu_id = device_id_input.value
     send_http_req_and_display_transaction_info(obu_id)
 }
