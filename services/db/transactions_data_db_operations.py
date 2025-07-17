@@ -61,14 +61,14 @@ def get_transactions_aggregation_cursor_for_equ_obu_id(equ_obu_id:str, skip=0, l
 def get_transactions_info_for_equ_obu_id(equ_obu_id:str, skip=0, limit=10):
     pymongo_cursor = get_transactions_aggregation_cursor_for_equ_obu_id(equ_obu_id, skip, limit)
     for transaction_data in pymongo_cursor:
-        print(transaction_data)
+        # print(transaction_data)
         yield transaction_data
 
 def upload_local_data(size=0):
     db_transactions_collection = db_connect_to_transactions_coll()
     
     file_paths = local_transactions_storage_path.glob('*.json')
-    print(file_paths)
+    # print(file_paths)
     for json_filename in file_paths:
         if not json_filename.endswith('.json'):
             continue
