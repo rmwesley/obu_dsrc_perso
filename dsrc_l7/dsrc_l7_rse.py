@@ -431,6 +431,15 @@ def search_for_pan_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu
         personalAccountNumber = attribute_value['paymeans']['personalAccountNumber'].upper()
         return personalAccountNumber
 
+def enrich_transaction_data(transaction_data_json, request_t_apdu_jval, response_t_apdu_jval):
+    equOBUId_hex = search_for_obu_id_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
+    if equOBUId_hex is not None:
+        rename_transaction_data_file(equOBUId_hex)
+        transaction_data_json['equOBUId'] = equOBUId_hex
+    pan_hex = search_for_pan_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
+    if pan_hex:
+        transaction_data_json['personalAccountNumber'] = pan_hex
+
 def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jval):
     global transaction_data_filepath
     if 'current_transaction_id' not in globals():
@@ -445,13 +454,7 @@ def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jva
         transaction_data_json = json.load(json_file)
         transaction_data_json['data']['transaction_phase'].append(new_transaction_phase_data_json)
 
-    equOBUId_hex = search_for_obu_id_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
-    if equOBUId_hex is not None:
-        rename_transaction_data_file(equOBUId_hex)
-        transaction_data_json['equOBUId'] = equOBUId_hex
-    pan_hex = search_for_pan_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
-    if pan_hex:
-        transaction_data_json['personalAccountNumber'] = pan_hex
+    enrich_transaction_data(transaction_data_json, request_t_apdu_jval, response_t_apdu_jval)
 
     # Rewriting transaction data file with new exchange data added
     # We also change the last_update_timestamp field
