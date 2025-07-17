@@ -24,11 +24,49 @@ function send_http_req_to_get_data(obu_id){
     return fetch(obu_transaction_data_req)
     .then((response) => response.json())
 }
+
+function decode_jer_dsrc_wgs_84_lat_long(signed_lat_long_int){
+    signed_lat_long_int += 2**31
+
+    // Horrible 8 decimal chars encoding/decoding...
+    lat_long_joined_str = signed_lat_long_int.toString(10).padStart(8, '0');
+
+    before_decimal_point = lat_long_joined_str.substring(0, 2)
+    after_decimal_point = lat_long_joined_str.substring(2, 8)
+    lat_long_float_str = before_decimal_point + '.' + after_decimal_point
+    lat_long_float = parseFloat(lat_long_float_str)
+
+    return lat_long_float
+}
+
+function decode_jer_dsrc_wgs_84_position(gnss_status_data){
+    longitude_float = decode_jer_dsrc_wgs_84_lat_long(gnss_status_data['lastGnssFixLon'])
+    latitude_float = decode_jer_dsrc_wgs_84_lat_long(gnss_status_data['lastGnssFixLat'])
+    return [latitude_float, longitude_float]
+}
+
+function create_circle_from_gnss_status_data(gnss_status_data){
+    position = decode_jer_dsrc_wgs_84_position(gnss_status_data)
+    console.log(position)
+    unix_ts = gnss_status_data['lastGnssFixTime']
+    hdop = gnss_status_data['currentHdop']['hDop']
+
+    return L.circle(position, {
+        // color: 'blue',
+        // fillColor: '#3030f0',
+        color: 'red',
+        fillColor: '#f03030',
+        fillOpacity: '0.5',
+        radius: 1,
+    })
+}
+
 function send_http_req_and_display_data(obu_id){
     send_http_req_to_get_data(obu_id)
     .then((response_body) => {
         response_body.forEach(transaction_data => {
-            console.log(transaction_data);
+            circle = create_circle_from_gnss_status_data(transaction_data['position_info'])
+            circle.addTo(map)
         });
-    })
+    });
 }
