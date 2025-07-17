@@ -18,7 +18,7 @@ def ugly_decode_jer_geodata_lat_long(signed_lat_long_int:int):
     signed_lat_long_int += 2**31
     
     # Horrible 8 decimal chars encoding/decoding...
-    lat_long_joined_str = f"{signed_lat_long_int}:08d"
+    lat_long_joined_str = f"{signed_lat_long_int:08d}"
     
     before_decimal_point = lat_long_joined_str[:2]
     after_decimal_point = lat_long_joined_str[2:]
