@@ -147,7 +147,7 @@ def compute_pan_8_msb(pan_bytes:bytes) -> bytes:
     if is_tis_decimal(current_security_profile):
         return tis_compute_pan_8_msb(pan_bytes)
     if is_en15509(current_security_profile):
-        en15509_compute_pan_8_msb(pan_bytes)
+        return en15509_compute_pan_8_msb(pan_bytes)
     else:
         raise UnconfiguredTdSecurityProfile(f"Please properly update the methods for handling the current security profile ({current_security_profile})")
 
@@ -172,7 +172,7 @@ def compute_compact_pan(pan_bytes:bytes) -> bytes:
     # Compute actual PAN 8 MSB.
     # This means you can directly pass pan_bytes to the functions without an issue!
     pan_8_msb = compute_pan_8_msb(pan_bytes=pan_bytes)
-    if type(pan_8_msb) != bytes:
+    if not isinstance(pan_8_msb, bytes):
         raise ValueError('pan_8_msb should be a bytes object!!!')
     if len(pan_8_msb) < 8:
         raise ValueError('pan_8_msb should be at least 8 bytes in length!!!')
@@ -182,12 +182,12 @@ def compute_compact_pan(pan_bytes:bytes) -> bytes:
         current_byte = pan_8_msb[i] ^ pan_8_msb[i+4]
         compact_pan_bytes.append(current_byte)
 
-    if current_security_profile == 'TIS_decimal':
+    if 'TIS_decimal' in current_security_profile:
         # We interpret a decimal as a hex!
         compact_pan_int = int.from_bytes(compact_pan_bytes)
         return bytes.fromhex(f'{compact_pan_int:08d}')
 
-    elif current_security_profile == 'EN15509':
+    elif 'EN15509' in current_security_profile:
         pass
     return compact_pan_bytes
 
@@ -205,7 +205,7 @@ def compute_auk_plaintext_contract_provider_part(efc_cm:str) -> bytes:
     # TIS uses 0x49 = 73 in dec instead!!!
     #
     # So the ContractProvider is 0x25 00 49 instead of 0xB2 80 31!!!
-    if current_security_profile == 'TIS_decimal':
+    if 'TIS_decimal' in current_security_profile:
         iso3166_alpha2 = custom_its_per_decoders.decode_baudot_country_code(efc_cm)
         iso3166_numeric3_dec_str = iso3166.countries_by_alpha2.get(iso3166_alpha2).numeric
 
@@ -215,7 +215,7 @@ def compute_auk_plaintext_contract_provider_part(efc_cm:str) -> bytes:
 
         plaintext_extension = decimal_contract_provider + "00"
 
-    elif current_security_profile == 'EN15509':
+    elif 'EN15509' in current_security_profile:
         plaintext_extension = contract_provider_hex + "00"
         contract_provider_size = len(contract_provider_hex)
         if contract_provider_size != 6:
