@@ -17,11 +17,11 @@ axxes_marker.addTo(map);
 // HTML handling functions
 function trigger_search_from_input(){
     obu_id = device_id_input.value;
-    send_http_req_and_display_data(obu_id);
+    send_http_req_and_display_transaction_info(obu_id);
 }
-function send_http_req_to_get_data(obu_id){
-    obu_transaction_data_req = new Request('/dsrc-transactions/data/obus/' + obu_id)
-    return fetch(obu_transaction_data_req)
+function send_http_req_to_get_transaction_info(obu_id){
+    obu_transaction_info_req = new Request('/dsrc-transactions/data/obus/' + obu_id)
+    return fetch(obu_transaction_info_req)
     .then((response) => response.json())
 }
 
@@ -61,11 +61,11 @@ function create_circle_from_gnss_status_data(gnss_status_data){
     })
 }
 
-function send_http_req_and_display_data(obu_id){
-    send_http_req_to_get_data(obu_id)
+function send_http_req_and_display_transaction_info(obu_id){
+    send_http_req_to_get_transaction_info(obu_id)
     .then((response_body) => {
-        response_body.forEach(transaction_data => {
-            circle = create_circle_from_gnss_status_data(transaction_data['position_info'])
+        response_body.forEach(transaction_info => {
+            circle = create_circle_from_gnss_status_data(transaction_info['position_info'])
             circle.addTo(map)
         });
     });
