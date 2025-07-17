@@ -18,10 +18,11 @@ def ugly_decode_jer_geodata_lat_long(signed_lat_long_int:int):
     signed_lat_long_int += 2**31
     
     # Horrible 8 decimal chars encoding/decoding...
-    lat_long_str = f"{signed_lat_long_int}:08d"
+    lat_long_joined_str = f"{signed_lat_long_int}:08d"
     
-    lat_long_float_str = lat_long_str[:2]
-    lat_long_float_str += f".{lat_long_str[2:]}"
+    before_decimal_point = lat_long_joined_str[:2]
+    after_decimal_point = lat_long_joined_str[2:]
+    lat_long_float_str = before_decimal_point + '.' + after_decimal_point
 
     return lat_long_float_str
 
@@ -33,8 +34,7 @@ latitude_str = ugly_decode_jer_geodata_lat_long(latitude)
 
 print(latitude_str, longitude_str)
 
-
-ddd = {
+example_position = {
 "gnssLon": -2142627990,
 "gnssLat": -2101724964
 }
@@ -43,4 +43,4 @@ ddd = {
 # inttt = ugly_decode_jer_geodata_lat_long(-2101724964)
 # print(inttt)
 
-print(ugly_decode_jer_absolute_position_2d(ddd))
+print(ugly_decode_jer_absolute_position_2d(example_position))
