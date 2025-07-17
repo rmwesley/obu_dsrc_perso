@@ -337,6 +337,7 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     # Equipment OBU ID, PAN and timestamps at the top!
     transaction_data['equOBUId'] = ""
     transaction_data['personalAccountNumber'] = ""
+    transaction_data['obu_provided_invalid_stamp'] = False
     transaction_data['position_info'] = {}
     transaction_data['creation_time'] = ""
     transaction_data['last_update_timestamp'] = ""
@@ -438,6 +439,65 @@ def search_for_gnss_status_in_t_apdu_exchange(request_t_apdu_jval, response_t_ap
     if 'gnssStatus' in attribute_value:
         return attribute_value['gnssStatus']
 
+def verify_obe_authenticity(get_stamped_action_response_value=None):
+    global last_response_t_apdu_value
+    global last_vst_value
+
+    if get_stamped_action_response_value is None:
+        get_stamped_action_response_value = last_response_t_apdu_value[1]
+    if 'responseParameter' not in get_stamped_action_response_value:
+        # Not a GET_STAMPED.response!!
+        return True
+    if get_stamped_action_response_value['responseParameter'][0] != 'gstrs':
+        # Not a GET_STAMPED.response!!
+        return True
+
+    get_stamped_rs = get_stamped_action_response_value['responseParameter'][1]
+
+    # if 'get_stamped_response_value' not in locals():
+    #     bcm_logger.error("No GET_STAMPED.response to verify!!")
+    eid = get_stamped_action_response_value['eid']
+    decoded_vst_param = decode_vst_parameter_from_eid(eid)
+    efc_cm = decoded_vst_param['EFC-ContextMark']
+
+    attributeList = get_stamped_rs['attributeList']
+    bcm_logger.info(f'[OBE AUTH] attributeList value: {attributeList}')
+
+    container_with_attribute_list = ('attrList', get_stamped_rs['attributeList'])
+
+    bcm_logger.info(f"[OBE AUTH] EFC Container of Type/CHOICE 'attrList' value: {container_with_attribute_list}")
+    efc_asn_compilation.EfcDsrcGeneric.EfcContainer.set_val(container_with_attribute_list)
+    bcm_logger.info(f"[OBE AUTH] EFC Container of Type/CHOICE 'attrList' in ASN: {efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_asn1()}")
+
+    attribute_list_bytes = efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_uper()[1:]
+
+    provided_authenticator = get_stamped_rs['authenticator']
+    bcm_logger.info(f"[OBE AUTH] Authenticator provided by OBE (UPER hex): {provided_authenticator.hex().upper()}")
+
+    rnd_rse_bytes = rnd_rse_bytes_value
+    rnd_rse_int = int.from_bytes(rnd_rse_bytes, 'big')
+
+    pan_bytes = get_stamped_rs['attributeList'][0]['attributeValue'][1]['personalAccountNumber']
+
+    bcm_logger.debug(f'[OBE AUTH] EFC-CM: {efc_cm}')
+    bcm_logger.debug(f'[OBE AUTH] AttributeList: {attribute_list_bytes}')
+    bcm_logger.debug(f'[OBE AUTH] RndRSE int: {rnd_rse_int}')
+
+    manufacturer_id_int = last_vst_value['obeConfiguration']['manufacturerID']
+    manufacturer_id_hex = f'{manufacturer_id_int:04X}'
+
+    equipment_class_int = last_vst_value['obeConfiguration']['equipmentClass']
+    equipment_class_hex = f'{equipment_class_int:04X}'
+
+    authenticator = dsrc_auth.compute_authenticator_with_device_info_and_auk_ref(pan_bytes, efc_cm, manufacturer_id_hex, equipment_class_hex, attribute_list_bytes, rnd_rse_int, 115)
+
+    if provided_authenticator == authenticator:
+        bcm_logger.info('[OBE AUTH] OK!!!')
+        return True
+        # raise Exception('[OBE AUTH] Invalid OBE Auth!!')
+    else:
+        bcm_logger.critical('[OBE AUTH] ERROR!!!')
+
 def enrich_transaction_data(transaction_data_json, request_t_apdu_jval, response_t_apdu_jval):
     equOBUId_hex = search_for_obu_id_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
     if equOBUId_hex is not None:
@@ -449,6 +509,12 @@ def enrich_transaction_data(transaction_data_json, request_t_apdu_jval, response
     gnss_status = search_for_gnss_status_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
     if gnss_status:
         transaction_data_json['position_info'] = gnss_status
+
+    try:
+        valid_stamp = verify_obe_authenticity()
+        transaction_data_json['obu_provided_invalid_stamp'] &= not valid_stamp
+    except:
+        bcm_logger.exception("OBE AUTH ERROR!!!", stack_info=True)
 
 def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jval):
     global transaction_data_filepath
@@ -675,67 +741,7 @@ async def send_get_stamped_request(
 
     # custom_its_per_decoders.decode_get_response_param(response_t_apdu_value)
 
-    try:
-        verify_obe_authenticity()
-    except:
-        bcm_logger.exception("OBE AUTH ERROR!!!", stack_info=True)
     return response_t_apdu_value
-
-def verify_obe_authenticity(get_stamped_action_response_value=None):
-    global last_response_t_apdu_value
-    global last_vst_value
-
-    if get_stamped_action_response_value is None:
-        get_stamped_action_response_value = last_response_t_apdu_value[1]
-    try:
-        get_stamped_rs = get_stamped_action_response_value['responseParameter'][1]
-    except KeyError:
-        bcm_logger.error('[OBE AUTH] No responseParameter in GET_STAMPED.response!!!')
-        return
-
-    # if 'get_stamped_response_value' not in locals():
-    #     bcm_logger.error("No GET_STAMPED.response to verify!!")
-    eid = get_stamped_action_response_value['eid']
-    decoded_vst_param = decode_vst_parameter_from_eid(eid)
-    efc_cm = decoded_vst_param['EFC-ContextMark']
-
-    attributeList = get_stamped_rs['attributeList']
-    bcm_logger.info(f'[OBE AUTH] attributeList value: {attributeList}')
-
-    container_with_attribute_list = ('attrList', get_stamped_rs['attributeList'])
-
-    bcm_logger.info(f"[OBE AUTH] EFC Container of Type/CHOICE 'attrList' value: {container_with_attribute_list}")
-    efc_asn_compilation.EfcDsrcGeneric.EfcContainer.set_val(container_with_attribute_list)
-    bcm_logger.info(f"[OBE AUTH] EFC Container of Type/CHOICE 'attrList' in ASN: {efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_asn1()}")
-
-    attribute_list_bytes = efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_uper()[1:]
-
-    provided_authenticator = get_stamped_rs['authenticator']
-    bcm_logger.info(f"[OBE AUTH] Authenticator provided by OBE (UPER hex): {provided_authenticator.hex().upper()}")
-
-    rnd_rse_bytes = rnd_rse_bytes_value
-    rnd_rse_int = int.from_bytes(rnd_rse_bytes, 'big')
-
-    pan_bytes = get_stamped_rs['attributeList'][0]['attributeValue'][1]['personalAccountNumber']
-
-    bcm_logger.debug(f'[OBE AUTH] EFC-CM: {efc_cm}')
-    bcm_logger.debug(f'[OBE AUTH] AttributeList: {attribute_list_bytes}')
-    bcm_logger.debug(f'[OBE AUTH] RndRSE int: {rnd_rse_int}')
-
-    manufacturer_id_int = last_vst_value['obeConfiguration']['manufacturerID']
-    manufacturer_id_hex = f'{manufacturer_id_int:04X}'
-
-    equipment_class_int = last_vst_value['obeConfiguration']['equipmentClass']
-    equipment_class_hex = f'{equipment_class_int:04X}'
-
-    authenticator = dsrc_auth.compute_authenticator_with_device_info_and_auk_ref(pan_bytes, efc_cm, manufacturer_id_hex, equipment_class_hex, attribute_list_bytes, rnd_rse_int, 115)
-
-    if provided_authenticator == authenticator:
-        bcm_logger.info('[OBE AUTH] OK!!!')
-        return True
-        # raise Exception('[OBE AUTH] Invalid OBE Auth!!')
-    else:
-        bcm_logger.critical('[OBE AUTH] ERROR!!!')
 
 def get_stamped_request_action_parameter_preparation(eid:int, attrIdList:list = [], operator_auk_ref=111):
     """
