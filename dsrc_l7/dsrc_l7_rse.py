@@ -337,6 +337,7 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     # Equipment OBU ID, PAN and timestamps at the top!
     transaction_data['equOBUId'] = ""
     transaction_data['personalAccountNumber'] = ""
+    transaction_data['position_info'] = {}
     transaction_data['creation_time'] = ""
     transaction_data['last_update_timestamp'] = ""
 
@@ -431,6 +432,12 @@ def search_for_pan_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu
         personalAccountNumber = attribute_value['paymeans']['personalAccountNumber'].upper()
         return personalAccountNumber
 
+def search_for_gnss_status_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval):
+    attribute_value = search_json_t_apdu_exchange_data_for_attribute_value(request_t_apdu_jval, response_t_apdu_jval, attribute_id=50)
+
+    if 'gnssStatus' in attribute_value:
+        return attribute_value['gnssStatus']
+
 def enrich_transaction_data(transaction_data_json, request_t_apdu_jval, response_t_apdu_jval):
     equOBUId_hex = search_for_obu_id_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
     if equOBUId_hex is not None:
@@ -439,6 +446,9 @@ def enrich_transaction_data(transaction_data_json, request_t_apdu_jval, response
     pan_hex = search_for_pan_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
     if pan_hex:
         transaction_data_json['personalAccountNumber'] = pan_hex
+    gnss_status = search_for_gnss_status_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
+    if gnss_status:
+        transaction_data_json['position_info'] = gnss_status
 
 def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jval):
     global transaction_data_filepath
