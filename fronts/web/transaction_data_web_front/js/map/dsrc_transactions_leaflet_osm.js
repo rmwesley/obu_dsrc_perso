@@ -1,17 +1,16 @@
 // Setup OpenStreetMap
 zoom = 13;
-x = 45.7593685;
-y = 4.8557787;
+axxes_position = [45.7593685, 4.8557787]
 
 // var map = L.map('map');
-var map = L.map('map').setView([x, y], zoom);
+var map = L.map('map').setView(axxes_position, zoom);
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
 
-var axxes_marker = L.marker([x, y]);
+var axxes_marker = L.marker(axxes_position);
 axxes_marker.addTo(map);
 
 // HTML handling functions
