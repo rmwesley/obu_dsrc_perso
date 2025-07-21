@@ -6,37 +6,44 @@
       "TIS": {
         "td_name": "TIS",
         "security_profile": "TIS_decimal_level_1",
-        "default_transaction_type": "CARDME"
+        "default_transaction_type": "CARDME",
+        "mandApplications": [1]
       },
       "VIA-T2": {
         "td_name": "VIA-T2",
         "security_profile": "TIS_decimal_level_0",
-        "default_transaction_type": "PISTA"
+        "default_transaction_type": "PISTA",
+        "mandApplications": [1]
       },
       "EasyGo": {
         "td_name": "EasyGo",
         "security_profile": "EN15509_level_1",
-        "default_transaction_type": "CARDME"
+        "default_transaction_type": "CARDME",
+        "mandApplications": [1]
       },
       "DE": {
         "td_name": "DE",
         "security_profile": "EN15509_level_1",
-        "default_transaction_type": "CCC2023"
+        "default_transaction_type": "CCC2023",
+        "mandApplications": [20]
       },
       "CH": {
         "td_name": "CH",
         "security_profile": "EN15509_level_1",
-        "default_transaction_type": "CCC2023"
+        "default_transaction_type": "CCC2023",
+        "mandApplications": [20]
       },
       "BE": {
         "td_name": "BE",
         "security_profile": "EN15509_level_1",
-        "default_transaction_type": "CCC2015"
+        "default_transaction_type": "CCC2015",
+        "mandApplications": [20]
       },
       "IT": {
         "td_name": "IT",
         "security_profile": "EN15509_level_0",
-        "default_transaction_type": "CARDME"
+        "default_transaction_type": "CARDME",
+        "mandApplications": [29]
       }
     },
     "try_looking_up_master_keys_for_other_obes_with_same_efc_cm": false
