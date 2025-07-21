@@ -1,0 +1,383 @@
+import time
+import logging
+import json
+
+from dsrc_l7 import dsrc_l7_rse
+from dsrc_security import dsrc_contracts, dsrc_mk_by_device_and_td_loader
+
+from ASN.compiled_DSRC_instances import AXXESv1_2
+EFCv5 = AXXESv1_2
+from ASN.compiled_DSRC_instances import CCCv1
+
+dsrc_l7_transactions_logger = logging.getLogger(__name__)
+
+with open('settings/toll_domain_config.json') as json_file:
+    toll_domain_config = json.load(json_file)
+
+async def cardme_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
+    _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
+    eid = dsrc_contracts.get_eid_in_vst_with_valid_contract(vst_value=last_vst_value)
+    if force_eid is not None:
+        eid = force_eid
+    # Getting payment info!! (Core part)
+    await dsrc_l7_rse.presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+
+    # Getting Receipt data...
+    # dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[33, 34])
+
+    # Getting contract information...
+    # dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[4])
+
+    # Getting Vehicle attributes...
+    ## Getting LPN only first case errors occurs in the 'big' GET.request
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[17, 18, 19, 20, 22])
+
+    # Getting OBE info...
+    # dsrc_l7_rse.send_get_request(eid, False, attrIdList=[24, 25, 26])
+    await dsrc_l7_rse.send_get_request(eid, False, attrIdList=[24]) # Get equOBUId
+
+    # Getting driver info...
+    # dsrc_l7_rse.send_get_request(eid, False, attrIdList=[27, 47])
+
+    # Close the transaction
+    if set_mmi == True:
+        await dsrc_l7_rse.send_close_transaction_setmmi(eid=eid)
+    else:
+        await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
+
+async def tis_vl_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
+    """
+    Used in the context of TIS VL CIP CARDME/Liber-t transactions.
+    TIS: Télépéage Inter Sociétés
+    CIP: Commission Interautoroutes Péage
+    VL: Véhicule Léger
+    """
+    _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
+    eid = dsrc_contracts.get_eid_in_vst_with_valid_contract(vst_value=last_vst_value)
+    if force_eid is not None:
+        eid = force_eid
+    await dsrc_l7_rse.presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[17, 18, 19, 20, 22])
+
+    # Getting TIS specific/reserved attributes...
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[125, 126])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[95, 96])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[97, 98, 99])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=list(range(100, 104)))
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=list(range(104, 108)))
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=list(range(108, 112)))
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=list(range(112, 116)))
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[116])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[124])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[127])
+
+    # Close the transaction
+    if set_mmi == True:
+        await dsrc_l7_rse.send_close_transaction_setmmi(eid=eid)
+    else:
+        await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
+
+async def test_ccc_2009_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
+    global efc_asn_compilation
+    # Compiled CCC 2015 specs
+    efc_asn_compilation = CCCv1
+
+    _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
+    eid = dsrc_contracts.get_eid_in_vst_with_valid_contract(vst_value=last_vst_value)
+    if force_eid is not None:
+        eid = force_eid
+    await dsrc_l7_rse.presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
+
+    # OBU ID
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[24])
+
+    # Getting CCC 2009 attributes...
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[48])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[49])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[50])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[51])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[52])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[53])
+
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[116])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[124])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[127])
+
+    # Close the transaction
+    if set_mmi == True:
+        await dsrc_l7_rse.send_close_transaction_setmmi(eid=eid)
+    else:
+        await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
+    efc_asn_compilation = AXXESv1_2
+
+async def test_ccc_2009_transaction_old(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
+    global efc_asn_compilation
+    # Compiled CCC 2015 specs
+    efc_asn_compilation = CCCv1
+
+    _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
+    eid = dsrc_contracts.get_eid_in_vst_with_valid_contract(vst_value=last_vst_value)
+    if force_eid is not None:
+        eid = force_eid
+    await dsrc_l7_rse.presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
+
+    # OBU ID
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[24])
+
+    # Getting CCC 2009 attributes...
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[37])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[38])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[39])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[40])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[41])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[42])
+
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[116])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[124])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[127])
+
+    # Close the transaction
+    if set_mmi == True:
+        await dsrc_l7_rse.send_close_transaction_setmmi(eid=eid)
+    else:
+        await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
+    efc_asn_compilation = AXXESv1_2
+
+async def ccc_2015_status_history_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
+    global efc_asn_compilation
+    # Compiled CCC 2015 specs
+    efc_asn_compilation = EFCv5
+
+    _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
+    eid = dsrc_contracts.get_eid_in_vst_with_valid_contract(vst_value=last_vst_value)
+    if force_eid is not None:
+        eid = force_eid
+    await dsrc_l7_rse.presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+
+    # OBU ID
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[24])
+
+    # Getting CCC attributes...
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[53])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[55])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[60])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[61])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[62])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[63])
+
+    # Close the transaction
+    if set_mmi == True:
+        await dsrc_l7_rse.send_close_transaction_setmmi(eid=eid)
+    else:
+        await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
+    efc_asn_compilation = AXXESv1_2
+
+async def test_ccc_2015_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
+    global efc_asn_compilation
+    # Compiled CCC 2015 specs
+    efc_asn_compilation = EFCv5
+
+    _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
+    eid = dsrc_contracts.get_eid_in_vst_with_valid_contract(vst_value=last_vst_value)
+    if force_eid is not None:
+        eid = force_eid
+    await dsrc_l7_rse.presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
+
+    # Get OBU ID
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[24])
+
+    # Getting CCC attributes...
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[46])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[48])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[49])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[50])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[51])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[52])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[53])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[55])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[60])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[61])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[62])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[63])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[64])
+
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[116])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[124])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[127])
+
+    # Close the transaction
+    if set_mmi == True:
+        await dsrc_l7_rse.send_close_transaction_setmmi(eid=eid)
+    else:
+        await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
+    efc_asn_compilation = AXXESv1_2
+
+async def ccc_2023_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
+    _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
+    eid = dsrc_contracts.get_eid_in_vst_with_valid_contract(vst_value=last_vst_value)
+    if force_eid is not None:
+        eid = force_eid
+
+    await dsrc_l7_rse.presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
+
+    # Get OBU ID
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[24])
+
+    # Getting CCC attributes...
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[50])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[53])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[99])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[100])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[101])
+
+    # Close the transaction
+    if set_mmi == True:
+        await dsrc_l7_rse.send_close_transaction_setmmi(eid=eid)
+    else:
+        await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
+
+async def kapsch_system_element_transaction(force_eid=0, mand_applications=[0], accessCredentialsPresent=True, set_mmi=True):
+    _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
+    if force_eid is not None:
+        eid = force_eid
+
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[1, 2, 3])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[6, 7])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[10])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[17])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[18])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[23])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[33])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[108])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[120])
+
+    # Close the transaction
+    if set_mmi == True:
+        await dsrc_l7_rse.send_close_transaction_setmmi(eid=eid)
+    else:
+        await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
+
+async def test_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
+    _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
+    if force_eid is not None:
+        eid = force_eid
+
+    await dsrc_l7_rse.presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
+
+    # Getting CCC attributes...
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[53])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[99])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[100])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[101])
+
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[111, 115, 118])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[116])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[124])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[127])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[125, 126])
+
+    # Close the transaction
+    if set_mmi == True:
+        await dsrc_l7_rse.send_close_transaction_setmmi(eid=eid)
+    else:
+        await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
+
+async def get_all_attributes(eid, mand_applications=[1, 20, 29]):
+    attrIdList = list(range(0, 128))
+    return await get_attributes_in_list(eid, attrIdList, mand_applications=mand_applications)
+
+async def get_attributes_in_list(eid, accessCredentialsPresent=True, attrIdList=[32], mand_applications=[1, 20, 29], set_mmi=False):
+    global last_response_t_apdu_json
+
+    # Initialize transaction
+    _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
+
+    # Send GET.requests
+    obtained_attrs = set()
+    get_responses = []
+    try:
+        for attr in attrIdList:
+            await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[attr])
+            try:
+                if last_response_t_apdu_json['getResponse']['ret'] == 0:
+                    dsrc_l7_transactions_logger.info(last_response_t_apdu_json['getResponse'])
+                    obtained_attrs.add(attr)
+                    get_responses.append(last_response_t_apdu_json['getResponse']['attributelist'])
+            except KeyError:
+                dsrc_l7_transactions_logger.info(last_response_t_apdu_json['getResponse'])
+                obtained_attrs.add(attr)
+                get_responses.append(last_response_t_apdu_json['getResponse']['attributelist'])
+    except dsrc_l7_rse.EIDNotFoundException:
+        dsrc_l7_transactions_logger.error("EID not present!", stack_info=True)
+    dsrc_l7_transactions_logger.info(f"Obtained attributes: {obtained_attrs}")
+    dsrc_l7_transactions_logger.info(f"Rejected attributes: {set(attrIdList).difference(obtained_attrs)}")
+
+    # dsrc_l7_transactions_logger.info(json.dumps(get_responses, indent=2))
+
+    # Close the transaction
+    if set_mmi == True:
+        await dsrc_l7_rse.send_close_transaction_setmmi(eid=eid)
+    else:
+        await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
+
+    return obtained_attrs, get_responses
+
+def stop_loop():
+    global keep_looping
+    keep_looping = False
+
+def set_beeping_state(beep_state=False):
+    global loop_set_mmi_bool
+    loop_set_mmi_bool = beep_state
+
+def loop_transactions(beep_state=None):
+    global keep_looping
+    global loop_set_mmi_bool
+
+    if beep_state is not None:
+        set_beeping_state(beep_state=beep_state)
+
+    if keep_looping == True:
+        dsrc_l7_transactions_logger.error('Loop already in progress!!')
+        return
+    keep_looping = True
+    if 'loop_set_mmi_bool' not in globals():
+        loop_set_mmi_bool = False
+
+    while keep_looping:
+        try:
+            get_attributes_in_list(eid=4, attrIdList=[32], mand_applications=[1, 20], set_mmi=loop_set_mmi_bool)
+            time.sleep(0.3)
+
+            get_attributes_in_list(eid=2, attrIdList=[16, 17, 18, 19, 20, 22, 32], mand_applications=[1, 20], set_mmi=False)
+            time.sleep(0.01)
+            get_attributes_in_list(eid=2, attrIdList=[50, 51, 52], mand_applications=[1, 20], set_mmi=False)
+            get_attributes_in_list(eid=2, attrIdList=[53, 99, 100, 101], mand_applications=[1, 20], set_mmi=False)
+            time.sleep(0.3)
+
+            get_attributes_in_list(eid=3, attrIdList=[16, 17, 18, 19, 20, 22, 32], mand_applications=[1, 20])
+            time.sleep(0.01)
+            get_attributes_in_list(eid=3, attrIdList=[50, 51, 52], mand_applications=[1, 20], set_mmi=False)
+            get_attributes_in_list(eid=3, attrIdList=[53, 99, 100, 101], mand_applications=[1, 20], set_mmi=False)
+            time.sleep(0.3)
+
+            time.sleep(3)
+        except dsrc_l7_rse.UnclosedTransactionException:
+            keep_looping = False
+            dsrc_l7_transactions_logger.error("Transaction error occurred during loop!", exc_info=True)
+            time.sleep(1)

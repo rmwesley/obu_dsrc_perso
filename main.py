@@ -3,7 +3,7 @@ import asyncio
 
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
-from dsrc_l7 import dsrc_l7_rse
+from dsrc_l7 import dsrc_l7_rse, dsrc_l7_transactions
 
 import logging
 
@@ -44,10 +44,7 @@ root_logger.addHandler(console_handler)
 async def simple_bcm_transactions():
     await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
 
-    dsrc_l7_rse.set_beeping_state(beep_state=False)
-    # await dsrc_l7_rse.cardme_transaction(mand_applications=[1, 20, 29], set_mmi=False)
-    await dsrc_l7_rse.ccc_2023_transaction(mand_applications=[20], set_mmi=True)
-    # await dsrc_l7_rse.test_ccc_2009_transaction(mand_applications=[20], set_mmi=True)
+    await dsrc_l7_transactions.cardme_transaction(set_mmi=False)
 
 # Main execution
 if __name__ == "__main__":
