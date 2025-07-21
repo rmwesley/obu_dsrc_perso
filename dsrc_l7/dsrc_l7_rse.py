@@ -354,9 +354,10 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     # equOBUId = 0
 
     # Actual data at the bottom!
-    transaction_data['data'] = {'initialization_phase': initialization_data}
+    transaction_data['data'] = {}
+    transaction_data['data']['initialization_phase'] = initialization_data
     # Create an empty list for future data exchanges (ACTION/GET/SET requests...)
-    transaction_data['data'] |= {'transaction_phase':  []}
+    transaction_data['data']['transaction_phase'] = []
 
     current_transaction_start_date = datetime.now()
     current_transaction_datetime_prefix = current_transaction_start_date.strftime("%Y%m%dT%H%M%S")
