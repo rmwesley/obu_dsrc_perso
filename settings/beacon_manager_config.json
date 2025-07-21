@@ -4,7 +4,7 @@
     "chosen_communication_mode": "serial-pertel",
     "bac_l2_config": {
       "beacon_host_serial_config": {
-        "port": "COM6",
+        "port": "COM1",
         "baudrate": 115200,
         "parity": "E",
         "stopbits": 2
