@@ -1,4 +1,3 @@
-import os
 import asyncio
 
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
