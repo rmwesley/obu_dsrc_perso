@@ -1,6 +1,6 @@
 {
-    "efc_sec_conf_path": "C:\\Users\\wesley.rodrigues\\AXXES\\OBU Proxy - Documents\\16 - Automatisation des Tests\\efc_security_config_v2.5.2.json",
-    "default_toll_domain_name": "TIS",
+    "efc_sec_conf_path": "C:\\Users\\wesley.rodrigues\\AXXES\\OBU Proxy - Documents\\16 - Automatisation des Tests\\efc_security_config_v2.6.0.json",
+    "default_toll_domain_name": "IT_CEN",
     "environment": "TEST",
     "td_conf_by_td_name": {
       "TIS": {
@@ -39,8 +39,8 @@
         "default_transaction_type": "CCC2015",
         "mandApplications": [20]
       },
-      "IT": {
-        "td_name": "IT",
+      "IT_CEN": {
+        "td_name": "IT_CEN",
         "security_profile": "EN15509_level_0",
         "default_transaction_type": "CARDME",
         "mandApplications": [29]
