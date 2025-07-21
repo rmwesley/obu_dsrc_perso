@@ -44,7 +44,7 @@ root_logger.addHandler(console_handler)
 async def simple_bcm_transactions():
     await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
 
-    await dsrc_l7_transactions.cardme_transaction(set_mmi=False)
+    await dsrc_l7_transactions.td_default_transaction(set_mmi=False)
 
 # Main execution
 if __name__ == "__main__":

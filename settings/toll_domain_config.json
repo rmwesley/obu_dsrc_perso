@@ -5,31 +5,38 @@
     "td_conf_by_td_name": {
       "TIS": {
         "td_name": "TIS",
-        "security_profile": "TIS_decimal_level_1"
+        "security_profile": "TIS_decimal_level_1",
+        "default_transaction_type": "CARDME"
       },
       "VIA-T2": {
         "td_name": "VIA-T2",
-        "security_profile": "TIS_decimal_level_0"
+        "security_profile": "TIS_decimal_level_0",
+        "default_transaction_type": "PISTA"
       },
       "EasyGo": {
         "td_name": "EasyGo",
-        "security_profile": "EN15509_level_1"
+        "security_profile": "EN15509_level_1",
+        "default_transaction_type": "CARDME"
       },
       "DE": {
         "td_name": "DE",
-        "security_profile": "EN15509_level_1"
+        "security_profile": "EN15509_level_1",
+        "default_transaction_type": "CCC2023"
       },
       "CH": {
         "td_name": "CH",
-        "security_profile": "EN15509_level_1"
+        "security_profile": "EN15509_level_1",
+        "default_transaction_type": "CCC2023"
       },
       "BE": {
         "td_name": "BE",
-        "security_profile": "EN15509_level_1"
+        "security_profile": "EN15509_level_1",
+        "default_transaction_type": "CCC2015"
       },
       "IT": {
         "td_name": "IT",
-        "security_profile": "EN15509_level_0"
+        "security_profile": "EN15509_level_0",
+        "default_transaction_type": "CARDME"
       }
     },
     "try_looking_up_master_keys_for_other_obes_with_same_efc_cm": false
