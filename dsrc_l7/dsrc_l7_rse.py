@@ -336,7 +336,7 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     # Equipment OBU ID, PAN and timestamps at the top!
     transaction_data['equOBUId'] = ""
     transaction_data['personalAccountNumber'] = ""
-    transaction_data['obu_provided_invalid_stamp'] = False
+    transaction_data['obu_provided_invalid_attr_auth_stamp'] = False
     transaction_data['position_info'] = {}
     transaction_data['creation_time'] = ""
     transaction_data['last_update_timestamp'] = ""
@@ -512,7 +512,7 @@ def enrich_transaction_data(transaction_data_json, request_t_apdu_jval, response
         transaction_data_json['position_info'] = gnss_status
 
     valid_stamp = verify_obe_authenticity()
-    transaction_data_json['obu_provided_invalid_stamp'] |= not valid_stamp
+    transaction_data_json['obu_provided_invalid_attr_auth_stamp'] |= not valid_stamp
 
 def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jval):
     global transaction_data_filepath
