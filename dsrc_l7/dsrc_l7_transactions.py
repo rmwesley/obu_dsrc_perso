@@ -382,20 +382,20 @@ def loop_transactions(beep_state=None):
             dsrc_l7_transactions_logger.error("Transaction error occurred during loop!", exc_info=True)
             time.sleep(1)
 
-async def td_default_transaction(set_mmi=False):
+async def td_default_transaction(accessCredentialsPresent=True, set_mmi=False):
     current_td = dsrc_mk_by_device_and_td_loader.current_toll_domain_name
 
     transaction_type = toll_domain_config['td_conf_by_td_name'][current_td]['default_transaction_type']
     default_mand_applications = toll_domain_config['td_conf_by_td_name'][current_td]['mandApplications']
     if transaction_type == 'CARDME':
-        await cardme_transaction(mand_applications=default_mand_applications, set_mmi=set_mmi)
+        await cardme_transaction(mand_applications=default_mand_applications, accessCredentialsPresent=accessCredentialsPresent, set_mmi=set_mmi)
     elif transaction_type == 'PISTA':
-        await cardme_transaction(mand_applications=default_mand_applications, set_mmi=set_mmi)
+        await cardme_transaction(mand_applications=default_mand_applications, accessCredentialsPresent=accessCredentialsPresent, set_mmi=set_mmi)
     elif transaction_type == 'CCC2009':
-        await test_ccc_2009_transaction(mand_applications=default_mand_applications, set_mmi=set_mmi)
+        await test_ccc_2009_transaction(mand_applications=default_mand_applications, accessCredentialsPresent=accessCredentialsPresent, set_mmi=set_mmi)
     elif transaction_type == 'CCC2015':
-        await test_ccc_2015_transaction(mand_applications=default_mand_applications, set_mmi=set_mmi)
+        await test_ccc_2015_transaction(mand_applications=default_mand_applications, accessCredentialsPresent=accessCredentialsPresent, set_mmi=set_mmi)
     elif transaction_type == 'CCC2019':
-        await ccc_2023_transaction(mand_applications=default_mand_applications, set_mmi=set_mmi)
+        await ccc_2023_transaction(mand_applications=default_mand_applications, accessCredentialsPresent=accessCredentialsPresent, set_mmi=set_mmi)
     elif transaction_type == 'CCC2023':
-        await ccc_2023_transaction(mand_applications=default_mand_applications, set_mmi=set_mmi)
+        await ccc_2023_transaction(mand_applications=default_mand_applications, accessCredentialsPresent=accessCredentialsPresent, set_mmi=set_mmi)
