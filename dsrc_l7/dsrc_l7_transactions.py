@@ -35,7 +35,7 @@ async def cardme_transaction(force_eid=None, mand_applications=[1, 20, 29], acce
 
     # Getting OBE info...
     # dsrc_l7_rse.send_get_request(eid, False, attrIdList=[24, 25, 26])
-    await dsrc_l7_rse.send_get_request(eid, False, attrIdList=[24]) # Get equOBUId
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[24]) # Get equOBUId
 
     # Getting driver info...
     # dsrc_l7_rse.send_get_request(eid, False, attrIdList=[27, 47])
