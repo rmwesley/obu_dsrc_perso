@@ -497,6 +497,7 @@ def verify_obe_authenticity(get_stamped_action_response_value=None):
         # raise Exception('[OBE AUTH] Invalid OBE Auth!!')
     else:
         bcm_logger.critical('[OBE AUTH] ERROR!!!')
+        return False
 
 def enrich_transaction_data(transaction_data_json, request_t_apdu_jval, response_t_apdu_jval):
     equOBUId_hex = search_for_obu_id_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
@@ -510,11 +511,8 @@ def enrich_transaction_data(transaction_data_json, request_t_apdu_jval, response
     if gnss_status:
         transaction_data_json['position_info'] = gnss_status
 
-    try:
-        valid_stamp = verify_obe_authenticity()
-        transaction_data_json['obu_provided_invalid_stamp'] &= not valid_stamp
-    except:
-        bcm_logger.exception("OBE AUTH ERROR!!!", stack_info=True)
+    valid_stamp = verify_obe_authenticity()
+    transaction_data_json['obu_provided_invalid_stamp'] |= not valid_stamp
 
 def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jval):
     global transaction_data_filepath
