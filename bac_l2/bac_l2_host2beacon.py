@@ -152,7 +152,7 @@ class BacHost(serial.Serial):
         command_response_queue = self.async_response_queue_dict_by_command_id[command_id]
 
         self._send_request_message(message_content)
-        await self.__block_and_receive_response_message(command_id)
+        await self._receive_response_message(command_id)
 
         response_content = await command_response_queue.get()
         return response_content
@@ -165,24 +165,17 @@ class BacHost(serial.Serial):
         if self._send_request_to_transfer_msg_to_dest():
             self._transfer_message(message_content)
 
-    # DEPRECATION WARNING
-    async def __block_and_receive_response_message(self, command_id:int):
-        """Default is no timeout.
-
-        timeout=0 is immediate.
-        timeout=None is blocking behavior!
-
-        BAC L2 is an asynchronous protocol.
-        We can send multiple commands at once (Async I/O).
-        Using a blocking function is not ideal.
-        We should do periodic response polling instead and resolve a Future-like object"""
+    async def _receive_response_message(self, command_id:int):
         response_queue = self.async_response_queue_dict_by_command_id[command_id]
 
         response_content = b''
-        if self.__block_and_wait_for_transfer_req_from_dest():
-            response_content = self._receive_message()
+        await self._wait_for_transfer_req_from_dest()
+        response_content = self._receive_message()
 
         await response_queue.put(response_content)
+        # except TimeoutError as exc:
+        #     bac_serial_wrapper_logger.error('[BAC L2] Timeout: No serial response from beacon!')
+        #     raise exc
 
     # Host transfers a message
     def _transfer_message(self, message_content:bytes):
@@ -234,22 +227,32 @@ class BacHost(serial.Serial):
             transfer_request_counter += 1
         return True
 
-    def read_with_timeout(self, size:int, timeout:float|None):
+    def read_with_timeout(self, size:int, timeout_delay:float|None):
         previous_timeout_value = self.timeout
-        self.timeout = timeout
+
+        self.timeout = timeout_delay
         received_char = self.read(size)
+        # if received_char == b'':
+        #     raise TimeoutError(f'Received no char from COM serial port after {timeout_delay} seconds!')
+
         self.timeout = previous_timeout_value
         return received_char
 
-    # DEPRECATION WARNING
-    def __block_and_wait_for_transfer_req_from_dest(self):
-        """Blocking wait function to read 1 byte.
-        That is, no timeout!
-        timeout=None"""
-        received_char = self.read_with_timeout(1, timeout=None)
-        if received_char == b'':
-            raise BacL2Exception('Received null byte! Set timeout to None!!!')
-        elif received_char == EOT:
+    async def _wait_for_transfer_req_from_dest(self, unblock_delay=None):
+        """Wait function to read 1 byte from serial port."""
+        if unblock_delay is None and 'serial_rx_unblock_delay' in bac_l2_config:
+            unblock_delay = bac_l2_config['serial_rx_unblock_delay']
+
+        received_char = b''
+        while len(received_char) != 1:
+            received_char = self.read_with_timeout(1, timeout_delay=unblock_delay)
+            bac_serial_wrapper_logger.info(f'No transfer request received from destination in {unblock_delay} seconds...')
+            # Sleep this process so other async tasks can be executed!
+            await asyncio.sleep(0.1)
+
+        # if received_char == b'':
+        #     raise BacL2Exception('Received null byte! Set timeout to None!!!')
+        if received_char == EOT:
             bac_serial_wrapper_logger.debug('[BAC L2] Received EOT instead of ENQ!! A message was lost!')
             return False
         elif received_char != ENQ:

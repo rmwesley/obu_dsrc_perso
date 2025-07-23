@@ -17,7 +17,8 @@
       "polling_instead_of_blocking": true,
       "messages_polling_seconds": 0.5,
       "message_waiting": 1,
-      "release_command_config" : "ACn"
+      "release_command_config" : "ACn",
+      "serial_rx_unblock_delay": 0.2
     },
     "pertel_tcp_ip_config": {
       "ip_address": "133.38.40.152",
@@ -41,7 +42,8 @@
       "polling_instead_of_blocking": true,
       "messages_polling_seconds": 0.5,
       "message_waiting": 1,
-      "release_command_config" : "ACn"
+      "release_command_config" : "ACn",
+      "serial_rx_unblock_delay": 0.2
     },
     "kapsch_tcp_ip_config": {
       "ip_address": "127.0.0.1",
