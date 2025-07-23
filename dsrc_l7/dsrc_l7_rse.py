@@ -14,13 +14,14 @@ import json
 import logging
 import uuid
 import pathlib
+import asyncio
 
 import typing
 
 from bac_l7 import ops1955_bac_l7, pertel_bac_l7, tgbv_bac_l7
 
 import custom_its_per_decoders
-from dsrc_security import dsrc_auth
+from dsrc_security import dsrc_auth, dsrc_mk_by_device_and_td_loader
 
 bcm_logger = logging.getLogger(__name__)
 
@@ -172,6 +173,8 @@ class TApduResponseException(Exception):
     pass
 class EIDNotFoundException(Exception):
     pass
+class AbortedInitPhase(Exception):
+    pass
 
 # Start sending a BST
 async def start_bst_emission_and_await_vst(bst_value: dict):
@@ -194,7 +197,19 @@ async def start_bst_emission_and_await_vst(bst_value: dict):
 
     fragmented_t_apdu = frag_header + last_sent_t_apdu_containing_bst
     bcm_logger.info(f"RSE is now emitting BST and awaiting VST from OBE...")
-    response = await beacon_bac_l7_wrapper._pertel_start_bst_emission_and_await_vst(fragmented_t_apdu)
+
+    # Finally start BST emission!!
+    if 'bst_timeout_delay' in beacon_manager_config[current_beacon_name]['dsrc_l7_config']:
+        bst_timeout_delay = beacon_manager_config[current_beacon_name]['dsrc_l7_config']['bst_timeout_delay']
+        try:
+            response = await asyncio.wait_for(beacon_bac_l7_wrapper._pertel_start_bst_emission_and_await_vst(fragmented_t_apdu), timeout=bst_timeout_delay)
+        except TimeoutError as exc:
+            bcm_logger.error('BST response timeout!')
+            await beacon_bac_l7_wrapper._pertel_stop_bst_emission()
+            # raise exc
+            raise AbortedInitPhase('BST response timeout!')
+    else:
+        response = await beacon_bac_l7_wrapper._pertel_start_bst_emission_and_await_vst(fragmented_t_apdu)
 
     if response[1] == 2:
         bcm_logger.critical("Transaction unclosed!!")
@@ -213,7 +228,8 @@ async def initialize_transaction(
         mand_applications=[1, 20, 29],
         profile=0x00,
         profile_list=[0x00],
-        non_mand_applications = []
+        non_mand_applications = [],
+        timeout_delay:float=0
     ):
     """
     The initialization phase comprises 2 steps for the beacon:
@@ -249,6 +265,7 @@ async def initialize_transaction(
         'profileList': profile_list
         }
 
+    # Finally start BST emission!!
     initialization_request_jval = await start_bst_emission_and_await_vst(bst_value=bst_value)
 
     bcm_logger.info("A VST was received!")
@@ -362,7 +379,8 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     current_transaction_start_date = datetime.now()
     current_transaction_datetime_prefix = current_transaction_start_date.strftime("%Y%m%dT%H%M%S")
 
-    transaction_data_filename = f"{current_transaction_datetime_prefix}_{manufacturerID:04X}_{equipmentClass:04X}_00000000_{current_transaction_id}.json"
+    current_td = dsrc_mk_by_device_and_td_loader.get_current_toll_domain()
+    transaction_data_filename = f"{current_transaction_datetime_prefix}_{current_td}_{manufacturerID:04X}_{equipmentClass:04X}_00000000_{current_transaction_id}.json"
     transaction_data_filepath = pathlib.Path(f"local_file_storage/transactions/{transaction_data_filename}")
 
     with transaction_data_filepath.open('w') as json_file:
@@ -389,7 +407,7 @@ def search_json_action_transaction_data_for_attribute_data(action_request_jval, 
                 for attribute_data in action_response_jval['responseParameter']['gstrs']['attributeList']:
                     if attribute_data['attributeId'] == attribute_id:
                         return attribute_data['attributeValue']
-            except:
+            except KeyError:
                 bcm_logger.error(f'ACTION response does not contain data for Attribute Id ({attribute_id})!!')
                 return {}
     return {}
@@ -400,7 +418,7 @@ def search_json_get_transaction_data_for_attribute_data(get_request_jval, get_re
             for attribute_data in get_response_jval['attributelist']:
                 if attribute_data['attributeId'] == attribute_id:
                     return attribute_data['attributeValue']
-        except:
+        except KeyError:
             bcm_logger.error(f'GET response does not contain data for Attribute Id ({attribute_id})!!')
             return {}
     return {}

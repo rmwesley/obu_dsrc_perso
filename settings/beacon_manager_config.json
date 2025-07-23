@@ -23,6 +23,9 @@
     "pertel_tcp_ip_config": {
       "ip_address": "133.38.40.152",
       "tcp_port": 10001
+    },
+    "dsrc_l7_config": {
+      "bst_timeout_delay": 2.0
     }
   },
   "OPS1955": {
@@ -56,6 +59,9 @@
       "l2_config": {
         "automatic_internal_beacon_bst": false
       }
+    },
+    "dsrc_l7_config": {
+      "bst_timeout_delay": 2.0
     }
   }
 }
