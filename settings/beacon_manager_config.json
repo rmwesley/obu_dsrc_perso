@@ -1,5 +1,5 @@
 {
-  "default_beacon_name": "TGBV",
+  "default_beacon_name": "OPS1955",
   "TGBV": {
     "chosen_communication_mode": "serial-pertel",
     "bac_l2_config": {
@@ -25,7 +25,7 @@
       "tcp_port": 10001
     },
     "dsrc_l7_config": {
-      "bst_timeout_delay": 2.0
+      "bst_timeout_delay": 0.5
     }
   },
   "OPS1955": {
@@ -61,7 +61,7 @@
       }
     },
     "dsrc_l7_config": {
-      "bst_timeout_delay": 2.0
+      "bst_timeout_delay": 0.5
     }
   }
 }
