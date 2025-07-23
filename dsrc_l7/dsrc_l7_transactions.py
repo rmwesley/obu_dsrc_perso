@@ -13,12 +13,23 @@ from ASN.compiled_DSRC_instances import CCCv1
 
 dsrc_l7_transactions_logger = logging.getLogger(__name__)
 
+class AbortedTransaction(Exception):
+    pass
+
 with open('settings/toll_domain_config.json') as json_file:
     toll_domain_config = json.load(json_file)
 
+async def get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value: dict):
+    try:
+        return dsrc_contracts.get_eid_in_vst_with_valid_contract(vst_value=vst_value)
+    except dsrc_contracts.NoValidObeEfcmFoundInVst as exc:
+        dsrc_l7_transactions_logger.info('Aborting transaction due to invalid EFC-CM...')
+        await dsrc_l7_rse.send_close_transaction_echo()
+        raise AbortedTransaction('Invalid EFC-CM!!')
+
 async def cardme_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
-    eid = dsrc_contracts.get_eid_in_vst_with_valid_contract(vst_value=last_vst_value)
+    eid = await get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value=last_vst_value)
     if force_eid is not None:
         eid = force_eid
     # Getting payment info!! (Core part)
@@ -56,7 +67,7 @@ async def tis_vl_transaction(force_eid=None, mand_applications=[1, 20, 29], acce
     VL: Véhicule Léger
     """
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
-    eid = dsrc_contracts.get_eid_in_vst_with_valid_contract(vst_value=last_vst_value)
+    eid = await get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value=last_vst_value)
     if force_eid is not None:
         eid = force_eid
     await dsrc_l7_rse.presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
@@ -88,7 +99,7 @@ async def test_ccc_2009_transaction(force_eid=None, mand_applications=[1, 20, 29
     efc_asn_compilation = CCCv1
 
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
-    eid = dsrc_contracts.get_eid_in_vst_with_valid_contract(vst_value=last_vst_value)
+    eid = await get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value=last_vst_value)
     if force_eid is not None:
         eid = force_eid
     await dsrc_l7_rse.presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
@@ -123,7 +134,7 @@ async def test_ccc_2009_transaction_old(force_eid=None, mand_applications=[1, 20
     efc_asn_compilation = CCCv1
 
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
-    eid = dsrc_contracts.get_eid_in_vst_with_valid_contract(vst_value=last_vst_value)
+    eid = await get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value=last_vst_value)
     if force_eid is not None:
         eid = force_eid
     await dsrc_l7_rse.presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
@@ -158,7 +169,7 @@ async def ccc_2015_status_history_transaction(force_eid=None, mand_applications=
     efc_asn_compilation = EFCv5
 
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
-    eid = dsrc_contracts.get_eid_in_vst_with_valid_contract(vst_value=last_vst_value)
+    eid = await get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value=last_vst_value)
     if force_eid is not None:
         eid = force_eid
     await dsrc_l7_rse.presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
@@ -187,7 +198,7 @@ async def test_ccc_2015_transaction(force_eid=None, mand_applications=[1, 20, 29
     efc_asn_compilation = EFCv5
 
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
-    eid = dsrc_contracts.get_eid_in_vst_with_valid_contract(vst_value=last_vst_value)
+    eid = await get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value=last_vst_value)
     if force_eid is not None:
         eid = force_eid
     await dsrc_l7_rse.presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
@@ -225,7 +236,7 @@ async def test_ccc_2015_transaction(force_eid=None, mand_applications=[1, 20, 29
 
 async def ccc_2023_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
-    eid = dsrc_contracts.get_eid_in_vst_with_valid_contract(vst_value=last_vst_value)
+    eid = await get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value=last_vst_value)
     if force_eid is not None:
         eid = force_eid
 
@@ -418,9 +429,13 @@ async def loop_transactions_on_toll_domains(beep_state=None, td_list=['TIS', 'DE
 
             # Execute default transaction for the current Toll Domain
             try:
-                await td_default_transaction(set_mmi=loop_set_mmi_bool)
-            except dsrc_l7_rse.AbortedInitPhase:
-                print('Timeout: No VST obtained!!')
+                try:
+                    await td_default_transaction(set_mmi=loop_set_mmi_bool)
+                except dsrc_l7_rse.AbortedInitPhase as exc:
+                    print('Timeout: No VST obtained!!')
+            except AbortedTransaction as exc:
+                print('Aborted transaction due to invalid EFC-CM!!')
+
             # Sleep between transactions
             time.sleep(sleep_time)
         except dsrc_l7_rse.UnclosedTransactionException:
