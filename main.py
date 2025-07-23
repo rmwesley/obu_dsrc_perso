@@ -43,8 +43,13 @@ root_logger.addHandler(console_handler)
 async def simple_bcm_transactions():
     await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
 
-    await dsrc_l7_transactions.td_default_transaction(set_mmi=False)
+    await dsrc_l7_transactions.td_default_transaction(set_mmi=True)
+
+async def toll_domains_transaction_loop(td_list:list[str] = ['TIS', 'DE', 'CH', 'BE']):
+    await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
+
+    await dsrc_l7_transactions.loop_transactions_on_toll_domains(beep_state=False, td_list=td_list)
 
 # Main execution
 if __name__ == "__main__":
-    asyncio.run(simple_bcm_transactions())
+    asyncio.run(toll_domains_transaction_loop())

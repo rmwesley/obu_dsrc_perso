@@ -1,6 +1,8 @@
 import time
 import logging
 import json
+import itertools
+import asyncio
 
 from dsrc_l7 import dsrc_l7_rse
 from dsrc_security import dsrc_contracts, dsrc_mk_by_device_and_td_loader
@@ -399,3 +401,29 @@ async def td_default_transaction(accessCredentialsPresent=True, set_mmi=False):
         await ccc_2023_transaction(mand_applications=default_mand_applications, accessCredentialsPresent=accessCredentialsPresent, set_mmi=set_mmi)
     elif transaction_type == 'CCC2023':
         await ccc_2023_transaction(mand_applications=default_mand_applications, accessCredentialsPresent=accessCredentialsPresent, set_mmi=set_mmi)
+
+async def loop_transactions_on_toll_domains(beep_state=None, td_list=['TIS', 'DE', 'CH', 'BE'], sleep_time=1.5):
+    global loop_set_mmi_bool
+    td_list_cycle = itertools.cycle(td_list)
+
+    if beep_state is not None:
+        set_beeping_state(beep_state=beep_state)
+
+    while True:
+        try:
+            current_td = next(td_list_cycle)
+            print(current_td)
+            # Change Toll Domain
+            dsrc_mk_by_device_and_td_loader.set_toll_domain(current_td)
+
+            # Execute default transaction for the current Toll Domain
+            try:
+                await td_default_transaction(set_mmi=loop_set_mmi_bool)
+            except dsrc_l7_rse.AbortedInitPhase:
+                print('Timeout: No VST obtained!!')
+            # Sleep between transactions
+            time.sleep(sleep_time)
+        except dsrc_l7_rse.UnclosedTransactionException:
+            keep_looping = False
+            dsrc_l7_transactions_logger.error("Transaction error occurred during loop!", exc_info=True)
+            time.sleep(1)
