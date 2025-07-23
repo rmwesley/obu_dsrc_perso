@@ -29,4 +29,5 @@ def get_eid_in_vst_with_valid_contract(vst_value: dict = None) -> int:
         
         if is_device_info_valid(efc_cm_bytes, manufacturer_id, equipment_class):
             return application_data['eid']
+    dsrc_contracts_logger.error('Invalid or Unknown EFC-CM!!')
     raise NoValidObeEfcmFoundInVst(f'No valid EFC-CM (contract) found for the OBE with VST: {vst_value}')
