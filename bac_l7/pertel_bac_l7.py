@@ -169,19 +169,9 @@ class PertelBacL7(bac_l2_host2beacon.BacHost):
         self.t_apdu_containing_vst = response_content[2:]
         return response_content
 
-    async def _pertel_stop_bst_emission(self, t_apdu_bst_datagram:bytes) -> bytes:
+    async def _pertel_stop_bst_emission(self:bytes) -> bytes:
         """
-        A transaction should not be in progress!
-        That is, the beacon did not receive a VST yet!
-        Command ID, 1 byte:
-            0x04
-        Error, 1 byte:
-            0x00 : commande acceptée et correctement exécutée
-            0x01 : commande refusée car l’antenne de télépéage à
-            puissance réduite n'est pas dans le mode transparent ou
-            défaut de longueur
-            0x02 : commande refusée car une transaction est en cours
-            0x1D : configuration non effectuée
+        Stop BST emission
         """
         message_content = bytes([0x04])
         return await self.send_command(message_content)
