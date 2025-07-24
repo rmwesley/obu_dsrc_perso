@@ -1,5 +1,5 @@
 {
-  "default_beacon_name": "OPS1955",
+  "default_beacon_name": "TGBV",
   "TGBV": {
     "chosen_communication_mode": "serial-pertel",
     "bac_l2_config": {
@@ -18,14 +18,14 @@
       "messages_polling_seconds": 0.5,
       "message_waiting": 1,
       "release_command_config" : "ACn",
-      "serial_rx_unblock_delay": 0.2
+      "serial_rx_unblock_delay": 0.05
     },
     "pertel_tcp_ip_config": {
       "ip_address": "133.38.40.152",
       "tcp_port": 10001
     },
     "dsrc_l7_config": {
-      "bst_timeout_delay": 0.5
+      "bst_timeout_delay": 0.3
     }
   },
   "OPS1955": {
@@ -46,7 +46,7 @@
       "messages_polling_seconds": 0.5,
       "message_waiting": 1,
       "release_command_config" : "ACn",
-      "serial_rx_unblock_delay": 0.2
+      "serial_rx_unblock_delay": 0.05
     },
     "kapsch_tcp_ip_config": {
       "ip_address": "127.0.0.1",
@@ -61,7 +61,7 @@
       }
     },
     "dsrc_l7_config": {
-      "bst_timeout_delay": 0.5
+      "bst_timeout_delay": 0.3
     }
   }
 }
