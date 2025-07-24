@@ -21,6 +21,9 @@ with open('settings/beacon_manager_config.json', 'r') as beacon_manager_settings
     chosen_beacon_name = beacon_manager_settings['default_beacon_name']
     bac_l2_config = beacon_manager_settings[chosen_beacon_name]['bac_l2_config']
 
+    SOURCE_MAX_RESPONSE_MAX_UNIT_INTERVALS = bac_l2_config['SOURCE_MAX_RESPONSE_MAX_UNIT_INTERVALS']
+    DEST_MAX_REQUEST_MAX_UNIT_INTERVALS = bac_l2_config['DEST_MAX_REQUEST_MAX_UNIT_INTERVALS']
+
 def crc16_arc(data : bytearray) -> bytes:
     crc = 0
     for byte_val in data:
@@ -46,8 +49,9 @@ CONTROL_CHARS = [ENQ, ACK, NAK, EOT, DLE, STX, ETX]
 MAX_TRANSFER_REQ_RETRIES = 255
 MAX_MSG_TRANSFER_RETRIES = 8
 
-T1_FOR_1_BAUD = 20000
-T2_FOR_1_BAUD = 20000
+# SOURCE_MAX_RESPONSE_MAX_UNIT_INTERVALS = 2000
+# DEST_MAX_REQUEST_MAX_UNIT_INTERVALS = 2000
+# SOURCE_TRANSMISSION_MAX_INTERVALS = 4000
 
 def escape_dle_in_message_content(message_content:bytes) -> bytes:
     escaped_message_content = bytearray()
@@ -126,7 +130,7 @@ class BacHost(serial.Serial):
         bac_serial_wrapper_logger.info(f'Serial config: {serial_config}')
         super().__init__(*args, **serial_config, **kwargs)
 
-        T1 = T1_FOR_1_BAUD / self.baudrate
+        T1 = SOURCE_MAX_RESPONSE_MAX_UNIT_INTERVALS / self.baudrate
         self.TRANSFER_REQUEST_TIMEOUT = T1
         self.sender = BacMsgTransfer(serial_instance=self)
         self.receiver = BacMsgReceiver(serial_instance=self)
@@ -266,7 +270,7 @@ class BacHost(serial.Serial):
 
 class BacMsgTransfer():
     def __init__(self, serial_instance: serial.Serial):
-        T1 = T1_FOR_1_BAUD / serial_instance.baudrate
+        T1 = SOURCE_MAX_RESPONSE_MAX_UNIT_INTERVALS / serial_instance.baudrate
         self.TRANSFER_REQUEST_TIMEOUT = T1
         self.serial_instance = serial_instance
 
@@ -317,8 +321,8 @@ class BacMsgTransfer():
 
 class BacMsgReceiver():
     def __init__(self, serial_instance: serial.Serial):
-        T1 = T1_FOR_1_BAUD / serial_instance.baudrate
-        T2 = T2_FOR_1_BAUD / serial_instance.baudrate
+        T1 = SOURCE_MAX_RESPONSE_MAX_UNIT_INTERVALS / serial_instance.baudrate
+        T2 = DEST_MAX_REQUEST_MAX_UNIT_INTERVALS / serial_instance.baudrate
 
         self.TRANSFER_REQUEST_TIMEOUT = T1
         self.MESSAGE_CHARACTER_READ_TIMEOUT = T2
