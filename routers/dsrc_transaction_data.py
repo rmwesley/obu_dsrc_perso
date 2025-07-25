@@ -33,7 +33,7 @@ async def get_transaction_info_for_obu_id(equOBUId:str, skip:int=0, limit:int=10
     """
     equOBUId = equOBUId.lower()
 
-    return transactions_data_db_operations.get_transactions_info_for_equ_obu_id(equOBUId)
+    return transactions_data_db_operations.get_transactions_info_for_equ_obu_id(equOBUId, skip=skip, limit=limit)
 
 @router.get('/transactions/{transaction_id}')
 async def get_transaction_data(transaction_id:str):
