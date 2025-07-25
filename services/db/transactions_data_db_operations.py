@@ -47,7 +47,7 @@ def get_transaction_data(transaction_id:str):
     dsrc_transactions_db_coll = db_connect_to_transactions_coll()
     return dsrc_transactions_db_coll.find_one({'_id': transaction_id})
 
-def get_transactions_aggregation_cursor_for_equ_obu_id(equ_obu_id:str, skip=0, limit=10):
+def get_transactions_aggregation_cursor_for_equ_obu_id(equ_obu_id:str, skip=0, limit=20):
     dsrc_transactions_db_coll = db_connect_to_transactions_coll()
 
     pymongo_cursor = dsrc_transactions_db_coll.aggregate([
@@ -59,7 +59,7 @@ def get_transactions_aggregation_cursor_for_equ_obu_id(equ_obu_id:str, skip=0, l
     ])
     return pymongo_cursor
 
-def get_transactions_info_for_equ_obu_id(equ_obu_id:str, skip=0, limit=10):
+def get_transactions_info_for_equ_obu_id(equ_obu_id:str, skip=0, limit=20):
     pymongo_cursor = get_transactions_aggregation_cursor_for_equ_obu_id(equ_obu_id, skip, limit)
     for transaction_data in pymongo_cursor:
         # print(transaction_data)
