@@ -8,13 +8,9 @@
     <script>
       window.onload = () => {
         input_zone.addEventListener('click', (event) => event.stopPropagation());
+
         searchParams = new URLSearchParams(window.location.search);
-        // searchParams.forEach(el => console.log(el))
         INPUT_TYPES = ['hex_eq_obu_id', 'dec_eq_obu_id', 'hex_pan', 'transaction_id']
-        // for (const input_type of INPUT_TYPES){
-        //   document.getElementById(input_type + '_input').value = searchParams[input_type]
-        //   document.getElementById(input_type + '_search_button').click()
-        // }
         for (const [key, value] of searchParams) {
           if (INPUT_TYPES.includes(key)){
             document.getElementById(key + '_input').value = value
