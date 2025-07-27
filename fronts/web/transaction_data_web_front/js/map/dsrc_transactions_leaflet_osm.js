@@ -77,19 +77,19 @@ function transaction_info_popup_html_content(transaction_info){
 }
 
 function add_transaction_info_to_map(transaction_info){
-    console.log(transaction_info['position_info'])
-    try{
-        circle = create_circle_from_gnss_status_data(transaction_info['position_info']);
-
-        popup_html_content = transaction_info_popup_html_content(transaction_info)
-        circle.bindPopup(popup_html_content)
-        circle.addTo(map);
-    }
-    catch(error){
+    position_info = transaction_info['position_info']
+    console.log(position_info)
+    // Check for empty dict!
+    if (Object.keys(position_info).length == 0) {
         console.log('Transaction without position_info!')
-        console.log(error)
         console.error(transaction_info)
+        return
     }
+    circle = create_circle_from_gnss_status_data(position_info);
+
+    popup_html_content = transaction_info_popup_html_content(transaction_info)
+    circle.bindPopup(popup_html_content)
+    circle.addTo(map);
 }
 
 function send_http_req_and_display_transaction_info(obu_id){
