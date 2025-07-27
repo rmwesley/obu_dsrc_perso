@@ -70,13 +70,6 @@ function filter_and_keep_only_position_and_time_data(transaction_info){
 }
 
 function transaction_info_popup_html_content(transaction_info){
-    // popup_html_list_elements = ''
-    // for (const [key, value] of Object.entries(transaction_info)) {
-    //     if (!POPUP_DICT_KEY_FILTER.includes(key)) continue;
-
-    //     popup_html_list_elements += `<li><b>${key}:</b><pre>${JSON.stringify(value, null, '  ')}</pre></li>`
-    // }
-    // popup_html_content = `<ul style="list-style: none;">${popup_html_list_elements}</ul>`
     display_json_info = filter_and_keep_only_position_and_time_data(transaction_info)
     display_json_info_str = JSON.stringify(display_json_info, null, 2)
     popup_html_content = `<andypf-json-viewer data='${display_json_info_str}'></andypf-json-viewer>`
