@@ -83,14 +83,15 @@ function transaction_info_popup_html_content(transaction_info){
     return popup_html_content
 }
 
-function add_transaction_info_to_map(transaction_info){
-    position_info = transaction_info['position_info']
+function transaction_info_contains_position_data(transaction_info){
+    position_info = transaction_info['position_info'];
     // Check for empty dict!
-    if (position_info == undefined || Object.keys(position_info).length == 0) {
-        // console.log('Transaction without position_info!')
-        // console.error(transaction_info)
-        return false
-    }
+    return position_info != undefined && Object.keys(position_info).length > 0;
+}
+
+function add_transaction_info_to_map(transaction_info){
+    if (!transaction_info_contains_position_data(transaction_info)) return false;
+
     circle = create_circle_from_gnss_status_data(position_info);
 
     popup_html_content = transaction_info_popup_html_content(transaction_info)
