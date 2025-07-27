@@ -73,6 +73,8 @@ function transaction_info_popup_html_content(transaction_info){
     display_json_info = filter_and_keep_only_position_and_time_data(transaction_info)
     display_json_info_str = JSON.stringify(display_json_info, null, 2)
     popup_html_content = `<andypf-json-viewer data='${display_json_info_str}'></andypf-json-viewer>`
+    popup_html_content += `<a href='../data/transactions/${transaction_info['_id']}'>See transaction data</a>`
+    console.log(popup_html_content)
     return popup_html_content
 }
 
