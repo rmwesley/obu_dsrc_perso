@@ -4,14 +4,23 @@
 </head>
 <body>
   <div id="input_zone">
-    <input id="device_id_input" type="search"></input>
-    <button id="search_button" onclick="trigger_search_transaction_info_from_input()">Search</button>
+    <input id="hex_eq_obu_id_input" placeholder="Hex equOBUId" type="search"></input>
+    <button id="hex_eq_obu_id_search_button" onclick="trigger_search_transaction_info_from_hex_obu_id_input()">Search</button>
     <script>
-      device_id_input.select()
+      hex_eq_obu_id_input.select()
 
-      device_id_input.addEventListener("keyup", function(event) {
+      hex_eq_obu_id_input.addEventListener("keyup", function(event) {
         if (event.keyCode === 13) {
-          search_button.click();
+          hex_eq_obu_id_search_button.click();
+        }
+      });
+    </script>
+    <input id="dec_eq_obu_id_input" placeholder="Dec equOBUId" type="search"></input>
+    <button id="dec_eq_obu_id_search_button" onclick="trigger_search_transaction_info_from_dec_obu_id_input()">Search</button>
+    <script>
+      dec_eq_obu_id_input.addEventListener("keyup", function(event) {
+        if (event.keyCode === 13) {
+          dec_eq_obu_id_search_button.click();
         }
       });
     </script>

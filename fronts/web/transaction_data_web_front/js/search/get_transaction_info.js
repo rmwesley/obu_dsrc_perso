@@ -1,5 +1,10 @@
-function trigger_search_transaction_info_from_input(){
-    obu_id = device_id_input.value
+function trigger_search_transaction_info_from_hex_obu_id_input(){
+    obu_id = hex_eq_obu_id_input.value
+    send_http_req_and_display_transaction_info(obu_id)
+}
+
+function trigger_search_transaction_info_from_dec_obu_id_input(){
+    obu_id = parseInt(dec_eq_obu_id_input.value).toString(16)
     send_http_req_and_display_transaction_info(obu_id)
 }
 
