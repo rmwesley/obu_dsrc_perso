@@ -86,7 +86,7 @@ function transaction_info_popup_html_content(transaction_info){
 function add_transaction_info_to_map(transaction_info){
     position_info = transaction_info['position_info']
     // Check for empty dict!
-    if (Object.keys(position_info).length == 0) {
+    if (position_info == undefined || Object.keys(position_info).length == 0) {
         // console.log('Transaction without position_info!')
         // console.error(transaction_info)
         return false
