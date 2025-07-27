@@ -60,15 +60,26 @@ function create_circle_from_gnss_status_data(gnss_status_data){
     })
 }
 
+POPUP_DICT_KEY_FILTER = ['_id', 'position_info', 'creation_time', 'last_update_timestamp']
+function filter_and_keep_only_position_and_time_data(transaction_info){
+    filtered_dict = {}
+    for (const dict_key of POPUP_DICT_KEY_FILTER) {
+        filtered_dict[dict_key] = transaction_info[dict_key]
+    }
+    return filtered_dict
+}
+
 function transaction_info_popup_html_content(transaction_info){
     // popup_html_list_elements = ''
     // for (const [key, value] of Object.entries(transaction_info)) {
-    //     if (!['position_info', 'creation_time', 'last_update_timestamp'].includes(key)) continue;
+    //     if (!POPUP_DICT_KEY_FILTER.includes(key)) continue;
 
     //     popup_html_list_elements += `<li><b>${key}:</b><pre>${JSON.stringify(value, null, '  ')}</pre></li>`
     // }
     // popup_html_content = `<ul style="list-style: none;">${popup_html_list_elements}</ul>`
-    popup_html_content = `<andypf-json-viewer data='${JSON.stringify(transaction_info, null, 2)}'></andypf-json-viewer>`
+    display_json_info = filter_and_keep_only_position_and_time_data(transaction_info)
+    display_json_info_str = JSON.stringify(display_json_info, null, 2)
+    popup_html_content = `<andypf-json-viewer data='${display_json_info_str}'></andypf-json-viewer>`
     return popup_html_content
 }
 
