@@ -85,23 +85,31 @@ function transaction_info_popup_html_content(transaction_info){
 
 function add_transaction_info_to_map(transaction_info){
     position_info = transaction_info['position_info']
-    console.log(position_info)
     // Check for empty dict!
     if (Object.keys(position_info).length == 0) {
-        console.log('Transaction without position_info!')
-        console.error(transaction_info)
-        return
+        // console.log('Transaction without position_info!')
+        // console.error(transaction_info)
+        return false
     }
     circle = create_circle_from_gnss_status_data(position_info);
 
     popup_html_content = transaction_info_popup_html_content(transaction_info)
     circle.bindPopup(popup_html_content)
     circle.addTo(map);
+    return true
 }
 
 function send_http_req_and_display_transaction_info(obu_id){
     send_http_req_to_get_transaction_info(obu_id)
     .then((response_body) => {
-        response_body.forEach(add_transaction_info_to_map);
+        var failure_count = 0
+        for (const transaction_data of response_body){
+            result = add_transaction_info_to_map(transaction_data);
+            failure_count += result ? 0 : 1;
+        }
+        return [response_body.length - failure_count, failure_count]
+    }).then(([success_count, failure_count]) => {
+        console.info(`Displayed ${success_count} transactions on map!`)
+        if (failure_count > 0) console.error(`A total of ${failure_count} transactions could not be displayed`)
     });
 }
