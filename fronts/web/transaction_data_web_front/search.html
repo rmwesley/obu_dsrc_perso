@@ -4,6 +4,10 @@
 </head>
 <body>
   <div id="input_zone">
+    <script>
+      input_zone.addEventListener('click', (event) => event.stopPropagation());
+    </script>
+
     <input id="hex_eq_obu_id_input" placeholder="Hex equOBUId" type="search"></input>
     <button id="hex_eq_obu_id_search_button" onclick="trigger_search_transaction_info_from_hex_obu_id_input()">Search</button>
     <script>
@@ -15,12 +19,23 @@
         }
       });
     </script>
+
     <input id="dec_eq_obu_id_input" placeholder="Dec equOBUId" type="search"></input>
     <button id="dec_eq_obu_id_search_button" onclick="trigger_search_transaction_info_from_dec_obu_id_input()">Search</button>
     <script>
       dec_eq_obu_id_input.addEventListener("keyup", function(event) {
         if (event.keyCode === 13) {
           dec_eq_obu_id_search_button.click();
+        }
+      });
+    </script>
+
+    <input id="transaction_id_input" placeholder="Transaction ID" type="search"></input>
+    <button id="transaction_id_search_button" onclick="trigger_search_transaction_info_from_transaction_id_input()">Search</button>
+    <script>
+      transaction_id_input.addEventListener("keyup", function(event) {
+        if (event.keyCode === 13) {
+          transaction_id_search_button.click();
         }
       });
     </script>
