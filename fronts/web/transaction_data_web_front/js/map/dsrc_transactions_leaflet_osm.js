@@ -63,8 +63,13 @@ function create_circle_from_gnss_status_data(gnss_status_data){
 POPUP_DICT_KEY_FILTER = ['_id', 'position_info', 'creation_time', 'last_update_timestamp']
 function filter_and_keep_only_position_and_time_data(transaction_info){
     filtered_dict = {}
-    for (const dict_key of POPUP_DICT_KEY_FILTER) {
-        filtered_dict[dict_key] = transaction_info[dict_key]
+    // for (const dict_key of POPUP_DICT_KEY_FILTER) {
+    //     filtered_dict[dict_key] = transaction_info[dict_key]
+    // }
+    for (const key in transaction_info) {
+        if (POPUP_DICT_KEY_FILTER.includes(key)){
+            filtered_dict[key] = transaction_info[key]
+        }
     }
     return filtered_dict
 }
