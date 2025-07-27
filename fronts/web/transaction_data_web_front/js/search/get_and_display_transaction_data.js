@@ -15,7 +15,8 @@ document.body.addEventListener('click', (event) => transaction_data_display.clos
 function display_transaction_data_dialog_box(transaction_id){
     transaction_data_display.showModal();
     send_http_req_to_get_transaction_data(transaction_id).then((response_body) => {
-        indent_spaces = 2
-        transaction_data_dialog_display_content.innerHTML = JSON.stringify(response_body, null, indent_spaces)
+        display_json_info_str = JSON.stringify(response_body, null, 2)
+        diaglog_html_content = `<andypf-json-viewer data='${display_json_info_str}'></andypf-json-viewer>`
+        transaction_data_dialog_display_content.innerHTML = diaglog_html_content
     })
 }
