@@ -25,6 +25,43 @@ class SyncTransactionDataReq(BaseModel):
         }
     }
 
+def compute_gnss_status_position_fixes_interpolation(gnss_fix_1, t1, gnss_fix_2, t2, timestamp):
+    gnss_fix_interpolation = {
+        'interpolated': True,
+        'lastGnssFixLon': int( (gnss_fix_2['lastGnssFixLon']*(timestamp-t1) + gnss_fix_1['lastGnssFixLon']*(t2-timestamp)) / (t2-t1) ),
+        'lastGnssFixLat': int( (gnss_fix_2['lastGnssFixLat']*(timestamp-t1) + gnss_fix_1['lastGnssFixLat']*(t2-timestamp)) / (t2-t1) ),
+        'lastGnssFixTime': int(timestamp),
+    }
+    return gnss_fix_interpolation
+
+# def compute_gnss_status_position_fixes_interpolation_from_obu_times(gnss_fix_1, gnss_fix_2, timestampstamp):
+#     t1 = previous_gnss_fix['lastGnssFixTime']
+#     t2 = current_gnss_fix['lastGnssFixTime']
+#     return compute_gnss_status_position_fixes_interpolation(gnss_fix_1, t1, gnss_fix_2, t2, timestampstamp)
+
+def add_gnss_fix_interpolation_to_transaction_data(transaction_with_fix_1, transaction_with_fix_2, transaction_data):
+    t1 = datetime.datetime.fromisoformat(transaction_with_fix_1['creation_time']).timestamp()
+    t2 = datetime.datetime.fromisoformat(transaction_with_fix_2['creation_time']).timestamp()
+    timestamp = datetime.datetime.fromisoformat(transaction_data['creation_time']).timestamp()
+
+    transaction_data['position_info'] = compute_gnss_status_position_fixes_interpolation(
+        transaction_with_fix_1['position_info'], t1,
+        transaction_with_fix_2['position_info'], t2,
+        timestamp)
+
+def interpolate_missing_gnss_fixes_in_transactions_list(transactions_data_list:list[dict]):
+    # actual_gnss_fix_indexes = []
+    previous_index = 0
+    for curr_index, curr_transaction_data in enumerate(transactions_data_list):
+        if 'position_info' in curr_transaction_data and curr_transaction_data['position_info']:
+            for interpolation_index in range(previous_index+1, curr_index):
+                add_gnss_fix_interpolation_to_transaction_data(
+                    transactions_data_list[previous_index],
+                    transactions_data_list[curr_index],
+                    transactions_data_list[interpolation_index],
+                )
+            previous_index = curr_index
+
 def compute_gnss_status_position_fix_diff(previous_gnss_fix, current_gnss_fix):
     if not previous_gnss_fix:
         previous_gnss_fix = current_gnss_fix
@@ -50,7 +87,7 @@ def add_gnss_fix_deltas_to_transaction_list(transaction_data_list: list[dict]):
     return transaction_data_list
 
 @router.get('/obus/{equOBUId}/')
-async def get_transaction_info_for_obu_id(equOBUId:str, skip:int=0, limit:int=20, add_gnss_fix_deltas:bool=False):
+async def get_transaction_info_for_obu_id(equOBUId:str, skip:int=0, limit:int=20, add_gnss_fix_deltas:bool=False, interpolate_missing_gnss_fixes:bool=False):
     """
     Query transactions database for data related to a specific OBU ID.
     The OBU ID must be in hexadecimal format.
@@ -59,6 +96,8 @@ async def get_transaction_info_for_obu_id(equOBUId:str, skip:int=0, limit:int=20
     transactions_data_generator = transactions_data_db_operations.get_transactions_info_for_equ_obu_id(equOBUId, skip=skip, limit=limit)
 
     transaction_data_list = list(transactions_data_generator)
+    if interpolate_missing_gnss_fixes:
+        interpolate_missing_gnss_fixes_in_transactions_list(transaction_data_list)
     if add_gnss_fix_deltas:
         add_gnss_fix_deltas_to_transaction_list(transaction_data_list)
     return transaction_data_list
