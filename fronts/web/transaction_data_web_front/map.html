@@ -4,27 +4,67 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="https://pfau-software.de/json-viewer/dist/iife/index.js"></script>
+  <style>
+    input{
+      padding:10px;
+      margin: 10px;
+      display: block;
+      width: 100%;
+      text-align: center;
+    }
+    button{
+      padding:10px;
+      margin: 10px;
+      display: block;
+      width: 100%
+    }
+    input[type=checkbox]{
+      display: inline-block;
+      width: auto;
+    }
+  </style>
 </head>
+
 <body>
-  <p>This map only works for CCC Toll Domains (AID 20)!!</p>
-  <p>EFC DSRC Transactions (AID 1) do not contain position data...</p>
-  <div id="map" style="height: 768px; width: 1280px;">
+  <div id="map_section">
+    <p>This map only works for CCC Toll Domains (AID 20)!!</p>
+    <p>EFC DSRC Transactions (AID 1) do not contain position data...</p>
+    <div id="map" style="height: 768px; width: 1280px; display: inline-block;">
+    </div>
+
+    <div id="options" style="height: 300px; width: 320px; display: inline-block; vertical-align: top;">
+      <p>Options</p>
+      <input id="interpolate_positions" type="checkbox" name="interpolate_positions" checked/>
+      <label for="interpolate_positions">Interpolate missing GNSS fix positions</label>
+
+      <input id="search_start_time" type="datetime-local" name="search_start_time" min="2025-07-20T00:00"/>
+      <input id="search_end_time" type="datetime-local" name="search_end_time" min="2025-07-20T00:00"/>
+      <script>
+        current_datetime = new Date();
+        yesterday_datetime_milliseconds = current_datetime - 86400000;
+        yesterday_datetime = new Date(yesterday_datetime_milliseconds)
+        // console.log(new Date(1970, 0, 2, 1).getTime()) // 86400000 == 24 * 60 * 60 * 1000
+
+        search_end_time.value = current_datetime.toLocaleString('sv-SE').replace(' ', 'T');
+        search_start_time.value = yesterday_datetime.toLocaleString('sv-SE').replace(' ', 'T');
+
+        console.log(search_start_time.value)
+        console.log(search_end_time.value)
+      </script>
+
+      <input id="device_id_input" type="search">
+      <button id="search_button" onclick="trigger_search_from_input()" style="width: 100%;">Search</button>
+      <script>
+        device_id_input.select()
+
+        device_id_input.addEventListener("keyup", function(event) {
+          if (event.keyCode === 13) {
+            search_button.click();
+          }
+        });
+      </script>
+    </div>
   </div>
-
-  <div id="input_zone">
-    <input id="device_id_input" type="search"></input>
-    <button id="search_button" onclick="trigger_search_from_input()">Search</button>
-    <script>
-      device_id_input.select()
-
-      device_id_input.addEventListener("keyup", function(event) {
-        if (event.keyCode === 13) {
-          search_button.click();
-        }
-      });
-    </script>
-  </div>
-
   <script src="js/map/dsrc_transactions_leaflet_osm.js"></script>
 
   <script></script>
