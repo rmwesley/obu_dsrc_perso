@@ -74,6 +74,16 @@ function create_circle_from_gnss_status_data(gnss_status_data){
     })
 }
 
+function create_line_between_gnss_fixes(gnss_fix_1_data, gnss_fix_2_data){
+    if (!gnss_fix_1_data) return;
+    line_start = decode_jer_dsrc_wgs_84_position(gnss_fix_1_data);
+    line_end = decode_jer_dsrc_wgs_84_position(gnss_fix_2_data);
+    return L.polyline([line_start, line_end], {color: 'blue'})
+}
+function add_line_between_gnss_fixes_to_map(gnss_fix_1_data, gnss_fix_2_data){
+    line = create_line_between_gnss_fixes(gnss_fix_1_data, gnss_fix_2_data);
+    if (line) line.addTo(map);
+}
 POPUP_DICT_KEY_FILTER = ['_id', 'position_info', 'creation_time', 'last_update_timestamp']
 function filter_and_keep_only_position_and_time_data(transaction_info){
     filtered_dict = {}
@@ -104,8 +114,6 @@ function transaction_info_contains_position_data(transaction_info){
 }
 
 function add_transaction_info_to_map(transaction_info){
-    if (!transaction_info_contains_position_data(transaction_info)) return false;
-
     circle = create_circle_from_gnss_status_data(position_info);
 
     popup_html_content = transaction_info_popup_html_content(transaction_info)
@@ -117,10 +125,15 @@ function add_transaction_info_to_map(transaction_info){
 function send_http_req_and_display_transaction_info(obu_id){
     send_http_req_to_get_transaction_info(obu_id)
     .then((response_body) => {
+        let previous_gnss_fix = null
         var failure_count = 0
-        for (const transaction_data of response_body){
-            result = add_transaction_info_to_map(transaction_data);
+        for (const transaction_info of response_body){
+            if (!transaction_info_contains_position_data(transaction_info)) continue;
+            result = add_transaction_info_to_map(transaction_info);
             failure_count += result ? 0 : 1;
+
+            add_line_between_gnss_fixes_to_map(previous_gnss_fix, transaction_info['position_info'])
+            previous_gnss_fix = transaction_info['position_info']
         }
         return [response_body.length - failure_count, failure_count]
     }).then(([success_count, failure_count]) => {
