@@ -19,7 +19,8 @@ function trigger_search_from_input(){
     send_http_req_and_display_transaction_info(obu_id);
 }
 function send_http_req_to_get_transaction_info(obu_id){
-    obu_transaction_info_req = new Request('/dsrc-transactions/data/obus/' + obu_id)
+    // obu_transaction_info_req = new Request('/dsrc-transactions/data/obus/' + obu_id + '/?skip=0&limit=400')
+    obu_transaction_info_req = new Request('/dsrc-transactions/data/obus/' + obu_id + '/?skip=0&limit=400&add_gnss_fix_deltas=False&interpolate_missing_gnss_fixes=True')
     return fetch(obu_transaction_info_req)
     .then((response) => response.json())
 }
@@ -46,17 +47,30 @@ function decode_jer_dsrc_wgs_84_position(gnss_status_data){
 
 function create_circle_from_gnss_status_data(gnss_status_data){
     position = decode_jer_dsrc_wgs_84_position(gnss_status_data)
+
+    // INTERPOLATED POSITION!!
+    if (gnss_status_data['interpolated']) {
+        return L.circle(position, {
+            // color: 'blue',
+            // fillColor: '#3030f0',
+            color: 'green',
+            fillColor: 'green',
+            fillOpacity: '0.5',
+            radius: 1,
+        })
+    }
+
     // console.log(position)
-    unix_ts = gnss_status_data['lastGnssFixTime']
+    // unix_ts = gnss_status_data['lastGnssFixTime']
     hdop = gnss_status_data['currentHdop']['hDop']
 
     return L.circle(position, {
         // color: 'blue',
         // fillColor: '#3030f0',
         color: 'red',
-        fillColor: '#f03030',
+        fillColor: 'red',
         fillOpacity: '0.5',
-        radius: 1,
+        radius: hdop + 1,
     })
 }
 
