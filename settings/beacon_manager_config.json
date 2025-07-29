@@ -1,5 +1,5 @@
 {
-  "default_beacon_name": "TGBV",
+  "default_beacon_name": "OPS1955",
   "TGBV": {
     "chosen_communication_mode": "serial-pertel",
     "bac_l2_config": {
@@ -27,7 +27,7 @@
       "tcp_port": 10001
     },
     "dsrc_l7_config": {
-      "bst_timeout_delay": 0.3
+      "bst_timeout_delay": 1.5
     }
   },
   "OPS1955": {
@@ -41,8 +41,8 @@
       },
       "beacon_type": "OPS1955",
       "beacon_alarm_state_polling_ms": 2000,
-      "SOURCE_MAX_RESPONSE_MAX_UNIT_INTERVALS": 2000,
-      "DEST_MAX_REQUEST_MAX_UNIT_INTERVALS": 2000,
+      "SOURCE_MAX_RESPONSE_MAX_UNIT_INTERVALS": 20000,
+      "DEST_MAX_REQUEST_MAX_UNIT_INTERVALS": 20000,
       "send_OK_state_alarms": true,
       "change_beacon_id_internally_periodically": true,
       "max_message_size": 255,
@@ -50,7 +50,7 @@
       "messages_polling_seconds": 0.5,
       "message_waiting": 1,
       "release_command_config" : "ACn",
-      "serial_rx_unblock_delay": 0.05
+      "serial_rx_unblock_delay": 0.2
     },
     "kapsch_tcp_ip_config": {
       "ip_address": "127.0.0.1",
@@ -65,7 +65,7 @@
       }
     },
     "dsrc_l7_config": {
-      "bst_timeout_delay": 0.3
+      "bst_timeout_delay": 1.5
     }
   }
 }
