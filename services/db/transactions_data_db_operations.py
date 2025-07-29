@@ -65,6 +65,27 @@ def get_transactions_info_for_equ_obu_id(equ_obu_id:str, skip=0, limit=20):
         # print(transaction_data)
         yield transaction_data
 
+# def get_transactions_info_for_equ_obu_id(equ_obu_id:str, skip=0, limit=20, add_displacements:bool=True):
+#     pymongo_cursor = get_transactions_aggregation_cursor_for_equ_obu_id(equ_obu_id, skip, limit)
+#     last_position = {}
+#     for transaction_data in pymongo_cursor:
+#         if 'position_info' in transaction_data and transaction_data['position_info']:
+#             if add_displacements:
+#                 add_gnss_fix_delta_to_transaction_data(last_position, transaction_data)
+#             last_position = transaction_data['position_info']
+#         yield transaction_data
+
+# def get_transactions_info_for_equ_obu_id_and_interpolate_when_necessary(equ_obu_id:str, skip=0, limit=20):
+#     pymongo_cursor = get_transactions_aggregation_cursor_for_equ_obu_id(equ_obu_id, skip, limit)
+#     last_position = {}
+#     for transaction_data in pymongo_cursor:
+#         if 'position_info' in transaction_data and transaction_data['position_info']:
+#             last_position = transaction_data['position_info']
+#             # print(last_position)
+#         else:
+#             transaction_data['position_info'] = last_position
+#         yield transaction_data
+
 def upload_local_data(size=0):
     db_transactions_collection = db_connect_to_transactions_coll()
     
