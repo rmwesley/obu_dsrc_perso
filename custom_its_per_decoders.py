@@ -123,3 +123,24 @@ def decode_vst_parameter_oct_str_bytes(parameter_bytes):
 #     # second_5bits = (country_code >> 6) & 0b11111
 #     iso3166_alpha2 = custom_its_per_decoders.decode_baudot_country_code(contract_provider)
 #     iso3166_numeric3_dec_str = iso3166.countries_by_alpha2.get(iso3166_alpha2).numeric
+
+def decode_jer_dsrc_wgs_84_lat_long(signed_lat_long_int:int) -> str:
+    # signed_lat_long_int += 2 << 30
+    signed_lat_long_int += 2**31
+
+    # print(f'LatLong joined int: {signed_lat_long_int}')
+    # Horrible 8 decimal chars encoding/decoding...
+    lat_long_joined_str = f"{signed_lat_long_int:08d}"
+    # print(f'LatLong joined padded int str: {lat_long_joined_str}')
+
+    before_decimal_point = lat_long_joined_str[:2]
+    after_decimal_point = lat_long_joined_str[2:]
+    lat_long_float_str = before_decimal_point + '.' + after_decimal_point
+    # print(f'LatLong float str: {lat_long_float_str}')
+
+    return lat_long_float_str
+
+def decode_jer_dsrc_wgs_84_position(gnss_status_json):
+    longitude_float = decode_jer_dsrc_wgs_84_lat_long(gnss_status_json['lastGnssFixLon'])
+    latitude_float = decode_jer_dsrc_wgs_84_lat_long(gnss_status_json['lastGnssFixLat'])
+    return [latitude_float, longitude_float]

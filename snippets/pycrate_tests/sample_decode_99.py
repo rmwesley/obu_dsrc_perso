@@ -1,5 +1,6 @@
 from ASN.compiled_DSRC_instances import CCCv4_1 as EFC
 import datetime
+import custom_its_per_decoders
 
 EFC.EfcCcc.CccContainer.from_uper(bytes.fromhex("6301676033AC0300CC144C0321339800676033413300CC14FD032133E86760337A67603D53"))
 
@@ -14,21 +15,7 @@ print(datetime.datetime.fromtimestamp(utc_ts, datetime.UTC))
 def ugly_decode_jer_absolute_position_2d(absolute_position_2d):
     return {key : ugly_decode_jer_geodata_lat_long(value) for key, value in absolute_position_2d.items()}
 
-def ugly_decode_jer_geodata_lat_long(signed_lat_long_int:int):
-    # signed_lat_long_int += 2 << 30
-    signed_lat_long_int += 2**31
-    
-    # print(f'LatLong joined int: {signed_lat_long_int}')
-    # Horrible 8 decimal chars encoding/decoding...
-    lat_long_joined_str = f"{signed_lat_long_int:08d}"
-    print(f'LatLong joined padded int str: {lat_long_joined_str}')
-    
-    before_decimal_point = lat_long_joined_str[:2]
-    after_decimal_point = lat_long_joined_str[2:]
-    lat_long_float_str = before_decimal_point + '.' + after_decimal_point
-    # print(f'LatLong float str: {lat_long_float_str}')
-
-    return lat_long_float_str
+ugly_decode_jer_geodata_lat_long = custom_its_per_decoders.decode_jer_dsrc_wgs_84_lat_long
 
 longitude = attr_99_jval['extendedObeStatusHistoryPart1']['position']['gnssLon']
 latitude = attr_99_jval['extendedObeStatusHistoryPart1']['position']['gnssLat']
@@ -48,3 +35,13 @@ example_position = {
 # print(inttt)
 
 print(ugly_decode_jer_absolute_position_2d(example_position))
+
+result = custom_its_per_decoders.decode_jer_dsrc_wgs_84_position({
+  "lastGnssFixLon": -2142628748,
+  "lastGnssFixLat": -2101724189,
+})
+print(result)
+print(custom_its_per_decoders.decode_jer_dsrc_wgs_84_position({
+  "lastGnssFixLon": -2142629736,
+  "lastGnssFixLat": -2101725200,
+}))
