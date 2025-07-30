@@ -50,11 +50,14 @@ def get_transaction_data(transaction_id:str):
 def get_transactions_aggregation_cursor_for_equ_obu_id(equ_obu_id:str, skip=0, limit=20, since_dt_str:str='', until_dt_str:str='9'):
     dsrc_transactions_db_coll = db_connect_to_transactions_coll()
 
+    # print('Since:', since_dt_str)
     pymongo_cursor = dsrc_transactions_db_coll.aggregate([
         {'$match': {
             "equOBUId": equ_obu_id,
-            "creation_time": {'$gte': since_dt_str},
-            "creation_time": {'$lte': until_dt_str},
+            "creation_time": {
+                '$gte': since_dt_str,
+                '$lte': until_dt_str,
+                },
             }},
         {'$project': {'data': 0}},
         {'$sort': {'creation_time': -1}},
@@ -67,7 +70,6 @@ def get_transactions_info_for_equ_obu_id(equ_obu_id:str, skip=0, limit=20, since
     since_dt_str = since_dt.isoformat() if type(since_dt) is datetime.datetime else ''
     until_dt_str = until_dt.isoformat() if type(until_dt) is datetime.datetime else '9'
 
-    print('Since:', since_dt_str)
     # since_dt_str = since_dt.strftime('%Y-%M-%dT%H:%M:%S.')
     # until_dt_str = until_dt.isoformat()
     pymongo_cursor = get_transactions_aggregation_cursor_for_equ_obu_id(equ_obu_id, skip, limit, since_dt_str, until_dt_str)
