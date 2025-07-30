@@ -87,13 +87,18 @@ def add_gnss_fix_deltas_to_transaction_list(transaction_data_list: list[dict]):
     return transaction_data_list
 
 @router.get('/obus/{equOBUId}/')
-async def get_transaction_info_for_obu_id(equOBUId:str, skip:int=0, limit:int=20, add_gnss_fix_deltas:bool=False, interpolate_missing_gnss_fixes:bool=False):
+async def get_transaction_info_for_obu_id(
+    equOBUId:str, skip:int=0, limit:int=20,
+    since_dt:datetime.datetime=None,
+    until_dt:datetime.datetime=None,
+    add_gnss_fix_deltas:bool=False,
+    interpolate_missing_gnss_fixes:bool=False):
     """
     Query transactions database for data related to a specific OBU ID.
     The OBU ID must be in hexadecimal format.
     """
     equOBUId = equOBUId.lower()
-    transactions_data_generator = transactions_data_db_operations.get_transactions_info_for_equ_obu_id(equOBUId, skip=skip, limit=limit)
+    transactions_data_generator = transactions_data_db_operations.get_transactions_info_for_equ_obu_id(equOBUId, skip, limit, since_dt, until_dt)
 
     transaction_data_list = list(transactions_data_generator)
     if interpolate_missing_gnss_fixes:
