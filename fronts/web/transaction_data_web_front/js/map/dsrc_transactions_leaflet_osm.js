@@ -45,6 +45,11 @@ function decode_jer_dsrc_wgs_84_position(gnss_status_data){
     return [latitude_float, longitude_float]
 }
 
+function compute_radius_from_hdpop(hdop){
+    if (hdop == 0) return 1;
+    return hdop + 1/hdop;
+}
+
 function create_circle_from_gnss_status_data(gnss_status_data){
     position = decode_jer_dsrc_wgs_84_position(gnss_status_data)
 
@@ -70,7 +75,7 @@ function create_circle_from_gnss_status_data(gnss_status_data){
         color: 'red',
         fillColor: 'red',
         fillOpacity: '0.5',
-        radius: hdop + 1,
+        radius: compute_radius_from_hdpop(hdop),
     })
 }
 
