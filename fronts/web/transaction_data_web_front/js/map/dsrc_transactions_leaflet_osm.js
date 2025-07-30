@@ -165,3 +165,6 @@ function trigger_search_from_input(){
     }
     send_http_req_and_display_transaction_info(obu_id, search_query_params);
 }
+function clear_obu_transactions_layer_on_leaflet_map(){
+    obuDsrcTransactionsInfoLeafletLayer.clearLayers();
+}
