@@ -13,14 +13,10 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 var axxes_marker = L.marker(axxes_position);
 axxes_marker.addTo(map);
 
-// HTML handling functions
-function trigger_search_from_input(){
-    obu_id = device_id_input.value;
-    send_http_req_and_display_transaction_info(obu_id);
-}
-function send_http_req_to_get_transaction_info(obu_id){
+function send_http_req_to_get_transaction_info(obu_id, search_query_params){
     // obu_transaction_info_req = new Request('/dsrc-transactions/data/obus/' + obu_id + '/?skip=0&limit=400')
-    obu_transaction_info_req = new Request('/dsrc-transactions/data/obus/' + obu_id + '/?skip=0&limit=400&add_gnss_fix_deltas=False&interpolate_missing_gnss_fixes=True')
+    query_str = new URLSearchParams(search_query_params).toString()
+    obu_transaction_info_req = new Request(`/dsrc-transactions/data/obus/${obu_id}/?${query_str}`)
     return fetch(obu_transaction_info_req)
     .then((response) => response.json())
 }
@@ -122,8 +118,8 @@ function add_transaction_info_to_map(transaction_info){
     return true
 }
 
-function send_http_req_and_display_transaction_info(obu_id){
-    send_http_req_to_get_transaction_info(obu_id)
+function send_http_req_and_display_transaction_info(obu_id, search_query_params){
+    send_http_req_to_get_transaction_info(obu_id, search_query_params)
     .then((response_body) => {
         let previous_gnss_fix = null
         var failure_count = 0
@@ -140,4 +136,27 @@ function send_http_req_and_display_transaction_info(obu_id){
         console.info(`Displayed ${success_count} transactions on map!`)
         if (failure_count > 0) console.error(`A total of ${failure_count} transactions could not be displayed`)
     });
+}
+
+// Main HTML input handling functions
+function convert_local_date_to_iso8601_utc_datetime_str(local_date_str){
+    local_date_obj = new Date(local_date_str)
+    iso8601_utc_dt_str = local_date_obj.toISOString()
+    console.log(iso8601_utc_dt_str)
+    return iso8601_utc_dt_str
+}
+function trigger_search_from_input(){
+    obu_id = device_id_input.value
+    start_utc_dt_str = convert_local_date_to_iso8601_utc_datetime_str(search_start_time.value)
+    end_utc_dt_str = convert_local_date_to_iso8601_utc_datetime_str(search_end_time.value)
+    console.log(start_utc_dt_str)
+    search_query_params = {
+        'skip': 0,
+        'limit': 100,
+        'since_dt': start_utc_dt_str,
+        'until_dt': end_utc_dt_str,
+        'add_gnss_fix_deltas': false,
+        'interpolate_missing_gnss_fixes': interpolate_positions.value,
+    }
+    send_http_req_and_display_transaction_info(obu_id, search_query_params);
 }
