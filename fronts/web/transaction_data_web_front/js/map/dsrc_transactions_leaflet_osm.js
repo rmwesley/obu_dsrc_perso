@@ -158,15 +158,14 @@ function trigger_search_from_input(){
     obu_id = device_id_input.value
     start_utc_dt_str = convert_local_date_to_iso8601_utc_datetime_str(search_start_time.value)
     end_utc_dt_str = convert_local_date_to_iso8601_utc_datetime_str(search_end_time.value)
-    // console.log(start_utc_dt_str)
-    // console.log(interpolate_positions.checked)
+
     search_query_params = {
         'skip': 0,
         'limit': 100,
         'since_dt': start_utc_dt_str,
         'until_dt': end_utc_dt_str,
         'add_gnss_fix_deltas': false,
-        'interpolate_missing_gnss_fixes': interpolate_positions.checked,
+        'interpolate_missing_gnss_fixes': interpolate_positions_checkbox.checked,
     }
     send_http_req_and_display_transaction_info(obu_id, search_query_params);
 }
