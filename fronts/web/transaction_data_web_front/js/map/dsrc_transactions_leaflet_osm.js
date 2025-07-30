@@ -10,8 +10,12 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
 
+// Add Axxès marker directly to map!
 var axxes_marker = L.marker(axxes_position);
 axxes_marker.addTo(map);
+
+obuDsrcTransactionsInfoLeafletLayer = L.layerGroup()
+obuDsrcTransactionsInfoLeafletLayer.addTo(map)
 
 function send_http_req_to_get_transaction_info(obu_id, search_query_params){
     // obu_transaction_info_req = new Request('/dsrc-transactions/data/obus/' + obu_id + '/?skip=0&limit=400')
@@ -78,7 +82,7 @@ function create_line_between_gnss_fixes(gnss_fix_1_data, gnss_fix_2_data){
 }
 function add_line_between_gnss_fixes_to_map(gnss_fix_1_data, gnss_fix_2_data){
     line = create_line_between_gnss_fixes(gnss_fix_1_data, gnss_fix_2_data);
-    if (line) line.addTo(map);
+    if (line) line.addTo(obuDsrcTransactionsInfoLeafletLayer);
 }
 POPUP_DICT_KEY_FILTER = ['_id', 'position_info', 'creation_time', 'last_update_timestamp']
 function filter_and_keep_only_position_and_time_data(transaction_info){
@@ -114,7 +118,7 @@ function add_transaction_info_to_map(transaction_info){
 
     popup_html_content = transaction_info_popup_html_content(transaction_info)
     circle.bindPopup(popup_html_content)
-    circle.addTo(map);
+    circle.addTo(obuDsrcTransactionsInfoLeafletLayer);
     return true
 }
 
