@@ -44,18 +44,23 @@ def add_gnss_fix_interpolation_to_transaction_info(transaction_with_fix_1, trans
         transaction_with_fix_2['position_info'], t2,
         timestamp)
 
+def check_gnss_status_position_presence_in_transaction_info(transaction_info) -> bool:
+    return 'position_info' in transaction_info and transaction_info['position_info'] and transaction_info['position_info'] != {}
+
 def interpolate_missing_gnss_fixes_in_transactions_list(transactions_info_list:list[dict]):
     # actual_gnss_fix_indexes = []
-    previous_index = 0
-    for curr_index, curr_transaction_info in enumerate(transactions_info_list):
-        if 'position_info' in curr_transaction_info and curr_transaction_info['position_info']:
-            for interpolation_index in range(previous_index+1, curr_index):
+    prev_index = -1
+    for curr_index, curr_transaction_data in enumerate(transactions_info_list):
+        if check_gnss_status_position_presence_in_transaction_info(curr_transaction_data):
+            for interpolation_index in range(prev_index+1, curr_index):
+                if prev_index == -1:
+                    continue
                 add_gnss_fix_interpolation_to_transaction_info(
-                    transactions_info_list[previous_index],
+                    transactions_info_list[prev_index],
                     transactions_info_list[curr_index],
                     transactions_info_list[interpolation_index],
                 )
-            previous_index = curr_index
+            prev_index = curr_index
 
 def compute_gnss_status_position_fix_diff(previous_gnss_fix, current_gnss_fix):
     if not previous_gnss_fix:
