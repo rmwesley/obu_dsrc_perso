@@ -32,8 +32,11 @@ def read_shapefiles_from_config_and_convert_to_geojson():
 
     return convert_shapefiles_to_geojson(shapefile_reader)
 
-if __name__ == '__main__':
-    geo_json_data = read_shapefiles_from_config_and_convert_to_geojson()
+def regenerate_td_zones_geojson_file():
+    td_zones_geojson_data = read_shapefiles_from_config_and_convert_to_geojson()
 
     with pathlib.Path("local_file_storage/td_zones_files/td_zones_geojson.json").open("w") as geo_json_file:
-        json.dump(geo_json_data, geo_json_file, indent=2)
+        json.dump(td_zones_geojson_data, geo_json_file, indent=2)
+
+if __name__ == '__main__':
+    regenerate_td_zones_geojson_file()
