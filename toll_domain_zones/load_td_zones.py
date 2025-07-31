@@ -10,21 +10,27 @@ with pathlib.Path("settings/toll_domain_config.json").open('r') as json_file:
 
 shp_reader = shapefile.Reader(td_zones_shp_path)
 
-geo_json_feature_list = []
-for shape_record in shp_reader.shapeRecords():
-    geo_json_geometry = shape_record.shape.__geo_interface__
+def convert_shapefiles_to_geojson(shapefile_reader):
+    geo_json_feature_list = []
+    for shape_record in shp_reader.shapeRecords():
+        geo_json_geometry = shape_record.shape.__geo_interface__
+        properties = shape_record.record.as_dict()
 
-    properties = shape_record.record.as_dict()
-    geo_json_feature = {
-        "type": "Feature",
-        "geometry": geo_json_geometry,
-        "properties": properties,
+        geo_json_feature = {
+            "type": "Feature",
+            "geometry": geo_json_geometry,
+            "properties": properties,
+        }
+        geo_json_feature_list.append(geo_json_feature)
+
+    geo_json_data = {
+        "type": "FeatureCollection",
+        "features": geo_json_feature_list
     }
-    geo_json_feature_list.append(geo_json_feature)
+    return geo_json_data
 
-geo_json_data = {
-    "type": "FeatureCollection",
-    "features": geo_json_feature_list
-}
-with pathlib.Path("local_file_storage/td_zones_files/td_zones_geojson.json").open("w") as geo_json_file:
-    json.dump(geo_json_data, geo_json_file, indent=2)
+if __name__ == '__main__':
+    geo_json_data = convert_shapefiles_to_geojson(td_zones_shp_path)
+
+    with pathlib.Path("local_file_storage/td_zones_files/td_zones_geojson.json").open("w") as geo_json_file:
+        json.dump(geo_json_data, geo_json_file, indent=2)
