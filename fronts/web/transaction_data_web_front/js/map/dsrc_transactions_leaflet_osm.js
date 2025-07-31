@@ -10,6 +10,14 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
 
+td_zones_req = new Request('/td_zones/files/td_zones_geojson.json')
+td_zones_geojson_features = fetch(td_zones_req)
+.then((response) => response.json())
+.then((td_zones_geojson) => {
+    L.geoJSON(td_zones_geojson).addTo(map);
+    // console.log(td_zones_geojson)
+});
+
 // Add Axxès marker directly to map!
 var axxes_marker = L.marker(axxes_position);
 axxes_marker.addTo(map);
