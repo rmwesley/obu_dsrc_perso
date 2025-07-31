@@ -6,6 +6,7 @@ from efc_decoding_app import efc_decoding_app
 from efc_security_app import efc_security_app
 from beacon_client_app import beacon_client_app
 from dsrc_transaction_data_app import transaction_data_app
+from toll_domain_zones_app import td_zones_app
 
 import logging
 root_logger = logging.getLogger()
@@ -25,3 +26,4 @@ app.mount("/decoding", efc_decoding_app)
 app.mount("/security", efc_security_app)
 app.mount("/beacon", beacon_client_app)
 app.mount("/dsrc-transactions/", transaction_data_app)
+app.mount("/td_zones", td_zones_app)
