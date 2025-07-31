@@ -45,7 +45,7 @@ async def simple_bcm_transactions():
 
     await dsrc_l7_transactions.td_default_transaction(set_mmi=True)
 
-async def toll_domains_transaction_loop(td_list:list[str] = ['TIS', 'VIA-T2', 'DE', 'CH', 'BE']):
+async def toll_domains_transaction_loop(td_list:list[str] = ['TIS', 'EasyGo', 'DE', 'CH', 'BE']):
     await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
 
     await dsrc_l7_transactions.loop_transactions_on_toll_domains(beep_state=False, td_list=td_list, sleep_time=5.0)
