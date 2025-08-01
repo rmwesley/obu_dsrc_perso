@@ -8,16 +8,13 @@ with pathlib.Path("settings/toll_domain_config.json").open('r') as json_file:
     shapefiles_filename_stem = toll_domain_config['td_zones_gis']['shapefiles_filename_stem']
     td_zones_shp_path = pathlib.Path(shapefiles_filename_stem)
 
-def convert_shapefiles_to_geojson(shapefile_reader):
+def convert_shapefiles_to_geojson(shapefile_reader:shapefile.Reader):
     geo_json_feature_list = []
-    for shape_record in shapefile_reader.shapeRecords():
-        geo_json_geometry = shape_record.shape.__geo_interface__
-        properties = shape_record.record.as_dict()
-
+    for shape_record in shapefile_reader.iterShapeRecords():
         geo_json_feature = {
             "type": "Feature",
-            "geometry": geo_json_geometry,
-            "properties": properties,
+            "geometry": shape_record.shape.__geo_interface__,
+            "properties": shape_record.record.as_dict(),
         }
         geo_json_feature_list.append(geo_json_feature)
 
