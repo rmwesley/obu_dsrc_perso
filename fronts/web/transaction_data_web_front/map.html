@@ -22,6 +22,21 @@
       display: inline-block;
       width: auto;
     }
+    .checkbox_to_button{
+      display: block;
+      border: solid;
+      border-radius: 0.25rem;
+      /* border-color: #007bff; */
+      border-color: #0085f2;
+      padding: 10px;
+      margin: 10px;
+    }
+    .checkbox_to_button > input[type=checkbox]{
+      display: none;
+    }
+    .checkbox_to_button:has(> input:checked){
+      background-color: #007bff;
+    }
   </style>
 </head>
 
@@ -66,6 +81,24 @@
           }
         });
       </script>
+
+      <script>
+        function toggleCheckBox(event){
+          // console.log(event.target.className)
+          // console.log(event.target)
+          if (event.target.className == "checkbox_to_button"){
+            checkbox = event.target.querySelector("input[type=checkbox]")
+            // console.log(checkbox)
+            checkbox.checked = !checkbox.checked
+          }
+        }
+      </script>
+      <div id="rse_position_linker">
+        <div id="link_position_button" class="checkbox_to_button" onclick="toggleCheckBox(event)">
+          <input id="link_position_checkbox" type="checkbox" name="link_position_checkbox" unchecked/>
+          <label for="link_position_checkbox">Link</label>
+        </div>
+      </div>
     </div>
   </div>
   <script src="js/map/dsrc_transactions_leaflet_osm.js"></script>
