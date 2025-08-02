@@ -20,6 +20,9 @@ def get_td_name_from_gps_coords(latitude:float, longitude:float):
             print(shape_record.record.as_dict())
             return shape_record.record['TollDomain']
 
+    # Default Toll Domain when no GPS signal is available
+    return 'TIS'
+
 if __name__ == '__main__':
     td_name = get_td_name_from_gps_coords(45.7593685, 4.8557787)
     print(td_name)
