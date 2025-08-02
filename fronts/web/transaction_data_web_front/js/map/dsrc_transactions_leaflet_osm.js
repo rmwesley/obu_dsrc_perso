@@ -10,13 +10,32 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
 
+gps_position_layer = L.layerGroup()
+gps_position_layer.addTo(map)
+
+setInterval(() =>{
+    navigator.geolocation.getCurrentPosition((position) => {
+        // console.log(position)
+        gps_position_layer.clearLayers()
+
+        latlng = [position.coords['latitude'], position.coords['longitude']]
+        location_circle = L.circle(latlng, {
+                color: '#3030f0',
+                fillColor: '#3030f0',
+                fillOpacity: '0.5',
+                radius: position.coords.accuracy,
+            })
+    .addTo(gps_position_layer)
+    })},
+2000)
+
 td_zones_req = new Request('/td_zones/files/td_zones_geojson.json')
 td_zones_geojson_features = fetch(td_zones_req)
     .then((response) => response.json())
     .then((td_zones_geojson) => {
         L.geoJSON(td_zones_geojson)
             .bindPopup((layer) => {
-                console.log(layer.feature)
+                // console.log(layer.feature)
                 return layer.feature.properties.TollDomain
             })
             .addTo(map)
