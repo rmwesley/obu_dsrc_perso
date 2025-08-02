@@ -12,11 +12,17 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 td_zones_req = new Request('/td_zones/files/td_zones_geojson.json')
 td_zones_geojson_features = fetch(td_zones_req)
-.then((response) => response.json())
-.then((td_zones_geojson) => {
-    L.geoJSON(td_zones_geojson).addTo(map);
-    // console.log(td_zones_geojson)
-});
+    .then((response) => response.json())
+    .then((td_zones_geojson) => {
+        L.geoJSON(td_zones_geojson)
+            .bindPopup((layer) => {
+                console.log(layer.feature)
+                return layer.feature.properties.TollDomain
+            })
+            .addTo(map)
+        L.tileLayer
+        // console.log(td_zones_geojson)
+    });
 
 // Add Axxès marker directly to map!
 var axxes_marker = L.marker(axxes_position);
@@ -30,7 +36,7 @@ function send_http_req_to_get_transaction_info(obu_id, search_query_params){
     query_str = new URLSearchParams(search_query_params).toString()
     obu_transaction_info_req = new Request(`/dsrc-transactions/data/obus/${obu_id}/?${query_str}`)
     return fetch(obu_transaction_info_req)
-    .then((response) => response.json())
+        .then((response) => response.json())
 }
 
 function decode_jer_dsrc_wgs_84_lat_long(signed_lat_long_int){
