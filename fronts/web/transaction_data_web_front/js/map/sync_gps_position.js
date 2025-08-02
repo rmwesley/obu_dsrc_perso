@@ -1,3 +1,6 @@
+const WEBSOCKET_ORIGIN = "ws://localhost:8001"
+// const WEBSOCKET_ORIGIN = "wss://proud-cricket-sharp.ngrok-free.app"
+
 var sending_gps_positions = false;
 var gps_sharing_ws = null
 var refreshIntervalId = null
@@ -13,7 +16,7 @@ function start_gps_position_sharing(){
     if (sending_gps_positions) return;
     sending_gps_positions = true;
  
-    gps_sharing_ws = new WebSocket('wss://proud-cricket-sharp.ngrok-free.app/rse_gps/ws')
+    gps_sharing_ws = new WebSocket(`${WEBSOCKET_ORIGIN}/rse_gps/ws`)
     gps_sharing_ws.addEventListener('error', (event) =>{
         window.alert(`WebSocket connection failure!!\n\n${event.target.url}`)
         });
