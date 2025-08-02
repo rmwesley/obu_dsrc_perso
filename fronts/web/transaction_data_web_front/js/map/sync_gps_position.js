@@ -3,9 +3,9 @@ var gps_sharing_ws = null
 var refreshIntervalId = null
 
 function send_position(web_socket){
-    console.log('Sending packet...')
+    // console.log('Sending packet...')
     navigator.geolocation.getCurrentPosition((position) => {
-        console.log(position)
+        // console.log(position)
         web_socket.send(JSON.stringify(position.toJSON()));
     });
 }
