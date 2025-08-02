@@ -117,7 +117,7 @@ def set_toll_domain(toll_domain_name:str):
         current_toll_domain_name = toll_domain_name        
         master_keys_by_device_contract_ref = master_keys_by_toll_domain[current_toll_domain_name]
     else:
-        raise TollDomainMasterKeysNotFoundException('NO MASTERKEYS FOUND FOR GIVEN TOLL DOMAIN')
+        raise TollDomainMasterKeysNotFoundException(f'NO MASTERKEYS FOUND FOR TOLL DOMAIN ({toll_domain_name})')
 
 def get_current_toll_domain():
     global current_toll_domain_name

@@ -17,7 +17,7 @@ def get_td_name_from_gps_coords(latitude:float, longitude:float):
     for shape_record in shapefile_reader:
         zone_polygon = shapely.Polygon(shape_record.shape.points)
         if zone_polygon.contains(gps_point):
-            print(shape_record.record.as_dict())
+            # print(shape_record.record.as_dict())
             return shape_record.record['TollDomain']
 
     # Default Toll Domain when no GPS signal is available
