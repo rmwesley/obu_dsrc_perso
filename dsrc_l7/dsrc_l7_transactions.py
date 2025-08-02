@@ -5,7 +5,7 @@ import itertools
 import asyncio
 
 from dsrc_l7 import dsrc_l7_rse
-from dsrc_security import dsrc_contracts, dsrc_mk_by_device_and_td_loader
+from dsrc_security import dsrc_contracts, dsrc_td_security_operations
 
 from ASN.compiled_DSRC_instances import AXXESv1_2
 EFCv5 = AXXESv1_2
@@ -396,7 +396,7 @@ def loop_transactions(beep_state=None):
             time.sleep(1)
 
 async def td_default_transaction(accessCredentialsPresent=True, set_mmi=False):
-    current_td = dsrc_mk_by_device_and_td_loader.current_toll_domain_name
+    current_td = dsrc_td_security_operations.current_toll_domain_name
 
     transaction_type = toll_domain_config['td_conf_by_td_name'][current_td]['default_transaction_type']
     default_mand_applications = toll_domain_config['td_conf_by_td_name'][current_td]['mandApplications']
@@ -425,7 +425,7 @@ async def loop_transactions_on_toll_domains(beep_state=None, td_list=['TIS', 'DE
             current_td = next(td_list_cycle)
             print(current_td)
             # Change Toll Domain
-            dsrc_mk_by_device_and_td_loader.set_toll_domain(current_td)
+            dsrc_td_security_operations.set_toll_domain(current_td)
 
             # Execute default transaction for the current Toll Domain
             try:

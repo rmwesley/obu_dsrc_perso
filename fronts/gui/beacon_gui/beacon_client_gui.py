@@ -10,7 +10,7 @@ root_logger.setLevel(logging.INFO)
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
 from dsrc_l7 import dsrc_l7_rse
-from dsrc_security import dsrc_mk_by_device_and_td_loader
+from dsrc_security import dsrc_td_security_operations
 
 class TollDomainConfigException(Exception):
     pass
@@ -28,7 +28,7 @@ def _set_current_toll_domain(toll_domain_name):
     except:
         raise TollDomainConfigException('Default Toll Domain not valid (not in available TD list)!!!')
     # Setting DSRC L7 Security Toll Domain! (At runtime)
-    dsrc_mk_by_device_and_td_loader.set_toll_domain(current_toll_domain_name)
+    dsrc_td_security_operations.set_toll_domain(current_toll_domain_name)
 
 available_toll_domains = []
 def refresh_td_config():

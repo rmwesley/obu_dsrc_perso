@@ -21,7 +21,7 @@ import typing
 from bac_l7 import ops1955_bac_l7, pertel_bac_l7, tgbv_bac_l7
 
 import custom_its_per_decoders
-from dsrc_security import dsrc_auth, dsrc_mk_by_device_and_td_loader
+from dsrc_security import dsrc_auth, dsrc_td_security_operations
 
 bcm_logger = logging.getLogger(__name__)
 
@@ -379,7 +379,7 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     current_transaction_start_date = datetime.now()
     current_transaction_datetime_prefix = current_transaction_start_date.strftime("%Y%m%dT%H%M%S")
 
-    current_td = dsrc_mk_by_device_and_td_loader.get_current_toll_domain()
+    current_td = dsrc_td_security_operations.get_current_toll_domain()
     transaction_data_filename = f"{current_transaction_datetime_prefix}_{current_td}_{manufacturerID:04X}_{equipmentClass:04X}_00000000_{current_transaction_id}.json"
     transaction_data_filepath = pathlib.Path(f"local_file_storage/transactions/{transaction_data_filename}")
 

@@ -1,7 +1,7 @@
 from fastapi import FastAPI, WebSocket
 from starlette.websockets import WebSocketDisconnect
 
-from dsrc_security.dsrc_mk_by_device_and_td_loader import set_toll_domain
+from dsrc_security.dsrc_td_security_operations import set_toll_domain
 from toll_domain_gis_zones.td_geometry_operations import get_td_name_from_gps_coords
 
 rse_gps_app = FastAPI()

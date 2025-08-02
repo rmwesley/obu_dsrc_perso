@@ -1,17 +1,17 @@
-from dsrc_security import dsrc_mk_by_device_and_td_loader
+from dsrc_security import dsrc_td_security_operations
 import logging
 
 class NoValidObeEfcmFoundInVst(Exception):
     pass
 
 dsrc_contracts_logger = logging.getLogger(__name__)
-# Remember to set the current_toll_domain_name global variable in the dsrc_mk_by_device_and_td_loader module!!!
+# Remember to set the current_toll_domain_name global variable in the dsrc_td_security_operations module!!!
 def is_device_info_valid(efc_cm: str|int|bytes, manufacturer_id:str|int|bytes, equipment_class:str|int|bytes) -> bool:
     try:
-        master_keys = dsrc_mk_by_device_and_td_loader.get_master_keys_with_device_info(efc_cm, manufacturer_id, equipment_class)
+        master_keys = dsrc_td_security_operations.get_master_keys_with_device_info(efc_cm, manufacturer_id, equipment_class)
         # MasterKeys were found!
         return True
-    except dsrc_mk_by_device_and_td_loader.TollDomainMasterKeysNotFoundException:
+    except dsrc_td_security_operations.TollDomainMasterKeysNotFoundException:
         return False
 
 def get_eid_in_vst_with_valid_contract(vst_value: dict = None) -> int:
