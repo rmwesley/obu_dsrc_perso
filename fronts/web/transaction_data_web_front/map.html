@@ -76,6 +76,18 @@
 
         search_end_time.value = current_datetime.toLocaleString('sv-SE').replace(' ', 'T');
         search_start_time.value = yesterday_datetime.toLocaleString('sv-SE').replace(' ', 'T');
+
+        window.onload = () => {
+          link_position_checkbox.addEventListener("change", (event) => {
+            console.log(event)
+            if (link_position_checkbox.checked) {
+              start_gps_position_sharing();
+            }
+            else{
+              stop_gps_position_sharing();
+            }
+          });
+        }
       </script>
     </div>
   </div>
