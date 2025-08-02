@@ -13,7 +13,14 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 gps_position_layer = L.layerGroup()
 gps_position_layer.addTo(map)
 
-setInterval(() =>{
+// function get_latlng(leaflet_callback){
+//     navigator.geolocation.getCurrentPosition((position) => {
+//         latlng = [position.coords['latitude'], position.coords['longitude']];
+//         leaflet_callback(latlng);
+//     });
+// }
+
+function update_position_in_map(){
     navigator.geolocation.getCurrentPosition((position) => {
         // console.log(position)
         gps_position_layer.clearLayers()
@@ -26,8 +33,10 @@ setInterval(() =>{
                 radius: position.coords.accuracy,
             })
     .addTo(gps_position_layer)
-    })},
-2000)
+})}
+
+update_position_in_map()
+setInterval(update_position_in_map, 2000)
 
 td_zones_req = new Request('/td_zones/files/td_zones_geojson.json')
 td_zones_geojson_features = fetch(td_zones_req)
