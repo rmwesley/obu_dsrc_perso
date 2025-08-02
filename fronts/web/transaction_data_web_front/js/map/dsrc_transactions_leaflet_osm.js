@@ -52,7 +52,12 @@ td_zones_geojson_features = fetch(td_zones_req)
         L.geoJSON(td_zones_geojson)
             .bindPopup((layer) => {
                 // console.log(layer.feature)
-                return layer.feature.properties.TollDomain
+                popup_html_content = document.createElement('ul')
+                popup_html_content.innerHTML = `
+                    <li>TollDomain: ${layer.feature.properties.TollDomain}</li>\n
+                    <li>CountryCode: ${layer.feature.properties.CountryCod}</li>
+                    `
+                return popup_html_content
             })
             .addTo(map)
         L.tileLayer
