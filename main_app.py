@@ -13,6 +13,14 @@ import logging
 root_logger = logging.getLogger()
 root_logger.setLevel(logging.DEBUG)
 
+from datetime import datetime
+log_file_date_prefix = datetime.now().strftime('%Y%m%d')
+# SETTING UP LOGGER FILE HANDLER
+file_handler = logging.FileHandler(f'logs/api_logs/{log_file_date_prefix}_api_logs.log')
+file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
+file_handler.setFormatter(file_formatter)
+root_logger.addHandler(file_handler)
+
 app = FastAPI(title="Main FastAPI app")
 
 @app.get('/', include_in_schema=False)
