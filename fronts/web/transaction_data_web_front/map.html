@@ -51,22 +51,16 @@
 
       <input class="option_item" id="search_start_time" type="datetime-local" name="search_start_time" min="2025-07-20T00:00"/>
       <input class="option_item" id="search_end_time" type="datetime-local" name="search_end_time" min="2025-07-20T00:00"/>
-      <script>
-        current_datetime = new Date();
-        yesterday_datetime_milliseconds = current_datetime - 86400000;
-        yesterday_datetime = new Date(yesterday_datetime_milliseconds)
-        // console.log(new Date(1970, 0, 2, 1).getTime()) // 86400000 == 24 * 60 * 60 * 1000
-
-        search_end_time.value = current_datetime.toLocaleString('sv-SE').replace(' ', 'T');
-        search_start_time.value = yesterday_datetime.toLocaleString('sv-SE').replace(' ', 'T');
-
-        // console.log(search_start_time.value)
-        // console.log(search_end_time.value)
-      </script>
 
       <input class="option_item" id="device_id_input" type="search">
       <button class="option_item" id="search_button" onclick="trigger_search_from_input()">Search</button>
       <button class="option_item" id="clear_map_button" onclick="clear_obu_transactions_layer_on_leaflet_map()">Clear Map</button>
+
+      <label id="rse_position_linker_checkbutton" class="option_item checkbox_to_button" for="link_position_checkbox">
+        <input id="link_position_checkbox" type="checkbox" name="link_position_checkbox" unchecked/>
+        Link GPS to RSE
+      </label>
+
       <script>
         device_id_input.select()
 
@@ -75,23 +69,14 @@
             search_button.click();
           }
         });
-      </script>
 
-      <script>
-        function toggleCheckBox(event){
-          // console.log(event.target.className)
-          // console.log(event.target)
-          if (event.target.className == "checkbox_to_button"){
-            checkbox = event.target.querySelector("input[type=checkbox]")
-            // console.log(checkbox)
-            checkbox.checked = !checkbox.checked
-          }
-        }
+        current_datetime = new Date();
+        yesterday_datetime_milliseconds = current_datetime - 86400000;
+        yesterday_datetime = new Date(yesterday_datetime_milliseconds)
+
+        search_end_time.value = current_datetime.toLocaleString('sv-SE').replace(' ', 'T');
+        search_start_time.value = yesterday_datetime.toLocaleString('sv-SE').replace(' ', 'T');
       </script>
-      <div id="rse_position_linker_checkbutton" class="option_item checkbox_to_button" onclick="toggleCheckBox(event)">
-        <input id="link_position_checkbox" type="checkbox" name="link_position_checkbox" unchecked/>
-        <label for="link_position_checkbox">Link GPS to RSE</label>
-      </div>
     </div>
   </div>
   <script src="js/map/dsrc_transactions_leaflet_osm.js"></script>
