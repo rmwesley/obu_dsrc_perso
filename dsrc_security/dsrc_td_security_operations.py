@@ -31,6 +31,12 @@ def set_toll_domain(toll_domain_name:str):
     global current_toll_domain_name
     global master_keys_by_device_contract_ref
 
+    # print(f'Setting TD to {toll_domain_name}')
+    if current_toll_domain_name == toll_domain_name:
+        td_security_logger.debug(f"Toll Domain is already set to: {toll_domain_name}.")
+        return
+
+    td_security_logger.info(f"Switched Toll Domain to: {toll_domain_name}")
     # Check if Toll Domain has Master Keys properly configured
     if toll_domain_name in dsrc_mk_by_device_and_td_loader.master_keys_by_toll_domain:
         current_toll_domain_name = toll_domain_name        

@@ -13,10 +13,9 @@ async def gps_websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_json()
-            print(data)
+            # print(data)
             gps_coords = data['coords']
             td_name = get_td_name_from_gps_coords(gps_coords['latitude'], gps_coords['longitude'])
             set_toll_domain(td_name)
-            print(f"Set Toll Domain to: {td_name}")
     except WebSocketDisconnect:
         print('GPS WS: Disconnected!!')
