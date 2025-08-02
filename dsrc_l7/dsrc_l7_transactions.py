@@ -413,7 +413,7 @@ async def td_default_transaction(accessCredentialsPresent=True, set_mmi=False):
     elif transaction_type == 'CCC2023':
         await ccc_2023_transaction(mand_applications=default_mand_applications, accessCredentialsPresent=accessCredentialsPresent, set_mmi=set_mmi)
 
-async def loop_transactions_on_toll_domains(beep_state=None, td_list=['TIS', 'DE', 'CH', 'BE'], sleep_time=1.5):
+async def loop_transactions_on_toll_domains(beep_state=None, td_list=['TIS', 'DE', 'CH', 'BE'], sleep_time=3.0):
     global loop_set_mmi_bool
     td_list_cycle = itertools.cycle(td_list)
 
