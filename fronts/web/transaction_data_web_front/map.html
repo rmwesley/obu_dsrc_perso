@@ -8,6 +8,15 @@
 
 <body>
   <style>
+    #target_icon{
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      z-index: 1000;
+    }
+    .icon_img{
+      width: 25px
+    }
     #options{
       display: inline-block;
       width: 300px;
@@ -40,6 +49,9 @@
     <p>This map displays OBU GNSS fix positions, so it only truly works for CCC Toll Domains (AID 20)!!</p>
     <p>For EFC DSRC Transactions (AID 1) we try to interpolate/mapmatch the position data...</p>
     <div id="map" style="height: 768px; width: 960px; display: inline-block;">
+      <button id="target_icon" onclick="center_map_at_rse_gps_location()">
+        <img src="icons/target.png" class="icon_img"/>
+      </button>
     </div>
 
     <div id="options">
