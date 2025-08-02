@@ -2,8 +2,11 @@
 zoom = 18;
 axxes_position = [45.7593685, 4.8557787]
 
-// var map = L.map('map');
 var map = L.map('map').setView(axxes_position, zoom);
+
+// Add Axxès marker directly to map!
+var axxes_marker = L.marker(axxes_position);
+axxes_marker.addTo(map);
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
@@ -77,10 +80,6 @@ td_zones_geojson_features = fetch(td_zones_req)
         L.tileLayer
         // console.log(td_zones_geojson)
     });
-
-// Add Axxès marker directly to map!
-var axxes_marker = L.marker(axxes_position);
-axxes_marker.addTo(map);
 
 obuDsrcTransactionsInfoLeafletLayer = L.layerGroup()
 obuDsrcTransactionsInfoLeafletLayer.addTo(map)
