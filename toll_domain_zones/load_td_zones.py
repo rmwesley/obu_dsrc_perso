@@ -3,9 +3,9 @@ import pathlib
 
 import shapefile
 
-with pathlib.Path("settings/toll_domain_config.json").open('r') as json_file:
-    toll_domain_config = json.load(json_file)
-    shapefiles_filename_stem = toll_domain_config['td_zones_gis']['shapefiles_filename_stem']
+with pathlib.Path("settings/td_gis_config.json").open('r') as json_file:
+    td_gis_config = json.load(json_file)
+    shapefiles_filename_stem = td_gis_config['shapefiles_filename_stem']
     td_zones_shp_path = pathlib.Path(shapefiles_filename_stem)
 
 def convert_shapefiles_to_geojson(shapefile_reader:shapefile.Reader):

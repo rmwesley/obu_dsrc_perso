@@ -1,9 +1,6 @@
 {
     "efc_sec_conf_path": "C:\\Users\\wesley.rodrigues\\AXXES\\OBU Proxy - Documents\\16 - Automatisation des Tests\\efc_security_config_v2.6.2.json",
     "default_toll_domain_name": "EasyGo",
-    "td_zones_gis":{
-      "shapefiles_filename_stem": "C:\\Users\\wesley.rodrigues\\AXXES\\OBU Proxy - Documents\\16 - Automatisation des Tests\\td_zones_shapefiles\\TEST_conti_shapefiles_v1.0\\TEST_td_zones_Lyon"
-    },
     "environment": "TEST",
     "td_conf_by_td_name": {
       "TIS": {
