@@ -47,6 +47,10 @@ Required dependencies for EM API tests:
 - azure-storage-blob
 - csv
 
+Required dependencies for Toll Domain zones geography info app:
+- pyshp
+- shapely
+
 # Rememeber to copy the `master_keys.json` file!
 TODO: Securely handle secrets instead of keeping them in plaintext on a json file!!
 
