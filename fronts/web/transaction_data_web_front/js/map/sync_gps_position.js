@@ -14,6 +14,9 @@ function start_gps_position_sharing(){
     sending_gps_positions = true;
  
     gps_sharing_ws = new WebSocket('wss://proud-cricket-sharp.ngrok-free.app/rse_gps/ws')
+    gps_sharing_ws.addEventListener('error', (event) =>{
+        window.alert(`WebSocket connection failure!!\n\n${event.target.url}`)
+        });
     gps_sharing_ws.onmessage = console.log
 
     gps_sharing_ws.onopen = () => {
