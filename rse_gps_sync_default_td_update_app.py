@@ -4,9 +4,9 @@ from starlette.websockets import WebSocketDisconnect
 from dsrc_security.dsrc_td_security_operations import update_default_toll_domain
 from toll_domain_gis_zones.td_geometry_operations import get_td_name_from_gps_coords
 
-rse_gps_app = FastAPI()
+rse_gps_td_app = FastAPI()
 
-@rse_gps_app.websocket("/ws")
+@rse_gps_td_app.websocket("/ws")
 async def gps_websocket_endpoint(websocket: WebSocket):
     print('GPS WS: Connected!!')
     await websocket.accept()
