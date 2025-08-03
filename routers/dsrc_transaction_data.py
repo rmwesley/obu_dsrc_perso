@@ -107,6 +107,27 @@ async def get_transaction_info_for_obu_id(
         add_gnss_fix_deltas_to_transaction_list(transaction_info_list)
     return transaction_info_list
 
+@router.get('/pans/{personalAccountNumber}/')
+async def get_transaction_info_for_pan(
+    personalAccountNumber:str, skip:int=0, limit:int=20,
+    since_dt:datetime.datetime=None,
+    until_dt:datetime.datetime=None,
+    add_gnss_fix_deltas:bool=False,
+    interpolate_missing_gnss_fixes:bool=False):
+    """
+    Query transactions database for data related to a specific OBU ID.
+    The OBU ID must be in hexadecimal format.
+    """
+    pan = personalAccountNumber.upper()
+    transactions_info_generator = transactions_data_db_operations.get_transactions_info_for_pan(pan, skip, limit, since_dt, until_dt)
+
+    transaction_info_list = list(transactions_info_generator)
+    if interpolate_missing_gnss_fixes == True:
+        interpolate_missing_gnss_fixes_in_transactions_list(transaction_info_list)
+    if add_gnss_fix_deltas:
+        add_gnss_fix_deltas_to_transaction_list(transaction_info_list)
+    return transaction_info_list
+
 @router.get('/transactions/{transaction_id}')
 async def get_transaction_data(transaction_id:str):
     """

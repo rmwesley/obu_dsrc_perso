@@ -47,7 +47,7 @@ def get_transaction_data(transaction_id:str):
     dsrc_transactions_db_coll = db_connect_to_transactions_coll()
     return dsrc_transactions_db_coll.find_one({'_id': transaction_id})
 
-def get_transactions_aggregation_cursor_for_equ_obu_id(equ_obu_id:str, skip=0, limit=20, since_dt_str:str='', until_dt_str:str='9'):
+def get_transactions_info_aggregation_cursor_for_equ_obu_id(equ_obu_id:str, skip=0, limit=20, since_dt_str:str='', until_dt_str:str='9'):
     dsrc_transactions_db_coll = db_connect_to_transactions_coll()
 
     # print('Since:', since_dt_str)
@@ -66,16 +66,46 @@ def get_transactions_aggregation_cursor_for_equ_obu_id(equ_obu_id:str, skip=0, l
     ])
     return pymongo_cursor
 
+def get_transactions_info_aggregation_cursor_for_pan(pan:str, skip=0, limit=20, since_dt_str:str='', until_dt_str:str='9'):
+    dsrc_transactions_db_coll = db_connect_to_transactions_coll()
+
+    # print('Since:', since_dt_str)
+    pymongo_cursor = dsrc_transactions_db_coll.aggregate([
+        {'$match': {
+            "personalAccountNumber": pan,
+            "creation_time": {
+                '$gte': since_dt_str,
+                '$lte': until_dt_str,
+                },
+            }},
+        {'$project': {'data': 0}},
+        {'$sort': {'creation_time': -1}},
+        {'$skip':  skip},
+        {'$limit':  limit},
+    ])
+    return pymongo_cursor
+
 def get_transactions_info_for_equ_obu_id(equ_obu_id:str, skip=0, limit=20, since_dt:datetime.datetime=None, until_dt:datetime.datetime=None):
     since_dt_str = since_dt.isoformat() if type(since_dt) is datetime.datetime else ''
     until_dt_str = until_dt.isoformat() if type(until_dt) is datetime.datetime else '9'
 
     # since_dt_str = since_dt.strftime('%Y-%M-%dT%H:%M:%S.')
     # until_dt_str = until_dt.isoformat()
-    pymongo_cursor = get_transactions_aggregation_cursor_for_equ_obu_id(equ_obu_id, skip, limit, since_dt_str, until_dt_str)
-    for transaction_data in pymongo_cursor:
+    pymongo_cursor = get_transactions_info_aggregation_cursor_for_equ_obu_id(equ_obu_id, skip, limit, since_dt_str, until_dt_str)
+    for transaction_info in pymongo_cursor:
         # print(transaction_data)
-        yield transaction_data
+        yield transaction_info
+
+def get_transactions_info_for_pan(pan:str, skip=0, limit=20, since_dt:datetime.datetime=None, until_dt:datetime.datetime=None):
+    since_dt_str = since_dt.isoformat() if type(since_dt) is datetime.datetime else ''
+    until_dt_str = until_dt.isoformat() if type(until_dt) is datetime.datetime else '9'
+
+    # since_dt_str = since_dt.strftime('%Y-%M-%dT%H:%M:%S.')
+    # until_dt_str = until_dt.isoformat()
+    pymongo_cursor = get_transactions_info_aggregation_cursor_for_pan(pan, skip, limit, since_dt_str, until_dt_str)
+    for transaction_info in pymongo_cursor:
+        # print(transaction_data)
+        yield transaction_info
 
 # def get_transactions_info_for_equ_obu_id(equ_obu_id:str, skip=0, limit=20, add_displacements:bool=True):
 #     pymongo_cursor = get_transactions_aggregation_cursor_for_equ_obu_id(equ_obu_id, skip, limit)
