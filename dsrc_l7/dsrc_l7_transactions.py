@@ -442,3 +442,36 @@ async def loop_transactions_on_toll_domains(beep_state=None, td_list=['TIS', 'DE
             keep_looping = False
             dsrc_l7_transactions_logger.error("Transaction error occurred during loop!", exc_info=True)
             time.sleep(1)
+
+async def loop_transactions_with_default_td_and_extra_tds(beep_state=None, extra_td_list=['TIS'], sleep_time=3.0):
+    global loop_set_mmi_bool
+
+    if beep_state is not None:
+        set_beeping_state(beep_state=beep_state)
+
+    # Reset TD list on each iteration, since the Default TD name can be updated!!
+    while True:
+        td_list = [dsrc_td_security_operations.default_toll_domain_name, *extra_td_list]
+        td_list_cycle = itertools.cycle(td_list)
+
+        try:
+            for current_td in td_list:
+                print(current_td)
+                # Change Toll Domain
+                dsrc_td_security_operations.set_toll_domain(current_td)
+
+                # Execute default transaction for the current Toll Domain
+                try:
+                    try:
+                        await td_default_transaction(set_mmi=loop_set_mmi_bool)
+                    except dsrc_l7_rse.AbortedInitPhase as exc:
+                        print('Timeout: No VST obtained!!')
+                except AbortedTransaction as exc:
+                    print('Aborted transaction due to invalid EFC-CM!!')
+
+                # Sleep between transactions
+                time.sleep(sleep_time)
+        except dsrc_l7_rse.UnclosedTransactionException:
+            keep_looping = False
+            dsrc_l7_transactions_logger.error("Transaction error occurred during loop!", exc_info=True)
+            time.sleep(1)
