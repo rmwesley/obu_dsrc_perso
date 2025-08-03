@@ -44,6 +44,10 @@ def set_toll_domain(toll_domain_name:str):
     else:
         raise TollDomainMasterKeysNotFoundException(f'NO MASTERKEYS FOUND FOR TOLL DOMAIN ({toll_domain_name})')
 
+def reset_toll_domain():
+    global default_toll_domain_name
+    return set_toll_domain(default_toll_domain_name)
+
 def get_current_toll_domain():
     global current_toll_domain_name
     return current_toll_domain_name
