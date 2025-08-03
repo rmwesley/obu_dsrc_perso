@@ -42,6 +42,16 @@
       });
     </script>
 
+    <input id="hex_pan_input" placeholder="Hex personalAccountNumber" type="search"></input>
+    <button id="hex_pan_search_button" onclick="trigger_search_transaction_info_from_hex_pan_input()">Search</button>
+    <script>
+      hex_pan_input.addEventListener("keyup", function(event) {
+        if (event.keyCode === 13) {
+          hex_pan_search_button.click();
+        }
+      });
+    </script>
+
     <input id="transaction_id_input" placeholder="Transaction ID" type="search"></input>
     <button id="transaction_id_search_button" onclick="trigger_search_transaction_info_from_transaction_id_input()">Search</button>
     <script>
