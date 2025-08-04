@@ -3,13 +3,12 @@ import json
 
 import logging
 
-from dsrc_security import dsrc_mk_by_device_and_td_loader
+from dsrc_security import dsrc_mk_by_device_and_td_loader, dsrc_default_td_value_handler
 
 td_security_logger = logging.getLogger(__name__)
 
 with open(f'settings/toll_domain_config.json') as json_file:
     toll_domain_config_json = json.load(json_file)
-    default_toll_domain_name = toll_domain_config_json['default_toll_domain_name']
     td_conf_by_td_name = toll_domain_config_json['td_conf_by_td_name']
 
 class TollDomainSecurityProfileInvalidException(Exception):
@@ -43,19 +42,9 @@ def set_toll_domain(toll_domain_name:str):
     else:
         raise TollDomainMasterKeysNotFoundException(f'NO MASTERKEYS FOUND FOR TOLL DOMAIN ({toll_domain_name})')
 
-def update_default_toll_domain(toll_domain_name:str):
-    global default_toll_domain_name
-
-    if default_toll_domain_name == toll_domain_name:
-        td_security_logger.debug(f"Default Toll Domain is already ({toll_domain_name}).")
-        return
-
-    default_toll_domain_name = toll_domain_name
-    td_security_logger.info(f"Updated Default Toll Domain to: ({toll_domain_name})")
-
-def reset_toll_domain():
-    global default_toll_domain_name
-    return set_toll_domain(default_toll_domain_name)
+def reset_toll_domain_to_default():
+    default_td_name = dsrc_default_td_value_handler.get_default_toll_domain_name()
+    return set_toll_domain(default_td_name)
 
 def get_current_toll_domain():
     global current_toll_domain_name
@@ -118,4 +107,4 @@ def get_master_keys_with_device_model_only(device_model_name: str):
     return master_keyset_names_by_efc_cm
 
 # Set defaults!!
-set_toll_domain(toll_domain_name=default_toll_domain_name)
+reset_toll_domain_to_default()

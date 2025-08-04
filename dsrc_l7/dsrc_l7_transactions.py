@@ -5,7 +5,7 @@ import itertools
 import asyncio
 
 from dsrc_l7 import dsrc_l7_rse
-from dsrc_security import dsrc_contracts, dsrc_td_security_operations
+from dsrc_security import dsrc_contracts, dsrc_td_security_operations, dsrc_default_td_value_handler
 
 from ASN.compiled_DSRC_instances import AXXESv1_2
 EFCv5 = AXXESv1_2
@@ -451,7 +451,8 @@ async def loop_transactions_with_default_td_and_extra_tds(beep_state=None, extra
 
     # Reset TD list on each iteration, since the Default TD name can be updated!!
     while True:
-        td_list = [dsrc_td_security_operations.default_toll_domain_name, *extra_td_list]
+        default_td_name = dsrc_default_td_value_handler.get_default_toll_domain_name()
+        td_list = [default_td_name, *extra_td_list]
         td_list_cycle = itertools.cycle(td_list)
 
         try:
