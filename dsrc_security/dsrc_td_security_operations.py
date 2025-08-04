@@ -20,8 +20,10 @@ class TollDomainMasterKeysNotFoundException(Exception):
 def get_current_security_profile():
     global current_toll_domain_name
     current_security_profile = td_conf_by_td_name[current_toll_domain_name]['security_profile']
-    # if current_security_profile not in ['TIS_decimal', 'EN15509']:
-    #     raise TollDomainSecurityProfileInvalidException('The only valid security profile options are (TIS_decimal) or (EN15509)')
+    VALID_SECURITY_NORMS = ['TIS_decimal', 'EN15509']
+    if not any([security_type in current_security_profile for security_type in VALID_SECURITY_NORMS]):
+        td_security_logger.error(f'Invalid security profile: {current_security_profile}.')
+        raise TollDomainSecurityProfileInvalidException(f'The only valid security norms are {VALID_SECURITY_NORMS}, with levels 0 and 1.')
     return current_security_profile
 
 current_toll_domain_name = 'TIS'
