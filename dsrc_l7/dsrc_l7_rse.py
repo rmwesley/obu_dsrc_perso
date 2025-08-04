@@ -24,6 +24,7 @@ import custom_its_per_decoders
 from dsrc_security import dsrc_auth, dsrc_td_security_operations
 
 bcm_logger = logging.getLogger(__name__)
+bcm_logger.setLevel(logging.WARNING)
 
 local_transactions_storage_path_str = 'local_file_storage/transactions'
 startup_date = datetime.now()
