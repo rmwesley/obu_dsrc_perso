@@ -56,10 +56,12 @@ update_position_in_map()
 setInterval(update_position_in_map, 2000)
 
 function center_map_at_rse_gps_location(){
-    navigator.geolocation.getCurrentPosition((position) => {
-        latlng = [position.coords['latitude'], position.coords['longitude']]
-        map.setView(latlng)
-    });
+    // console.log(current_location_layer_group)
+    for (layer_id in current_location_layer_group._layers){
+        latest_location = current_location_layer_group._layers[layer_id]._latlng
+        map.setView(latest_location)
+        return
+    }
 }
 
 td_zones_req = new Request('/td_zones/files/td_zones_geojson.json')
