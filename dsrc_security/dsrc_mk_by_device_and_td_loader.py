@@ -6,14 +6,17 @@ import logging
 # Loading the Master Keys from a JSON into a Python dict
 # This dict maps an EFC-CM in hex format to a MasterKeySet also in hex format
 
-with open(f'settings/toll_domain_config.json') as json_file:
+with open(f'settings/toll_domain_config.json', 'r') as json_file:
     toll_domain_config_json = json.load(json_file)
-    efc_sec_conf_path = toll_domain_config_json['efc_sec_conf_path']
+    efc_contracts_conf_path = toll_domain_config_json['efc_contracts_conf_path']
+    master_keys_conf_path = toll_domain_config_json['master_keysets_conf_path']
     del toll_domain_config_json
 
-with open(efc_sec_conf_path) as json_file:
-    efc_security_config = json.load(json_file)
-    master_keysets = efc_security_config['keysets']
+with open(efc_contracts_conf_path, 'r') as json_file:
+    efc_contracts = json.load(json_file)
+
+with open(master_keys_conf_path, 'r') as json_file:
+    master_keys = json.load(json_file)
 
 class InvalidDeviceContractRef(Exception):
     pass
@@ -73,17 +76,16 @@ with open(f'settings/obu_product_names.json', 'r') as json_file:
     # print(equipment_refs_by_device_names)
 
 def load_master_keys_by_toll_domain():
-    global master_keysets
-    global efc_security_config
+    global master_keys
+    global efc_contracts
     # Setting up EFC-CM + Equipment Class to Master Key mapping, by Toll Domain!
     master_keys_by_toll_domain = {}
 
-    for toll_domain_name, contracts_by_manufacturer in efc_security_config['device_contracts_by_toll_domain'].items():
+    for toll_domain_name, contracts_by_manufacturer in efc_contracts.items():
         # Assembling masterkeys for a Toll Domain!!
         master_keys_by_toll_domain[toll_domain_name] = {}
-        for manufacturer_id_hex, device_details_by_equipment_class in contracts_by_manufacturer.items():
-            for equipment_class_hex, device_details in device_details_by_equipment_class.items():
-                contract_data = device_details['EFC_contract_data']
+        for manufacturer_id_hex, contract_by_obu_eq_class in contracts_by_manufacturer.items():
+            for equipment_class_hex, contract_data in contract_by_obu_eq_class.items():
                 keyset_name = contract_data['keyset_name']
                 efc_cm = contract_data['EFC-CM']
 
@@ -91,9 +93,10 @@ def load_master_keys_by_toll_domain():
                 # The dictionary keys are a concatenation of the EFC-CM, Manufacturer Id and Equipment Class!!
                 device_contract_ref = assemble_device_contract_ref_hex_str(efc_cm, manufacturer_id_hex, equipment_class_hex)
 
-                master_keys_by_toll_domain[toll_domain_name][device_contract_ref] = master_keysets[keyset_name]
+                master_keys_by_toll_domain[toll_domain_name][device_contract_ref] = master_keys[keyset_name]
 
-    del efc_security_config
+    del efc_contracts
+    del master_keys
     return master_keys_by_toll_domain
 
 master_keys_by_toll_domain = load_master_keys_by_toll_domain()

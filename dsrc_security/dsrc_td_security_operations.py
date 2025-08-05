@@ -66,7 +66,7 @@ def get_current_toll_domain():
     return current_toll_domain_name
 
 def get_all_master_keysets():
-    return dsrc_mk_by_device_and_td_loader.master_keysets
+    return dsrc_mk_by_device_and_td_loader.master_keys
 
 def get_master_keys_with_device_info(efc_cm: bytes|int|str, manufacturer_id:bytes|int|str, equipment_class:bytes|int|str):
     """Get master keys through device (OBE) model data and EFC contract data
