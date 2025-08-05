@@ -19,7 +19,7 @@ def get_eid_in_vst_with_valid_contract(vst_value: dict = None) -> int:
     available_applications_list = vst_value['applications']
     for application_data in available_applications_list:
         app_parameter_type, app_parameter_value = application_data['parameter']
-        efc_cm_bytes = app_parameter_value[0:8]
+        efc_cm_bytes = app_parameter_value[0:6]
         dsrc_contracts_logger.debug(f'EFC-CM: 0x{efc_cm_bytes.hex().upper()}')
 
         obe_config = vst_value['obeConfiguration']
