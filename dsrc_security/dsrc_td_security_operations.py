@@ -43,6 +43,7 @@ def set_toll_domain(toll_domain_name:str):
     if toll_domain_name in dsrc_mk_by_device_and_td_loader.master_keys_by_toll_domain:
         current_toll_domain_name = toll_domain_name
         master_keys_by_device_contract_ref = dsrc_mk_by_device_and_td_loader.master_keys_by_toll_domain[current_toll_domain_name]
+        # print(f'MKs config for current TD {toll_domain_name}: {master_keys_by_device_contract_ref}')
     else:
         raise TollDomainMasterKeysNotFoundException(f'NO MASTERKEYS FOUND FOR TOLL DOMAIN ({toll_domain_name})')
 
