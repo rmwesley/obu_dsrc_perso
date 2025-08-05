@@ -33,6 +33,7 @@ function display_transaction_info_list(transaction_info_list){
     let new_row = transactions_table.insertRow(-1)
     key_list = [
         '_id',
+        'RseTollDomain',
         'personalAccountNumber',
         'equOBUId',
         'creation_time',
