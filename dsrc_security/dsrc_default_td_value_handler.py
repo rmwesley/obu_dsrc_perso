@@ -5,8 +5,11 @@ import logging
 td_config_logger = logging.getLogger(__name__)
 
 def get_default_toll_domain_name():
-    with open(f'settings/default_td.txt') as txt_file:
-        return txt_file.read()
+    try:
+        with open(f'settings/default_td.txt') as txt_file:
+            return txt_file.read()
+    except FileNotFoundError:
+        return 'TIS'
 
 def update_default_toll_domain_name(new_default_td_name:str):
     current_default_td_name = get_default_toll_domain_name()
