@@ -175,7 +175,7 @@ function filter_and_keep_only_position_and_time_data(transaction_info){
 function transaction_info_popup_html_content(transaction_info){
     display_json_info = filter_and_keep_only_position_and_time_data(transaction_info)
     display_json_info_str = JSON.stringify(display_json_info, null, 2)
-    popup_html_content = `<andypf-json-viewer data='${display_json_info_str}'></andypf-json-viewer>`
+    popup_html_content = `<andypf-json-viewer show-toolbar="true" show-data-types="false" data='${display_json_info_str}'></andypf-json-viewer>`
     // popup_html_content += `<a href='../data/transactions/${transaction_info['_id']}'>See transaction data</a>`
     popup_html_content += `<a href='search.html?transaction_id=${transaction_info['_id']}'>See transaction data</a>`
     return popup_html_content
