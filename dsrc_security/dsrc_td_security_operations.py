@@ -7,6 +7,8 @@ from dsrc_security import dsrc_mk_by_device_and_td_loader, dsrc_default_td_value
 
 td_security_logger = logging.getLogger(__name__)
 
+default_toll_domain_name = dsrc_default_td_value_handler.get_default_toll_domain_name()
+
 with open(f'settings/toll_domain_config.json') as json_file:
     toll_domain_config_json = json.load(json_file)
     td_conf_by_td_name = toll_domain_config_json['td_conf_by_td_name']
@@ -39,14 +41,24 @@ def set_toll_domain(toll_domain_name:str):
     td_security_logger.info(f"Switched Toll Domain to ({toll_domain_name})")
     # Check if Toll Domain has Master Keys properly configured
     if toll_domain_name in dsrc_mk_by_device_and_td_loader.master_keys_by_toll_domain:
-        current_toll_domain_name = toll_domain_name        
+        current_toll_domain_name = toll_domain_name
         master_keys_by_device_contract_ref = dsrc_mk_by_device_and_td_loader.master_keys_by_toll_domain[current_toll_domain_name]
     else:
         raise TollDomainMasterKeysNotFoundException(f'NO MASTERKEYS FOUND FOR TOLL DOMAIN ({toll_domain_name})')
 
-def reset_toll_domain_to_default():
-    default_td_name = dsrc_default_td_value_handler.get_default_toll_domain_name()
-    return set_toll_domain(default_td_name)
+def update_default_toll_domain(toll_domain_name:str):
+    global default_toll_domain_name
+
+    if default_toll_domain_name == toll_domain_name:
+        td_security_logger.debug(f"Default Toll Domain is already ({toll_domain_name}).")
+        return
+
+    default_toll_domain_name = toll_domain_name
+    td_security_logger.info(f"Updated Default Toll Domain to: ({toll_domain_name})")
+
+def reset_toll_domain():
+    global default_toll_domain_name
+    return set_toll_domain(default_toll_domain_name)
 
 def get_current_toll_domain():
     global current_toll_domain_name
@@ -59,6 +71,7 @@ def get_master_keys_with_device_info(efc_cm: bytes|int|str, manufacturer_id:byte
     """Get master keys through device (OBE) model data and EFC contract data
     All of these should be present in the OBE's VST!!!"""
     global master_keys_by_device_contract_ref
+    global current_toll_domain_name
     # print(type(efc_cm))
     device_contract_ref = dsrc_mk_by_device_and_td_loader.assemble_device_contract_ref_hex_str(efc_cm, manufacturer_id, equipment_class)
     # print(master_keys_by_device_contract_ref)
@@ -72,6 +85,7 @@ def get_master_keys_with_device_info(efc_cm: bytes|int|str, manufacturer_id:byte
             # Trying to get masterkeys through EFC-CM only by looking up all devices!
             # Be careful if there are repeated EFC-CMs for different device models!!
             return get_master_keys_with_efc_cm_only(efc_cm)
+        td_security_logger.error(f'MasterKeys not found for device contract {device_contract_ref} on TD {current_toll_domain_name}!!!')
         raise TollDomainMasterKeysNotFoundException(f'MasterKeys not found for device contract {device_contract_ref}!!!')
 
 def get_master_keys_with_device_contract_ref(device_contract_ref: str):
@@ -109,4 +123,4 @@ def get_master_keys_with_device_model_only(device_model_name: str):
     return master_keyset_names_by_efc_cm
 
 # Set defaults!!
-reset_toll_domain_to_default()
+set_toll_domain(toll_domain_name=default_toll_domain_name)

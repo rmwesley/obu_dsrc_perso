@@ -23,7 +23,7 @@ async def get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value: d
     try:
         return dsrc_contracts.get_eid_in_vst_with_valid_contract(vst_value=vst_value)
     except dsrc_contracts.NoValidObeEfcmFoundInVst as exc:
-        dsrc_l7_transactions_logger.info('Aborting transaction due to invalid EFC-CM...')
+        dsrc_l7_transactions_logger.info(f'Aborting transaction due to no valid EFC-CM in VST: {vst_value}')
         await dsrc_l7_rse.send_close_transaction_echo()
         raise AbortedTransaction('Invalid EFC-CM!!')
 
@@ -432,9 +432,9 @@ async def loop_transactions_on_toll_domains(beep_state=None, td_list=['TIS', 'DE
                 try:
                     await td_default_transaction(set_mmi=loop_set_mmi_bool)
                 except dsrc_l7_rse.AbortedInitPhase as exc:
-                    print('Timeout: No VST obtained!!')
+                    dsrc_l7_transactions_logger.warning('Timeout: No VST obtained!!')
             except AbortedTransaction as exc:
-                print('Aborted transaction due to invalid EFC-CM!!')
+                dsrc_l7_transactions_logger.error('Aborted transaction due to invalid EFC-CM!!', exc_info=True)
 
             # Sleep between transactions
             time.sleep(sleep_time)
