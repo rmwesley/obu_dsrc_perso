@@ -158,7 +158,7 @@ function add_line_between_gnss_fixes_to_map(gnss_fix_1_data, gnss_fix_2_data){
     line = create_line_between_gnss_fixes(gnss_fix_1_data, gnss_fix_2_data);
     if (line) line.addTo(obuDsrcTransactionsInfoLeafletLayer);
 }
-POPUP_DICT_KEY_FILTER = ['_id', 'position_info', 'creation_time', 'last_update_timestamp']
+POPUP_DICT_KEY_FILTER = ['_id', 'RseTollDomain', 'position_info', 'creation_time', 'last_update_timestamp']
 function filter_and_keep_only_position_and_time_data(transaction_info){
     filtered_dict = {}
     // for (const dict_key of POPUP_DICT_KEY_FILTER) {
