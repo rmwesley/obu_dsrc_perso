@@ -15,6 +15,9 @@ with open(efc_sec_conf_path) as json_file:
     efc_security_config = json.load(json_file)
     master_keysets = efc_security_config['keysets']
 
+class InvalidDeviceContractRef(Exception):
+    pass
+
 def assemble_device_contract_ref_hex_str(efc_cm: bytes|int|str, manufacturer_id:bytes|int|str, equipment_class:bytes|int|str):
     if type(manufacturer_id) is int:
         manufacturer_id = f'{manufacturer_id:04X}'
@@ -36,7 +39,10 @@ def assemble_device_contract_ref_hex_str(efc_cm: bytes|int|str, manufacturer_id:
     if type(equipment_class) is str:
         equipment_class = equipment_class.zfill(4)[-4:].upper()
     if type(efc_cm) is str:
+        if len(efc_cm) != 12:
+            raise InvalidDeviceContractRef(f'EFC-CM (0x{efc_cm}) is too long!')
         efc_cm = efc_cm.zfill(12)[-12:].upper()
+        # print(efc_cm)
 
     device_contract_hex_ref = f'{efc_cm}{manufacturer_id}{equipment_class}'
     # print(f'device_contract_ref: {device_contract_ref}')
