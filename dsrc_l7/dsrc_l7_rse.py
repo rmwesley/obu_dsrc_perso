@@ -351,6 +351,8 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     transaction_data = {}
     transaction_data['_id'] = current_transaction_id.hex
 
+    current_td = dsrc_td_security_operations.get_current_toll_domain()
+    transaction_data['RseTollDomain'] = current_td
     # Equipment OBU ID, PAN and timestamps at the top!
     transaction_data['equOBUId'] = ""
     transaction_data['personalAccountNumber'] = ""
@@ -380,7 +382,6 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     current_transaction_start_date = datetime.now()
     current_transaction_datetime_prefix = current_transaction_start_date.strftime("%Y%m%dT%H%M%S")
 
-    current_td = dsrc_td_security_operations.get_current_toll_domain()
     transaction_data_filename = f"{current_transaction_datetime_prefix}_{current_td}_{manufacturerID:04X}_{equipmentClass:04X}_00000000_{current_transaction_id}.json"
     transaction_data_filepath = pathlib.Path(f"local_file_storage/transactions/{transaction_data_filename}")
 
