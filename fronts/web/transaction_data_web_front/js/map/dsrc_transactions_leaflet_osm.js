@@ -13,8 +13,8 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
 
-current_location_marker_layer = L.layerGroup()
-current_location_marker_layer.addTo(map)
+current_location_layer_group = L.layerGroup()
+current_location_layer_group.addTo(map)
 
 // function get_latlng(leaflet_callback){
 //     navigator.geolocation.getCurrentPosition((position) => {
@@ -26,7 +26,7 @@ current_location_marker_layer.addTo(map)
 function update_position_in_map(){
     navigator.geolocation.getCurrentPosition((position) => {
         // console.log(position)
-        current_location_marker_layer.clearLayers()
+        current_location_layer_group.clearLayers()
 
         latlng = [position.coords['latitude'], position.coords['longitude']]
         location_accuracy = L.circle(latlng, {
@@ -35,21 +35,21 @@ function update_position_in_map(){
                 fillOpacity: '0.3',
                 radius: position.coords.accuracy,
                 weight:0,
-            }).addTo(current_location_marker_layer);
+            }).addTo(current_location_layer_group);
         location_position_border = L.circleMarker(latlng, {
                 color: 'ffffff',
                 fillColor: '#ffffff',
                 fillOpacity: '0.9',
                 radius: 9,
                 weight:0,
-            }).addTo(current_location_marker_layer);
+            }).addTo(current_location_layer_group);
         location_position = L.circleMarker(latlng, {
                 color: '#3030f0',
                 fillColor: '#3030f0',
                 fillOpacity: '0.9',
                 radius: 7,
                 weight:0,
-            }).addTo(current_location_marker_layer);
+            }).addTo(current_location_layer_group);
 })}
 
 update_position_in_map()
