@@ -35,7 +35,7 @@ function update_position_in_map(){
                 fillOpacity: '0.3',
                 radius: position.coords.accuracy,
                 weight:0,
-            }).addTo(current_location_layer_group);
+            }).addTo(current_location_layer_group).bringToBack();
         location_position_border = L.circleMarker(latlng, {
                 color: 'ffffff',
                 fillColor: '#ffffff',
