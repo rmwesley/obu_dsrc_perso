@@ -8,6 +8,7 @@ from fastapi_apps.beacon_client_app import beacon_client_app
 from fastapi_apps.dsrc_transaction_data_app import transaction_data_app
 from fastapi_apps.toll_domain_zones_app import td_zones_app
 from fastapi_apps.rse_gps_sync_app import rse_gps_td_app
+from fastapi_apps.personalization_app import personalization_app
 
 import logging
 root_logger = logging.getLogger()
@@ -46,3 +47,4 @@ app.mount("/beacon", beacon_client_app)
 app.mount("/dsrc-transactions/", transaction_data_app)
 app.mount("/td_zones", td_zones_app)
 app.mount("/rse_gps", rse_gps_td_app)
+app.mount("/perso_reqs/", personalization_app)
