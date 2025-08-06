@@ -1,7 +1,24 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from enum import Enum
 
+import json
+import pathlib
+
 router = APIRouter(tags=['OBU Personalization routes'])
+
+perso_tasks_dirpath = pathlib.Path(f'local_file_storage/perso_tasks')
+
+with pathlib.Path('local_file_storage/valid_obu_models_by_td.json').open('r') as json_file:
+    valid_obu_models_by_td = json.load(json_file)
+
+@router.get('/valid_obu_contract_refs')
+def get_valid_obu_contracts(td_name:str|None = None):
+    if td_name is None:
+        return valid_obu_models_by_td
+    elif td_name in valid_obu_models_by_td:
+        return valid_obu_models_by_td[td_name]
+    else:
+        raise HTTPException(400, f'Invalid Toll Domain Name: ({td_name})')
 
 class PersoRequestState(str, Enum):
     PENDING = 'pending'
