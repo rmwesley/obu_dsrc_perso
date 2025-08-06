@@ -7,8 +7,12 @@ class PersoRequestState(str, Enum):
     PENDING = 'pending'
     FINISHED = 'finished'
 
-@router.get('/{perso_state}')
-def get_persos(request_state:PersoRequestState) -> list:
+@router.get('/persos')
+def get_orders(perso_state:PersoRequestState) -> list:
+    return []
+
+@router.get('/persos/state/{perso_state}')
+def get_orders(perso_state:PersoRequestState) -> list:
     return []
 
 class PersoApplicationMethod(str, Enum):
@@ -18,7 +22,7 @@ class PersoApplicationMethod(str, Enum):
 class PersonalizationError(Exception):
     pass
 
-@router.post('/{perso_state}/{perso_id}')
+@router.post('/persos/{perso_id}')
 def apply_personalization_data_to_obu(perso_state:PersoRequestState, perso_id:str, method:PersoApplicationMethod):
     '''Request application of personalization to OBU via Proxy or via a DSRC beacon'''
 
@@ -37,10 +41,10 @@ class PersoValidationMethod(str, Enum):
 class PersoValidationError(Exception):
     pass
 
-@router.post('/pending/{perso_id}')
+@router.post('/persos/{perso_id}')
 def validate_obu_data_and_finish_perso(perso_id:str, method: PersoValidationMethod):
     '''Validate that an OBU was personalized properly.
-    The personalization request state's must be PENDING, not FINISHED!!'''
+    In a proper SupplyChain process, the personalization request's state must be PENDING, not FINISHED!'''
     try:
         obu_id: bytes(8)
         obu_id_hex = obu_id.hex().upper()
