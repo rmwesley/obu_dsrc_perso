@@ -95,8 +95,9 @@ def load_master_keys_by_toll_domain():
 
                 master_keys_by_toll_domain[toll_domain_name][device_contract_ref] = master_keys[keyset_name]
 
-    del efc_contracts
-    del master_keys
     return master_keys_by_toll_domain
 
 master_keys_by_toll_domain = load_master_keys_by_toll_domain()
+del efc_contracts
+del master_keys
+del obu_models_data
