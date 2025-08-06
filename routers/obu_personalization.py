@@ -7,7 +7,7 @@ class PersoRequestState(str, Enum):
     PENDING = 'pending'
     FINISHED = 'finished'
 
-@router.get('/{request_state}')
+@router.get('/{perso_state}')
 def get_persos(request_state:PersoRequestState) -> list:
     return []
 
@@ -18,8 +18,8 @@ class PersoApplicationMethod(str, Enum):
 class PersonalizationError(Exception):
     pass
 
-@router.post('/{request_state}/{perso_id}')
-def apply_personalization_data_to_obu(request_state:PersoRequestState, perso_id:str, method:PersoApplicationMethod):
+@router.post('/{perso_state}/{perso_id}')
+def apply_personalization_data_to_obu(perso_state:PersoRequestState, perso_id:str, method:PersoApplicationMethod):
     '''Request application of personalization to OBU via Proxy or via a DSRC beacon'''
 
     try:
