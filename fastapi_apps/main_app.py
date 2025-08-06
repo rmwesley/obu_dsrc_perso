@@ -2,12 +2,12 @@ from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from efc_decoding_app import efc_decoding_app
-from efc_security_app import efc_security_app
-from beacon_client_app import beacon_client_app
-from dsrc_transaction_data_app import transaction_data_app
-from toll_domain_zones_app import td_zones_app
-from rse_gps_sync_default_td_update_app import rse_gps_td_app
+from fastapi_apps.efc_decoding_app import efc_decoding_app
+from fastapi_apps.efc_security_app import efc_security_app
+from fastapi_apps.beacon_client_app import beacon_client_app
+from fastapi_apps.dsrc_transaction_data_app import transaction_data_app
+from fastapi_apps.toll_domain_zones_app import td_zones_app
+from fastapi_apps.rse_gps_sync_default_td_update_app import rse_gps_td_app
 
 import logging
 root_logger = logging.getLogger()
