@@ -21,7 +21,7 @@ with open('settings/toll_domain_config.json') as json_file:
 
 async def get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value: dict):
     try:
-        return dsrc_contracts.get_eid_in_vst_with_valid_contract(vst_value=vst_value)
+        return dsrc_contracts.get_eid_in_vst_with_valid_contract_in_current_td(vst_value=vst_value)
     except dsrc_contracts.NoValidObeEfcmFoundInVst as exc:
         dsrc_l7_transactions_logger.info(f'Aborting transaction due to no valid EFC-CM in VST: {vst_value}')
         await dsrc_l7_rse.send_close_transaction_echo()
