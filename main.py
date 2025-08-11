@@ -2,7 +2,7 @@ import asyncio
 
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
-from dsrc_l7 import dsrc_l7_rse, dsrc_l7_transactions
+from dsrc_l7 import dsrc_efc_l7_transactions, dsrc_l7_rse
 from dsrc_security import dsrc_td_security_operations
 
 import logging
@@ -44,17 +44,17 @@ root_logger.addHandler(console_handler)
 async def simple_bcm_transactions():
     await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
 
-    await dsrc_l7_transactions.td_default_transaction(set_mmi=True)
+    await dsrc_efc_l7_transactions.td_default_transaction(set_mmi=True)
 
 async def toll_domains_transaction_loop(td_list:list[str] = ['TIS', 'EasyGo', 'DE', 'CH', 'BE']):
     await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
 
-    await dsrc_l7_transactions.loop_transactions_on_toll_domains(beep_state=True, td_list=td_list, sleep_time=5.0)
+    await dsrc_efc_l7_transactions.loop_transactions_on_toll_domains(beep_state=True, td_list=td_list, sleep_time=5.0)
 
 async def default_toll_domain_transaction_loop(extra_td_list:list[str] = ['TIS']):
     await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
 
-    await dsrc_l7_transactions.loop_transactions_with_default_td_and_extra_tds(beep_state=True, extra_td_list=extra_td_list, sleep_time=5.0)
+    await dsrc_efc_l7_transactions.loop_transactions_with_default_td_and_extra_tds(beep_state=True, extra_td_list=extra_td_list, sleep_time=5.0)
 
 # Main execution
 if __name__ == "__main__":
