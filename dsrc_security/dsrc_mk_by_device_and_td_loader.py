@@ -1,3 +1,5 @@
+from Crypto.Cipher import DES3
+
 import os
 import json
 
@@ -15,11 +17,22 @@ with open(f'settings/toll_domain_config.json', 'r') as json_file:
 with open(efc_contracts_conf_path, 'r') as json_file:
     efc_contracts = json.load(json_file)
 
+class InvalidKcv(Exception):
+    pass
 with open(master_keysets_conf_path, 'r') as json_file:
     master_keysets_conf = json.load(json_file)
     master_keysets = {}
     for keyset_name, master_keyset in master_keysets_conf.items():
-        master_keysets[keyset_name] = {key: val['mk_hex_value'] for key, val in master_keyset.items()}
+        master_keys = {}
+        for key_ref, mk_info in master_keyset.items():
+            mk_bytes = bytes.fromhex(mk_info['mk_hex_value'])
+            computed_kcv = DES3.new(mk_bytes, DES3.MODE_ECB).encrypt(bytes(8))[:3]
+            computed_kcv_hex = computed_kcv.hex().upper()
+            if mk_info['kcv_hex'] != computed_kcv_hex:
+                raise InvalidKcv(f'Invalid KCV {mk_info['kcv_hex']}!!!')
+            master_keys[key_ref] = mk_info['mk_hex_value']
+
+        master_keysets[keyset_name] = master_keys
 
 class InvalidDeviceContractRef(Exception):
     pass
