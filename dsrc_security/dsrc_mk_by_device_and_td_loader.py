@@ -16,7 +16,10 @@ with open(efc_contracts_conf_path, 'r') as json_file:
     efc_contracts = json.load(json_file)
 
 with open(master_keysets_conf_path, 'r') as json_file:
-    master_keysets = json.load(json_file)
+    master_keysets_conf = json.load(json_file)
+    master_keysets = {}
+    for keyset_name, master_keyset in master_keysets_conf.items():
+        master_keysets[keyset_name] = {key: val['mk_hex_value'] for key, val in master_keyset.items()}
 
 class InvalidDeviceContractRef(Exception):
     pass
