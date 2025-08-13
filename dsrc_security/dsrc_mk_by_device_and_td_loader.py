@@ -98,6 +98,6 @@ def load_master_keys_by_toll_domain():
     return master_keys_by_toll_domain
 
 master_keys_by_toll_domain = load_master_keys_by_toll_domain()
-del efc_contracts
-del master_keysets
-del obu_models_data
+# del efc_contracts
+# del master_keysets
+# del obu_models_data
