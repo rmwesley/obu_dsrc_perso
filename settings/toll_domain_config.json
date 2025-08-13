@@ -1,6 +1,6 @@
 {
-    "efc_contracts_conf_path": "..\\security_info\\efc_contracts_and_keysets_by_toll_domain_and_obu_models_v1.0.0.json",
-    "master_keysets_conf_path": "..\\security_info\\master_keys_v3.0.0.json",
+    "efc_contracts_conf_path": "..\\security_info\\toll_charging\\efc_contracts_and_keysets_by_toll_domain_and_obu_models_v1.0.0.json",
+    "master_keysets_conf_path": "..\\security_info\\toll_charging\\master_keys_v3.0.0.json",
     "environment": "TEST",
     "td_conf_by_td_name": {
       "TIS": {
