@@ -68,11 +68,18 @@ def get_current_toll_domain():
 def get_all_master_keysets():
     return dsrc_mk_by_device_and_td_loader.master_keysets
 
+class MasterKeysObjNotInitialized(Exception):
+    pass
+
 def get_master_keys_with_device_info_in_current_td(efc_cm: bytes|int|str, manufacturer_id:bytes|int|str, equipment_class:bytes|int|str):
     """Get master keys through device (OBE) model data and EFC contract data
     All of these should be present in the OBE's VST!!!"""
     global master_keys_by_device_contract_ref
     global current_toll_domain_name
+
+    if not master_keys_by_device_contract_ref:
+        raise MasterKeysObjNotInitialized
+
     # print(type(efc_cm))
     device_contract_ref = dsrc_mk_by_device_and_td_loader.assemble_device_contract_ref_hex_str(efc_cm, manufacturer_id, equipment_class)
     # print(master_keys_by_device_contract_ref)
