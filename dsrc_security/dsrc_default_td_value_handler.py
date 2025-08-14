@@ -9,6 +9,7 @@ def get_default_toll_domain_name():
         with open(f'settings/default_td.txt') as txt_file:
             return txt_file.read()
     except FileNotFoundError:
+        td_config_logger.error('No default TD set!! Using hardcoded value (TIS) instead.')
         return 'TIS'
 
 def update_default_toll_domain_name(new_default_td_name:str):
