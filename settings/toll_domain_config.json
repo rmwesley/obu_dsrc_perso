@@ -1,5 +1,5 @@
 {
-    "efc_contracts_conf_path": "..\\security_info\\toll_charging\\efc_contracts_and_keysets_by_toll_domain_and_obu_models_v1.0.1.json",
+    "obu_keysets_conf_path": "..\\security_info\\toll_charging\\keyset_name_by_toll_domain_obu_model_and_efc_cm_v1.0.0.json",
     "master_keysets_conf_path": "..\\security_info\\toll_charging\\master_keys_v4.0.0.json",
     "environment": "TEST",
     "td_conf_by_td_name": {

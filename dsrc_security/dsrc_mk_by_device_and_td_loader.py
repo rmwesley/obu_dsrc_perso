@@ -10,12 +10,12 @@ import logging
 
 with open(f'settings/toll_domain_config.json', 'r') as json_file:
     toll_domain_config_json = json.load(json_file)
-    efc_contracts_conf_path = toll_domain_config_json['efc_contracts_conf_path']
+    obu_keysets_conf_path = toll_domain_config_json['obu_keysets_conf_path']
     master_keysets_conf_path = toll_domain_config_json['master_keysets_conf_path']
     del toll_domain_config_json
 
-with open(efc_contracts_conf_path, 'r') as json_file:
-    efc_contracts = json.load(json_file)
+with open(obu_keysets_conf_path, 'r') as json_file:
+    obu_keyset_names = json.load(json_file)
 
 class InvalidKcv(Exception):
     pass
@@ -93,27 +93,29 @@ with open(f'settings/obu_product_names.json', 'r') as json_file:
 
 def load_master_keys_by_toll_domain():
     global master_keysets
-    global efc_contracts
+    global obu_keyset_names
     # Setting up EFC-CM + Equipment Class to Master Key mapping, by Toll Domain!
     master_keys_by_toll_domain = {}
 
-    for toll_domain_name, contracts_by_manufacturer in efc_contracts.items():
+    for toll_domain_name, contracts_by_manufacturer in obu_keyset_names.items():
         # Assembling masterkeys for a Toll Domain!!
         master_keys_by_toll_domain[toll_domain_name] = {}
         for manufacturer_id_hex, contract_by_obu_eq_class in contracts_by_manufacturer.items():
             for equipment_class_hex, contract_data in contract_by_obu_eq_class.items():
-                keyset_name = contract_data['keyset_name']
-                efc_cm = contract_data['EFC-CM']
+                for efc_cm, keyset_name in contract_data.items():
+                    # This dictionary makes it easier to find a keyset!!
+                    # The dictionary keys are a concatenation of the EFC-CM, Manufacturer Id and Equipment Class!!
+                    device_contract_ref = assemble_device_contract_ref_hex_str(efc_cm, manufacturer_id_hex, equipment_class_hex)
 
-                # This dictionary makes it easier to find a keyset!!
-                # The dictionary keys are a concatenation of the EFC-CM, Manufacturer Id and Equipment Class!!
-                device_contract_ref = assemble_device_contract_ref_hex_str(efc_cm, manufacturer_id_hex, equipment_class_hex)
-
-                master_keys_by_toll_domain[toll_domain_name][device_contract_ref] = master_keysets[keyset_name]
+                    master_keys_by_toll_domain[toll_domain_name][device_contract_ref] = master_keysets[keyset_name]
 
     return master_keys_by_toll_domain
 
+def get_contract_info_for_obu_equipment_info_in_toll_domain(toll_domain_name:str, manufacturer_id:str, equipment_class:str):
+    contract_info = obu_keyset_names[toll_domain_name][manufacturer_id][equipment_class]
+    return contract_info
+
 master_keys_by_toll_domain = load_master_keys_by_toll_domain()
-# del efc_contracts
+# del obu_keyset_names
 # del master_keysets
 # del obu_models_data
