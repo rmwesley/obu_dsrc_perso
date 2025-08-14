@@ -28,13 +28,12 @@ def get_current_security_profile():
         raise TollDomainSecurityProfileInvalidException(f'The only valid security norms are {VALID_SECURITY_NORMS}, with levels 0 and 1.')
     return current_security_profile
 
-current_toll_domain_name = 'TIS'
 master_keys_by_device_contract_ref = {}
 def set_toll_domain(toll_domain_name:str):
     global current_toll_domain_name
     global master_keys_by_device_contract_ref
 
-    if current_toll_domain_name == toll_domain_name:
+    if 'current_toll_domain_name' in globals() and current_toll_domain_name == toll_domain_name:
         td_security_logger.debug(f"Toll Domain is already set to ({toll_domain_name}).")
         return
 
