@@ -8,7 +8,7 @@ dsrc_contracts_logger = logging.getLogger(__name__)
 # Remember to set the current_toll_domain_name global variable in the dsrc_td_security_operations module!!!
 def is_device_info_valid_in_current_td(efc_cm: str|int|bytes, manufacturer_id:str|int|bytes, equipment_class:str|int|bytes) -> bool:
     try:
-        master_keys = dsrc_td_security_operations.get_master_keys_with_device_info(efc_cm, manufacturer_id, equipment_class)
+        master_keys = dsrc_td_security_operations.get_master_keys_with_device_info_in_current_td(efc_cm, manufacturer_id, equipment_class)
         # MasterKeys were found!
         return True
     except dsrc_td_security_operations.TollDomainMasterKeysNotFoundException:

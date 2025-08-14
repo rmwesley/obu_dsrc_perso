@@ -68,7 +68,7 @@ def get_current_toll_domain():
 def get_all_master_keysets():
     return dsrc_mk_by_device_and_td_loader.master_keysets
 
-def get_master_keys_with_device_info(efc_cm: bytes|int|str, manufacturer_id:bytes|int|str, equipment_class:bytes|int|str):
+def get_master_keys_with_device_info_in_current_td(efc_cm: bytes|int|str, manufacturer_id:bytes|int|str, equipment_class:bytes|int|str):
     """Get master keys through device (OBE) model data and EFC contract data
     All of these should be present in the OBE's VST!!!"""
     global master_keys_by_device_contract_ref
@@ -91,7 +91,7 @@ def get_master_keys_with_device_info(efc_cm: bytes|int|str, manufacturer_id:byte
 
 def get_master_keys_with_device_contract_ref(device_contract_ref: str):
     efc_cm_hex, manufacturer_id_hex, equipment_class_hex = dsrc_mk_by_device_and_td_loader.disassemble_device_contract_ref_hex_str(device_contract_ref)
-    return get_master_keys_with_device_info(efc_cm_hex, manufacturer_id_hex, equipment_class_hex)
+    return get_master_keys_with_device_info_in_current_td(efc_cm_hex, manufacturer_id_hex, equipment_class_hex)
 
 def get_master_keys_with_efc_cm_only(efc_cm_hex_str: str):
     """No device model provided, only an EFC-CM for the current Toll Domain!!"""

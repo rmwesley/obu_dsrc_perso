@@ -273,7 +273,7 @@ def compute_auk_with_device_info_and_auk_ref(pan_8_msb: bytes, efc_cm_hex_str: s
 
     plaintext_bytes = compute_auk_plaintext(pan_8_msb, efc_cm=efc_cm_hex_str)
 
-    master_hex_keyset = dsrc_td_security_operations.get_master_keys_with_device_info(efc_cm_hex_str, manufacturer_id_hex_str, equipment_class_hex_str)
+    master_hex_keyset = dsrc_td_security_operations.get_master_keys_with_device_info_in_current_td(efc_cm_hex_str, manufacturer_id_hex_str, equipment_class_hex_str)
     mauk_hex = master_hex_keyset[str(auk_ref)]
     mauk_bytes = bytes.fromhex(mauk_hex)
     # key_derivation_logger.info(f'FOUND MAuK: 0x{mauk_hex}')
