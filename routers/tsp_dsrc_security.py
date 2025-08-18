@@ -16,17 +16,24 @@ router = APIRouter(
 class UsetDerivedKeyDecryptionReq(BaseModel):
     obu_model: str
     uset_derived_key_hex: str
+    uset_key_type: perso_security_operations.TRP_4010_20B_MK_TYPES | None
 
     model_config = {
         "json_schema_extra": {
             "examples": [
                 {
                     "obu_model": "TRP-4010-20B",
-                    "uset_derived_key_hex": "E6F6740DC43FDA716C1FF0A25FC7E47F"
+                    "uset_derived_key_hex": "E6F6740DC43FDA716C1FF0A25FC7E47F",
+                    "uset_key_type": 'Stock'
                 },
                 {
                     "obu_model": "TRP-4010-20B",
                     "uset_derived_key_hex": "52CF61BFF3369741EC2E34EA8103AD5F"
+                },
+                {
+                    "obu_model": "TRP-4010-20B",
+                    "uset_derived_key_hex": "C68090FF17CC0B5FC68090FF17CC0B5F",
+                    "uset_key_type": 'Exploit'
                 },
             ]
         }
