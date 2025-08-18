@@ -1,12 +1,13 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, model_validator, field_validator
-from typing import Dict, List
+from typing import Dict, List, Literal
 from enum import Enum
 
 import json
 import uuid
 import pathlib
 
+from dsrc_l7 import dsrc_perso_l7
 from pycrate.pycrate_asn1c.err import ASN1ObjErr
 from ASN.compiled_DSRC_instances import AXXESv1_2
 
@@ -44,11 +45,25 @@ class PersoTaskData(BaseModel):
                     "dsrcMemoryData": {
                         "4": {
                             "dsrc_asn1_attr_container_path": "EfcDsrcGeneric.EfcContainer",
-                            "dsrcAttributesDict": {"0": "20B2803100066F"}
+                            "dsrcAttributesDict": {
+                                "17": "3120",
+                                "18": "32202020",
+                                "19": "332020",
+                                "20": "34202020202020",
+                                "21": "352020",
+                                "22": "3620202020"
+                                }
                         },
                         "7": {
                             "dsrc_asn1_attr_container_path": "EfcDsrcGeneric.EfcContainer",
-                            "dsrcAttributesDict": {"0": "20B2803100066F"}
+                            "dsrcAttributesDict": {
+                                "17": "3120",
+                                "18": "32202020",
+                                "19": "332020",
+                                "20": "34202020202020",
+                                "21": "352020",
+                                "22": "3620202020"
+                                }
                         }
                     }
                 }
@@ -73,25 +88,38 @@ def create_personalization_task(perso_task_data:PersoTaskData):
         'perso_id': perso_id
     }
 
-class PersoRequestState(str, Enum):
+class PersoTaskState(str, Enum):
     PENDING = 'pending'
     FINISHED = 'finished'
 
 @router.get('/persos')
-def get_orders(perso_state:PersoRequestState) -> list:
+def get_orders(perso_state:PersoTaskState) -> list:
     return []
 
 @router.get('/persos/state/{perso_state}')
-def get_orders(perso_state:PersoRequestState) -> list:
+def get_orders(perso_state:PersoTaskState) -> list:
     return []
 
 class PersonalizationError(Exception):
     pass
 
-@router.post('/persos/{perso_id}')
-def apply_personalization_data_to_obu(perso_state:PersoRequestState, perso_id:str):
-    '''Request application of personalization to OBU via Proxy or via a DSRC beacon'''
+def get_perso_data(perso_id: str) -> PersoTaskData:
+    perso_data_filepath = perso_tasks_dirpath / f'{perso_id}.json'
 
+    with perso_data_filepath.open('r') as json_file:
+        perso_task_data = PersoTaskData.parse_file(json_file)
+    return perso_task_data
+
+# PersoMethods = Literal['TRP_4010_20B_USET']
+# async def apply_personalization_data_to_obu(perso_state:PersoTaskState, perso_id:str, perso_method: PersoMethods):
+@router.post('/persos/{perso_id}')
+async def apply_personalization_data_to_obu(perso_state:PersoTaskState, perso_id:str):
+    '''Request application of personalization to OBU through a DSRC beacon'''
+
+    perso_task_data = get_perso_data(perso_id)
+    for eid, element_dsrc_data in perso_task_data.items():
+        element_dsrc_data
+    await dsrc_perso_l7.kapsch_tsp_4010_20b_pl_perso()
     try:
         obu_id: bytes(8)
         obu_id_hex = obu_id.hex().upper()
