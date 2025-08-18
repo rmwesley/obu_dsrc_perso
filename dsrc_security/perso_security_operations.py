@@ -6,11 +6,12 @@ import typing
 
 perso_logger = logging.getLogger(__name__)
 
+perso_env = 'TEST'
 with open('../security_info/tsp_obu_setup/perso_config_and_obu_models_v1.0.1.json', 'r') as json_file:
     perso_config = json.load(json_file)
 
-with open('../security_info/tsp_obu_setup/axxes_kapsch_uset_master_keys.json', 'r') as json_file:
-    axxes_kapsch_uset_master_keys = json.load(json_file)
+with open('../security_info/tsp_obu_setup/axxes_kapsch_tis_uset_master_keys.json', 'r') as json_file:
+    axxes_kapsch_uset_master_keys = json.load(json_file)[perso_env]
 
 TRP_4010_20B_MK_TYPES = typing.Literal['Factory', 'Stock', 'Exploit']
 def set_key_type(uset_key_type:TRP_4010_20B_MK_TYPES):
