@@ -27,6 +27,11 @@ def get_current_security_profile():
         raise TollDomainSecurityProfileInvalidException(f'The only valid security norms are {VALID_SECURITY_NORMS}, with levels 0 and 1.')
     return current_security_profile
 
+def td_is_en15509_level_1() -> bool:
+    global current_toll_domain_name
+    current_security_profile = td_conf_by_td_name[current_toll_domain_name]['security_profile']
+    return 'level_1' in current_security_profile
+
 master_keys_by_device_contract_ref = {}
 def set_toll_domain(toll_domain_name:str):
     global current_toll_domain_name
