@@ -10,7 +10,7 @@ import pathlib
 from pycrate.pycrate_asn1c.err import ASN1ObjErr
 from ASN.compiled_DSRC_instances import AXXESv1_2
 
-router = APIRouter(tags=['OBU Personalization routes'])
+router = APIRouter(tags=['OBU DSRC Personalization routes'])
 
 perso_tasks_dirpath = pathlib.Path(f'local_file_storage/perso_tasks')
 
