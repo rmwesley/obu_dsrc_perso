@@ -14,7 +14,7 @@ router = APIRouter(
     tags=["TSP DSRC Security Interface"])
 
 class ComputeUsetDerivedKeyReq(BaseModel):
-    obu_model: str
+    obu_eq_ref: str
     ac_cr_key_ref_hex: str
     uset_key_type: perso_security_operations.TRP_4010_20B_MK_TYPES | None
 
@@ -22,16 +22,16 @@ class ComputeUsetDerivedKeyReq(BaseModel):
         "json_schema_extra": {
             "examples": [
                 {
-                    "obu_model": "TRP-4010-20B",
+                    "obu_eq_ref": "00037404",
                     "ac_cr_key_ref_hex": "008E",
                     "uset_key_type": 'Stock'
                 },
                 {
-                    "obu_model": "TRP-4010-20B",
+                    "obu_eq_ref": "00037404",
                     "ac_cr_key_ref_hex": "00FA"
                 },
                 {
-                    "obu_model": "TRP-4010-20B",
+                    "obu_eq_ref": "00037404",
                     "ac_cr_key_ref_hex": "00FA",
                     "uset_key_type": 'Exploit'
                 },
@@ -43,13 +43,13 @@ class ComputeUsetDerivedKeyReq(BaseModel):
 def compute_uset_key(req_body: ComputeUsetDerivedKeyReq):
     ac_cr_key_ref = int(req_body.ac_cr_key_ref_hex, base=16)
     plaintext_bytes = perso_security_operations.compute_uset_derived_key_for_obu_model(
-        obu_model=req_body.obu_model,
+        obu_eq_ref=req_body.obu_eq_ref,
         ac_cr_key_ref=ac_cr_key_ref,
         uset_key_type=req_body.uset_key_type)
     return plaintext_bytes.hex().upper()
 
 class UsetDerivedKeyDecryptionReq(BaseModel):
-    obu_model: str
+    obu_eq_ref: str
     uset_derived_key_hex: str
     uset_key_type: perso_security_operations.TRP_4010_20B_MK_TYPES | None
 
@@ -57,16 +57,16 @@ class UsetDerivedKeyDecryptionReq(BaseModel):
         "json_schema_extra": {
             "examples": [
                 {
-                    "obu_model": "TRP-4010-20B",
+                    "obu_eq_ref": "00037404",
                     "uset_derived_key_hex": "E6F6740DC43FDA716C1FF0A25FC7E47F",
                     "uset_key_type": 'Stock'
                 },
                 {
-                    "obu_model": "TRP-4010-20B",
+                    "obu_eq_ref": "00037404",
                     "uset_derived_key_hex": "52CF61BFF3369741EC2E34EA8103AD5F"
                 },
                 {
-                    "obu_model": "TRP-4010-20B",
+                    "obu_eq_ref": "00037404",
                     "uset_derived_key_hex": "C68090FF17CC0B5FC68090FF17CC0B5F",
                     "uset_key_type": 'Exploit'
                 },
@@ -78,7 +78,7 @@ class UsetDerivedKeyDecryptionReq(BaseModel):
 def decrypt_uset_key(req_body: UsetDerivedKeyDecryptionReq):
     ciphertext = bytes.fromhex(req_body.uset_derived_key_hex)
     plaintext_bytes = perso_security_operations.decrypt_uset_derived_key_for_obu_model(
-        obu_model=req_body.obu_model,
+        obu_eq_ref=req_body.obu_eq_ref,
         ciphertext=ciphertext,
         uset_key_type=req_body.uset_key_type)
     return plaintext_bytes.hex().upper()
