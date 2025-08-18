@@ -13,6 +13,41 @@ router = APIRouter(
     prefix="/security",
     tags=["TSP DSRC Security Interface"])
 
+class ComputeUsetDerivedKeyReq(BaseModel):
+    obu_model: str
+    ac_cr_key_ref_hex: str
+    uset_key_type: perso_security_operations.TRP_4010_20B_MK_TYPES | None
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "obu_model": "TRP-4010-20B",
+                    "ac_cr_key_ref_hex": "008E",
+                    "uset_key_type": 'Stock'
+                },
+                {
+                    "obu_model": "TRP-4010-20B",
+                    "ac_cr_key_ref_hex": "00FA"
+                },
+                {
+                    "obu_model": "TRP-4010-20B",
+                    "ac_cr_key_ref_hex": "00FA",
+                    "uset_key_type": 'Exploit'
+                },
+            ]
+        }
+    }
+
+@router.post("/compute_uset_key")
+def compute_uset_key(req_body: ComputeUsetDerivedKeyReq):
+    ac_cr_key_ref = int(req_body.ac_cr_key_ref_hex, base=16)
+    plaintext_bytes = perso_security_operations.compute_uset_derived_key_for_obu_model(
+        obu_model=req_body.obu_model,
+        ac_cr_key_ref=ac_cr_key_ref,
+        uset_key_type=req_body.uset_key_type)
+    return plaintext_bytes.hex().upper()
+
 class UsetDerivedKeyDecryptionReq(BaseModel):
     obu_model: str
     uset_derived_key_hex: str
@@ -40,7 +75,7 @@ class UsetDerivedKeyDecryptionReq(BaseModel):
     }
 
 @router.post("/decrypt_uset_key")
-def triple_des_decryt(req_body: UsetDerivedKeyDecryptionReq):
+def decrypt_uset_key(req_body: UsetDerivedKeyDecryptionReq):
     ciphertext = bytes.fromhex(req_body.uset_derived_key_hex)
     plaintext_bytes = perso_security_operations.decrypt_uset_derived_key_for_obu_model(
         obu_model=req_body.obu_model,
