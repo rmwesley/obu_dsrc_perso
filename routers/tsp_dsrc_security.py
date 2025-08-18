@@ -23,7 +23,11 @@ class UsetDerivedKeyDecryptionReq(BaseModel):
                 {
                     "obu_model": "TRP-4010-20B",
                     "uset_derived_key_hex": "E6F6740DC43FDA716C1FF0A25FC7E47F"
-                }
+                },
+                {
+                    "obu_model": "TRP-4010-20B",
+                    "uset_derived_key_hex": "52CF61BFF3369741EC2E34EA8103AD5F"
+                },
             ]
         }
     }
