@@ -35,5 +35,8 @@ class UsetDerivedKeyDecryptionReq(BaseModel):
 @router.post("/decrypt_uset_key")
 def triple_des_decryt(req_body: UsetDerivedKeyDecryptionReq):
     ciphertext = bytes.fromhex(req_body.uset_derived_key_hex)
-    plaintext_bytes = perso_security_operations.decrypt_uset_derived_key_for_obu_model(obu_model=req_body.obu_model, ciphertext=ciphertext)
+    plaintext_bytes = perso_security_operations.decrypt_uset_derived_key_for_obu_model(
+        obu_model=req_body.obu_model,
+        ciphertext=ciphertext,
+        uset_key_type=req_body.uset_key_type)
     return plaintext_bytes.hex().upper()
