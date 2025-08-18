@@ -395,11 +395,12 @@ def loop_transactions(beep_state=None):
             dsrc_l7_transactions_logger.error("Transaction error occurred during loop!", exc_info=True)
             time.sleep(1)
 
-async def td_default_transaction(accessCredentialsPresent=True, set_mmi=False):
+async def td_default_transaction(set_mmi=True):
     current_td = dsrc_td_security_operations.current_toll_domain_name
 
     transaction_type = toll_domain_config['td_conf_by_td_name'][current_td]['default_transaction_type']
     default_mand_applications = toll_domain_config['td_conf_by_td_name'][current_td]['mandApplications']
+    accessCredentialsPresent = dsrc_td_security_operations.td_is_en15509_level_1()
     if transaction_type == 'CARDME':
         await cardme_transaction(mand_applications=default_mand_applications, accessCredentialsPresent=accessCredentialsPresent, set_mmi=set_mmi)
     elif transaction_type == 'PISTA':
