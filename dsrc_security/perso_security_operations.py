@@ -30,7 +30,25 @@ def set_default_key_type(uset_key_type:TRP_4010_20B_MK_TYPES):
 class ObuModelUnknown(Exception):
     pass
 
-def get_uset_derived_key(uset_master_key:bytes, ac_cr_key_ref:int) -> bytes:
+def compute_uset_derived_key_8_bytes_mk(uset_master_key:bytes, ac_cr_key_ref:int) -> bytes:
+    ac_cr_key_ref_bytes = ac_cr_key_ref.to_bytes(length=2)
+    plaintext = ac_cr_key_ref_bytes * 4
+
+    cipher = DES.new(key=uset_master_key[0:8], mode=DES3.MODE_ECB)
+    ciphertext = cipher.encrypt(plaintext)
+
+    return ciphertext
+
+def compute_uset_derived_key_16_bytes_mk(uset_master_key:bytes, ac_cr_key_ref:int) -> bytes:
+    ac_cr_key_ref_bytes = ac_cr_key_ref.to_bytes(length=2)
+    plaintext = ac_cr_key_ref_bytes * 4
+
+    cipher = DES3.new(key=uset_master_key[0:16], mode=DES3.MODE_ECB)
+    ciphertext = cipher.encrypt(plaintext)
+
+    return ciphertext
+
+def compute_uset_derived_key_32_bytes_mk(uset_master_key:bytes, ac_cr_key_ref:int) -> bytes:
     ac_cr_key_ref_bytes = ac_cr_key_ref.to_bytes(length=2)
     plaintext = ac_cr_key_ref_bytes * 4
 
@@ -41,14 +59,22 @@ def get_uset_derived_key(uset_master_key:bytes, ac_cr_key_ref:int) -> bytes:
 
     return uset_key_part1 + uset_key_part2
 
-def get_uset_derived_key_for_obu_model(obu_model:str, ac_cr_key_ref:int, uset_key_type=default_uset_key_type) -> bytes:
+def compute_uset_derived_key(uset_master_key:bytes, ac_cr_key_ref:int) -> bytes:
+    if len(uset_master_key) == 8:
+        return compute_uset_derived_key_8_bytes_mk(uset_master_key, ac_cr_key_ref)
+    if len(uset_master_key) == 16:
+        return compute_uset_derived_key_16_bytes_mk(uset_master_key, ac_cr_key_ref)
+    if len(uset_master_key) == 32:
+        return compute_uset_derived_key_32_bytes_mk(uset_master_key, ac_cr_key_ref)
+
+def compute_uset_derived_key_for_obu_model(obu_model:str, ac_cr_key_ref:int, uset_key_type=default_uset_key_type) -> bytes:
     if not uset_key_type:
         uset_key_type = default_uset_key_type
 
     uset_mk_hex = axxes_kapsch_uset_master_keys[obu_model][uset_key_type]
     uset_mk_bytes = bytes.fromhex(uset_mk_hex)
 
-    return get_uset_derived_key(uset_master_key=uset_mk_bytes, ac_cr_key_ref=ac_cr_key_ref)
+    return compute_uset_derived_key(uset_master_key=uset_mk_bytes, ac_cr_key_ref=ac_cr_key_ref)
 
 def decrypt_uset_derived_key_8_bytes_mk(uset_master_key:bytes, ciphertext:bytes) -> bytes:
     cipher = DES.new(key=uset_master_key[0:8], mode=DES3.MODE_ECB)
