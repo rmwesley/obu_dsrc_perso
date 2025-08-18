@@ -5,7 +5,7 @@
     "td_conf_by_td_name": {
       "TIS": {
         "td_name": "TIS",
-        "security_profile": "TIS_decimal_level_1",
+        "security_profile": "TIS_decimal_level_0",
         "default_transaction_type": "CARDME",
         "mandApplications": [1]
       },
