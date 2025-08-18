@@ -14,9 +14,9 @@ with open('../security_info/tsp_obu_setup/axxes_kapsch_tis_uset_master_keys.json
     axxes_kapsch_uset_master_keys = json.load(json_file)[perso_env]
 
 TRP_4010_20B_MK_TYPES = typing.Literal['Factory', 'Stock', 'Exploit']
-def set_key_type(uset_key_type:TRP_4010_20B_MK_TYPES):
-    global curr_uset_key_type
-    curr_uset_key_type = uset_key_type
+def set_default_key_type(uset_key_type:TRP_4010_20B_MK_TYPES):
+    global default_uset_key_type
+    default_uset_key_type = uset_key_type
 
 # def notify_obu_with_no_contract(obu_eq_ref:str):
 #     efc_cm = obu_eq_ref[0:12]
@@ -40,8 +40,11 @@ def get_uset_derived_key(uset_master_key:bytes, ac_cr_key_ref:int) -> bytes:
 
     return uset_key_part1 + uset_key_part2
 
-def get_uset_derived_key_for_obu_model(obu_model:str, ac_cr_key_ref:int) -> bytes:
-    uset_mk_hex = axxes_kapsch_uset_master_keys[obu_model][curr_uset_key_type]
+def get_uset_derived_key_for_obu_model(obu_model:str, ac_cr_key_ref:int, uset_key_type=default_uset_key_type) -> bytes:
+    if not uset_key_type:
+        uset_key_type = default_uset_key_type
+
+    uset_mk_hex = axxes_kapsch_uset_master_keys[obu_model][uset_key_type]
     uset_mk_bytes = bytes.fromhex(uset_mk_hex)
 
     return get_uset_derived_key(uset_master_key=uset_mk_bytes, ac_cr_key_ref=ac_cr_key_ref)
@@ -54,10 +57,13 @@ def decrypt_uset_derived_key(uset_master_key:bytes, ciphertext:bytes) -> bytes:
 
     return plaintext_part1 + plaintext_part2
 
-def decrypt_uset_derived_key_for_obu_model(obu_model:str, ciphertext:bytes) -> bytes:
-    uset_mk_hex = axxes_kapsch_uset_master_keys[obu_model][curr_uset_key_type]
+def decrypt_uset_derived_key_for_obu_model(obu_model:str, ciphertext:bytes, uset_key_type=default_uset_key_type) -> bytes:
+    if not uset_key_type:
+        uset_key_type = default_uset_key_type
+
+    uset_mk_hex = axxes_kapsch_uset_master_keys[obu_model][uset_key_type]
     uset_mk_bytes = bytes.fromhex(uset_mk_hex)
 
     return decrypt_uset_derived_key(uset_master_key=uset_mk_bytes, ciphertext=ciphertext)
 
-set_key_type('Stock')
+set_default_key_type('Stock')
