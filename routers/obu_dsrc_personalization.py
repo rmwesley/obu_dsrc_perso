@@ -6,10 +6,13 @@ from enum import Enum
 import json
 import uuid
 import pathlib
+import logging
 
 from dsrc_l7 import dsrc_perso_l7
 from pycrate.pycrate_asn1c.err import ASN1ObjErr
 from ASN.compiled_DSRC_instances import AXXESv1_2
+
+obu_dsrc_perso_router_logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=['OBU DSRC Personalization routes'])
 
@@ -21,14 +24,21 @@ with pathlib.Path('settings/toll_domain_config.json').open('r') as json_file:
 class DsrcAttributesDict(BaseModel):
     @model_validator(mode='after')
     def check_attribute_ids(cls, dsrc_attributes_dict):
-        for attribute_id in dsrc_attributes_dict:
+        for attribute_id, attribute_value_hex in dsrc_attributes_dict.dict().items():
             if attribute_id > 127 or attribute_id < 0:
                 raise AssertionError(f'Invalid Attribute Id value: {attribute_id}')
+            attr_val_bytes = bytes.fromhex(attribute_value_hex)
+            try:
+                AXXESv1_2.EfcDsrcGeneric.EfcContainer.from_uper(attr_val_bytes)
+            except AXXESv1_2.ASN1ObjErr as e:
+                obu_dsrc_perso_router_logger.critical(f'Bad EFC DSRC attribute value!! Attribute {attribute_id}: 0x{attribute_value_hex}')
+                raise e
+
         return dsrc_attributes_dict
 
 class ElementDsrcData(BaseModel):
     dsrc_asn1_attr_container_path: str = 'EfcDsrcGeneric.EfcContainer'
-    dsrcAttributesDict: dict
+    dsrcAttributesDict: DsrcAttributesDict
 
 class InvalidObuModelContractRef(Exception):
     pass
