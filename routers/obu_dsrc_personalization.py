@@ -7,14 +7,22 @@ import json
 import uuid
 import pathlib
 import logging
+from contextlib import asynccontextmanager
 
-from dsrc_l7 import dsrc_perso_l7
+from dsrc_l7 import dsrc_l7_rse, dsrc_perso_l7
 from pycrate.pycrate_asn1c.err import ASN1ObjErr
 from ASN.compiled_DSRC_instances import AXXESv1_2
 
 obu_dsrc_perso_router_logger = logging.getLogger(__name__)
 
-router = APIRouter(tags=['OBU DSRC Personalization routes'])
+@asynccontextmanager
+async def lifespan(arg_router: APIRouter):
+    print('Initializing DSRC L7 for Perso App!!')
+    await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
+    yield
+    await dsrc_l7_rse.change_trx_mode('Stopped')
+
+router = APIRouter(tags=['OBU DSRC Personalization routes'], lifespan=lifespan)
 
 perso_tasks_dirpath = pathlib.Path(f'local_file_storage/dsrc_perso_tasks')
 
