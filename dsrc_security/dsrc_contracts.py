@@ -23,12 +23,17 @@ def get_eid_in_vst_with_valid_contract_in_current_td(vst_value: dict = None) -> 
     manufacturer_id = obe_config['manufacturerID']
     dsrc_contracts_logger.info(f'OBU equipment ref: 0x{manufacturer_id:04X}{equipment_class:04X}')
 
+    obu_contract_ref_list = []
     for application_data in available_applications_list:
         app_parameter_type, app_parameter_value = application_data['parameter']
         efc_cm_bytes = app_parameter_value[0:6]
-        dsrc_contracts_logger.debug(f'EFC-CM: 0x{efc_cm_bytes.hex().upper()}')
-        
+
+        efc_cm_hex = efc_cm_bytes.hex().upper()
+        dsrc_contracts_logger.debug(f'EFC-CM: 0x{efc_cm_hex}')
+
+        obu_contract_ref = f'{efc_cm_hex}{manufacturer_id:04X}{equipment_class:04X}'
+        obu_contract_ref_list.append(obu_contract_ref)
         if is_device_info_valid_in_current_td(efc_cm_bytes, manufacturer_id, equipment_class):
-            return application_data['eid']
-    dsrc_contracts_logger.error(f'No valid EFC-CM (contract) found for the OBE with VST apps: {available_applications_list}')
-    raise NoValidObeEfcmFoundInVst(f'No valid EFC-CM (contract) found for the OBE with VST: {available_applications_list}')
+            return eid
+    dsrc_contracts_logger.error(f'No valid EFC-CM (contract) found in current Toll Domain for OBU Eq Refs: {obu_contract_ref_list}')
+    raise NoValidObeEfcmFoundInVst(f'No valid EFC-CM (contract) found in current Toll Domain for the OBU Eq Refs: {obu_contract_ref_list}')
