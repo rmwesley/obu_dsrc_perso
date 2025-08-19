@@ -12,7 +12,16 @@ from fastapi_apps.beacon_client_app import beacon_client_app
 from fastapi_apps.dsrc_transaction_data_app import transaction_data_app
 from fastapi_apps.toll_domain_zones_app import td_zones_app
 from fastapi_apps.rse_gps_sync_app import rse_gps_td_app
+
+from contextlib import asynccontextmanager, AsyncExitStack
 from fastapi_apps.personalization_app import personalization_app
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with AsyncExitStack() as stack:
+        await stack.enter_async_context(
+            personalization_app.router.lifespan_context(personalization_app)
+        )
+        yield
 
 import logging
 root_logger = logging.getLogger()
@@ -35,7 +44,7 @@ file_handler.setFormatter(file_formatter)
 root_logger.addHandler(file_handler)
 
 
-app = FastAPI(title="Main FastAPI app")
+app = FastAPI(title="Main FastAPI app", lifespan=lifespan)
 
 @app.get('/', include_in_schema=False)
 async def redirect_index_to_hmi():
