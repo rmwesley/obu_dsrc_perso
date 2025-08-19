@@ -25,11 +25,12 @@ async def get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value: d
     except dsrc_contracts.NoValidObeEfcmFoundInVst as exc:
         dsrc_l7_transactions_logger.info(f'Aborting transaction due to no valid EFC-CM in VST: {vst_value}')
         await dsrc_l7_rse.send_close_transaction_echo()
-        raise AbortedTransaction('Invalid EFC-CM!!')
+        raise AbortedTransaction('No valid EFC-CM!!')
 
 async def cardme_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
-    eid = await get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value=last_vst_value)
+    result = await get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value=last_vst_value)
+    eid = result['eid']
     if force_eid is not None:
         eid = force_eid
     # Getting payment info!! (Core part)
@@ -435,7 +436,7 @@ async def loop_transactions_on_toll_domains(beep_state=None, td_list=['TIS', 'DE
                 except dsrc_l7_rse.AbortedInitPhase as exc:
                     dsrc_l7_transactions_logger.warning('Timeout: No VST obtained!!')
             except AbortedTransaction as exc:
-                dsrc_l7_transactions_logger.error('Aborted transaction due to invalid EFC-CM!!', exc_info=True)
+                dsrc_l7_transactions_logger.error('Aborted transaction due to lack of a valid EFC-CM!!', exc_info=True)
 
             # Sleep between transactions
             time.sleep(sleep_time)
@@ -469,7 +470,7 @@ async def loop_transactions_with_default_td_and_extra_tds(beep_state=None, extra
                     except dsrc_l7_rse.AbortedInitPhase as exc:
                         print('Timeout: No VST obtained!!')
                 except AbortedTransaction as exc:
-                    print('Aborted transaction due to invalid EFC-CM!!')
+                    print(exc)
 
                 # Sleep between transactions
                 time.sleep(sleep_time)

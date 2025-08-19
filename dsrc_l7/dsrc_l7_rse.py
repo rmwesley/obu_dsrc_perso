@@ -249,10 +249,13 @@ async def initialize_transaction(
 
     await update_beacon_state()
 
-    if beacon_bac_l7_wrapper._is_transaction_in_progress():
-        bcm_logger.error("Do not try to initilize a transaction! One is already in progress!")
-        # bcm_logger.debug("We lock the thread until the opened transaction is closed!")
-        raise BeaconManagerException("Transaction already in progress!!")
+    try:
+        if beacon_bac_l7_wrapper._is_transaction_in_progress():
+            bcm_logger.error("Do not try to initilize a transaction! One is already in progress!")
+            # bcm_logger.debug("We lock the thread until the opened transaction is closed!")
+            raise BeaconManagerException("Transaction already in progress!!")
+    except:
+        send_close_transaction_echo()
 
     mand_applications = [{'aid': mandatory_aid} for mandatory_aid in mand_applications]
     bst_value = {
@@ -581,7 +584,7 @@ def get_parameter_for_eid(eid):
     # Kapsch System Element: EID 0, no VST parameter
     if eid == 0:
         bcm_logger.info(f'Kapsch System Element has no Parameter in VST!!!')
-        return {}
+        return b''
     return get_parameter_bytes_from_eid_on_vst_value(eid=eid)
 
 def decode_t_apdu_response_uper(t_apdu_with_response_bytes):
@@ -678,6 +681,51 @@ async def send_get_request(eid, accessCredentialsPresent:bool = False, attrIdLis
 
     bcm_logger.debug("We now obtain the GET.response object from the T_APDU response!")
     bcm_logger.debug("GET.response is a parameterized type, so we cannot encode/decode it, only the T_APDU!")
+
+    return response_t_apdu_value
+
+# SET.request only exists for EFC, LAC UNI (AIDs 1, 20 and 29)! Not for CCC (AID 20).
+async def send_set_request(eid, access_credentials, attrList, close_transaction=False):
+    global TApdu_container
+    aid = 1
+    # SET.Request is filled with 1 bit valued at 0
+    set_req_value = {
+        'fill': (0, 1),
+        'eid': eid,
+        'mode': True,
+        'accessCredentials': access_credentials,
+        'attrList': attrList
+    }
+
+    bcm_logger.debug(f"SET.Request value: {set_req_value}")
+
+    t_apdu_with_set_request_value = ('set-request', set_req_value)
+
+    TApdu_container = efc_asn_compilation.EfcDsrcGeneric.T_APDUs
+    response_t_apdu_value = await send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_set_request_value, close_transaction=close_transaction)
+    TApdu_container = efc_asn_compilation.EfcCcc.CccTApdus
+
+    bcm_logger.debug(f"SET.Response value: {efc_asn_compilation.EfcDsrcGeneric.T_APDUs._val[1]}")
+
+    return response_t_apdu_value
+
+async def send_set_request_with_eack_ac_cr(eid, attrList, close_transaction=False):
+    accessCredentials = compute_access_credentials_for_eid(eid)
+    # Get.Request is filled with 1 bit valued at 0
+    set_req_value = {
+        'eid': eid,
+        'accessCredentials': accessCredentials,
+        'attrList': attrList,
+        'fill': (0, 1)
+    }
+
+    efc_asn_compilation.EfcDsrcGeneric.Set_Request.set_val(set_req_value)
+    bcm_logger.debug(f"SET.Request value: {efc_asn_compilation.EfcDsrcGeneric.Set_Request._val}")
+
+    t_apdu_with_get_request_value = ('setRequest', set_req_value)
+    response_t_apdu_value = await send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_get_request_value, close_transaction=close_transaction)
+
+    bcm_logger.debug(f"SET.Response value: {efc_asn_compilation.EfcDsrcGeneric.T_APDUs._val[1]}")
 
     return response_t_apdu_value
 
