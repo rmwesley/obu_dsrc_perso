@@ -90,10 +90,6 @@ class PersoTaskData(BaseModel):
 
 @router.post('/persos/')
 def create_personalization_task(perso_task_data:PersoTaskData):
-    for eid, elementDsrcData in perso_task_data.dsrcMemoryData.items():
-        dsrcAttributesDict = elementDsrcData.dsrcAttributesDict
-        # validate_efc_toll_domain_dsrc_data(tollDomain, dsrcAttributesDict)
-
     perso_id = uuid.uuid4()
     perso_data_filepath = perso_tasks_dirpath / f'{perso_id}.json'
 
