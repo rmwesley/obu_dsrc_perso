@@ -29,12 +29,18 @@ perso_tasks_dirpath = pathlib.Path(f'local_file_storage/dsrc_perso_tasks')
 with pathlib.Path('settings/toll_domain_config.json').open('r') as json_file:
     td_conf_by_td_name = json.load(json_file)['td_conf_by_td_name']
 
-class DsrcAttributesDict(BaseModel):
+# class DsrcAttributesDict(Dict[int, str]):
+#     pass
+
+class ElementDsrcData(BaseModel):
+    dsrc_asn1_attr_container_path: str = 'EfcDsrcGeneric.EfcContainer'
+    dsrcAttributesDict: Dict[int, str]
+
     @model_validator(mode='after')
-    def check_attribute_ids(cls, dsrc_attributes_dict):
-        for attribute_id, attribute_value_hex in dsrc_attributes_dict.dict().items():
+    def check_attribute_ids_and_values(self):
+        for attribute_id, attribute_value_hex in self.dsrcAttributesDict.items():
             if attribute_id > 127 or attribute_id < 0:
-                raise AssertionError(f'Invalid Attribute Id value: {attribute_id}')
+                raise ValueError(f'Invalid Attribute Id value: {attribute_id}')
             attr_val_bytes = bytes.fromhex(attribute_value_hex)
             try:
                 AXXESv1_2.EfcDsrcGeneric.EfcContainer.from_uper(attr_val_bytes)
@@ -42,14 +48,7 @@ class DsrcAttributesDict(BaseModel):
                 obu_dsrc_perso_router_logger.critical(f'Bad EFC DSRC attribute value!! Attribute {attribute_id}: 0x{attribute_value_hex}')
                 raise e
 
-        return dsrc_attributes_dict
-
-class ElementDsrcData(BaseModel):
-    dsrc_asn1_attr_container_path: str = 'EfcDsrcGeneric.EfcContainer'
-    dsrcAttributesDict: DsrcAttributesDict
-
-class InvalidObuModelContractRef(Exception):
-    pass
+        return self
 
 class PersoTaskData(BaseModel):
     obuModelRef: str
