@@ -63,11 +63,14 @@ def compute_uset_derived_key_32_bytes_mk(uset_master_key:bytes, ac_cr_key_ref:in
 
 def compute_uset_derived_key(uset_master_key:bytes, ac_cr_key_ref:int) -> bytes:
     if len(uset_master_key) == 8:
-        return compute_uset_derived_key_8_bytes_mk(uset_master_key, ac_cr_key_ref)
+        uset_derived_key = compute_uset_derived_key_8_bytes_mk(uset_master_key, ac_cr_key_ref)
     if len(uset_master_key) == 16:
-        return compute_uset_derived_key_16_bytes_mk(uset_master_key, ac_cr_key_ref)
+        uset_derived_key = compute_uset_derived_key_16_bytes_mk(uset_master_key, ac_cr_key_ref)
     if len(uset_master_key) == 32:
-        return compute_uset_derived_key_32_bytes_mk(uset_master_key, ac_cr_key_ref)
+        uset_derived_key = compute_uset_derived_key_32_bytes_mk(uset_master_key, ac_cr_key_ref)
+
+    perso_logger.info(f"Derived USET key: 0x{uset_derived_key.hex().upper()}")
+    return uset_derived_key
 
 def compute_uset_derived_key_for_obu_model(obu_eq_ref:str, ac_cr_key_ref:int, uset_key_type=default_uset_key_type) -> bytes:
     if not uset_key_type:
