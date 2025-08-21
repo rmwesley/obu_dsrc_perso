@@ -84,7 +84,7 @@ def compute_uset_derived_key_for_obu_model(obu_eq_ref:str, ac_cr_key_ref:int, us
 
 def decrypt_uset_derived_key_8_bytes_mk(uset_master_key:bytes, ciphertext:bytes) -> bytes:
     cipher = DES.new(key=uset_master_key[0:8], mode=DES3.MODE_ECB)
-    plaintext = cipher.decrypt(ciphertext[0:8])
+    plaintext = cipher.decrypt(ciphertext[0:4])
 
     return plaintext
 
