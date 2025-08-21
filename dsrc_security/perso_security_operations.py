@@ -119,7 +119,7 @@ def decrypt_uset_derived_key_for_obu_model(obu_eq_ref:str, ciphertext:bytes, use
 
     return decrypt_uset_derived_key(uset_master_key=uset_mk_bytes, ciphertext=ciphertext)
 
-def compute_access_credentials_with_uset_key(rnd_obe:int, uset_derived_key) -> bytes:
+def compute_access_credentials_with_8_bytes_uset_key(rnd_obe:int, uset_derived_key) -> bytes:
     # Prepare the DES cipher with the derivec Access Key/USET Key
     cipher = DES.new(uset_derived_key, DES.MODE_ECB)
     # The padding is automatically added to the right of RndOBE for DES
@@ -127,10 +127,30 @@ def compute_access_credentials_with_uset_key(rnd_obe:int, uset_derived_key) -> b
     output = cipher.encrypt(rnd_obe.to_bytes(4) + bytearray(4))
 
     # We now truncate this output to the 4 left-most bytes
-    ac_cr = int.from_bytes(output[:4])
-    perso_logger.debug(f"Access Credentials in hex: {ac_cr:08X}")
+    ac_cr = output[:4]
+    perso_logger.debug(f"Access Credentials in hex: {ac_cr.hex().upper()}")
     return ac_cr
 
-def compute_access_credentials_for_obu_model(rnd_obe:int, obu_eq_ref:str, ac_cr_key_ref:int, uset_key_type=default_uset_key_type) -> bytes:
+def compute_access_credentials_with_16_bytes_uset_key(rnd_obe:int, uset_derived_key) -> bytes:
+    cipher = DES3.new(uset_derived_key, DES3.MODE_ECB)
+    output = cipher.encrypt(rnd_obe.to_bytes(4) + bytearray(4))
+
+    ac_cr = output[:4]
+    perso_logger.debug(f"Access Credentials in hex: {ac_cr.hex().upper()}")
+    return ac_cr
+compute_access_credentials_with_32_bytes_uset_key = compute_access_credentials_with_16_bytes_uset_key
+
+def compute_access_credentials_with_uset_key(rnd_obe:int, uset_derived_key) -> bytes:
+    if len(uset_derived_key) == 8:
+        ac_cr = compute_access_credentials_with_8_bytes_uset_key(rnd_obe, uset_derived_key)
+    if len(uset_derived_key) == 16:
+        ac_cr = compute_access_credentials_with_16_bytes_uset_key(rnd_obe, uset_derived_key)
+    if len(uset_derived_key) == 32:
+        ac_cr = compute_access_credentials_with_32_bytes_uset_key(rnd_obe, uset_derived_key)
+    return ac_cr
+
+def compute_access_credentials_for_obu_model(obu_eq_ref:str, ac_cr_key_ref:int, rnd_obe:int, uset_key_type=default_uset_key_type) -> bytes:
     uset_derived_key = compute_uset_derived_key_for_obu_model(obu_eq_ref, ac_cr_key_ref, uset_key_type)
     return compute_access_credentials_with_uset_key(rnd_obe, uset_derived_key)
+
+set_default_key_type('Stock')
