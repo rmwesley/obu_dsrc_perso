@@ -115,7 +115,7 @@ For example, run:
 python3 devices/dm/dm_auth_client.py
 ```
 And then copy-paste the redirect-uri in the terminal.
-The access_token will be stored in the `devices/dm/dm_access_token.txt` local file
+The access_token will be stored in the `devices/dm/local_auth_data/dm_access_token.txt` local file
 
 ## Non-regression tests execution
 After all the setup is done and the access_token is updated, run the main module in the `devices/dm_api_tester/` directory.
