@@ -129,3 +129,7 @@ def compute_access_credentials_with_uset_key(rnd_obe:int, uset_derived_key) -> b
     ac_cr = int.from_bytes(output[:4])
     perso_logger.debug(f"Access Credentials in hex: {ac_cr:08X}")
     return ac_cr
+
+def compute_access_credentials_for_obu_model(rnd_obe:int, obu_eq_ref:str, ac_cr_key_ref:int, uset_key_type=default_uset_key_type) -> bytes:
+    uset_derived_key = compute_uset_derived_key_for_obu_model(obu_eq_ref, ac_cr_key_ref, uset_key_type)
+    return compute_access_credentials_with_uset_key(rnd_obe, uset_derived_key)
