@@ -117,3 +117,15 @@ def decrypt_uset_derived_key_for_obu_model(obu_eq_ref:str, ciphertext:bytes, use
     uset_mk_bytes = bytes.fromhex(uset_mk_hex)
 
     return decrypt_uset_derived_key(uset_master_key=uset_mk_bytes, ciphertext=ciphertext)
+
+def compute_access_credentials_with_uset_key(rnd_obe:int, uset_derived_key) -> bytes:
+    # Prepare the DES cipher with the derivec Access Key/USET Key
+    cipher = DES.new(uset_derived_key, DES.MODE_ECB)
+    # The padding is automatically added to the right of RndOBE for DES
+    # We add 4 bytes of padding to the right of RndOBE
+    output = cipher.encrypt(rnd_obe.to_bytes(4) + bytearray(4))
+
+    # We now truncate this output to the 4 left-most bytes
+    ac_cr = int.from_bytes(output[:4])
+    perso_logger.debug(f"Access Credentials in hex: {ac_cr:08X}")
+    return ac_cr
