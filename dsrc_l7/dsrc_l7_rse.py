@@ -442,6 +442,7 @@ def search_json_t_apdu_exchange_data_for_attribute_value(request_t_apdu_jval, re
 
         attribute_value = search_json_get_transaction_data_for_attribute_data(get_req_jval, get_resp_jval, attribute_id)
         return attribute_value
+    return {}
 
 def search_for_obu_id_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval):
     attribute_value = search_json_t_apdu_exchange_data_for_attribute_value(request_t_apdu_jval, response_t_apdu_jval, attribute_id=24)
