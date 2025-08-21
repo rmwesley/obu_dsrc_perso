@@ -32,6 +32,7 @@ def set_default_key_type(uset_key_type:TRP_4010_20B_MK_TYPES):
 class ObuModelUnknown(Exception):
     pass
 
+# Not supported!!
 def compute_uset_derived_key_8_bytes_mk(uset_master_key:bytes, ac_cr_key_ref:int) -> bytes:
     ac_cr_key_ref_bytes = ac_cr_key_ref.to_bytes(length=2)
     plaintext = ac_cr_key_ref_bytes * 4
@@ -39,7 +40,7 @@ def compute_uset_derived_key_8_bytes_mk(uset_master_key:bytes, ac_cr_key_ref:int
     cipher = DES.new(key=uset_master_key[0:8], mode=DES3.MODE_ECB)
     ciphertext = cipher.encrypt(plaintext)
 
-    return ciphertext
+    return ciphertext * 4
 
 def compute_uset_derived_key_16_bytes_mk(uset_master_key:bytes, ac_cr_key_ref:int) -> bytes:
     ac_cr_key_ref_bytes = ac_cr_key_ref.to_bytes(length=2)
@@ -48,7 +49,7 @@ def compute_uset_derived_key_16_bytes_mk(uset_master_key:bytes, ac_cr_key_ref:in
     cipher = DES3.new(key=uset_master_key[0:16], mode=DES3.MODE_ECB)
     ciphertext = cipher.encrypt(plaintext)
 
-    return ciphertext
+    return ciphertext * 2
 
 def compute_uset_derived_key_32_bytes_mk(uset_master_key:bytes, ac_cr_key_ref:int) -> bytes:
     ac_cr_key_ref_bytes = ac_cr_key_ref.to_bytes(length=2)
