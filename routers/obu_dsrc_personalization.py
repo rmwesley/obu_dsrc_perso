@@ -130,15 +130,19 @@ async def apply_personalization_data_to_obu(perso_state:PersoTaskState, perso_id
     '''Request application of personalization to OBU through a DSRC beacon'''
 
     perso_task_data = get_perso_data(perso_id)
-    for eid, element_dsrc_data in perso_task_data.items():
-        element_dsrc_data
-    await dsrc_perso_l7.kapsch_tsp_4010_20b_pl_perso()
-    try:
-        obu_id: bytes(8)
-        obu_id_hex = obu_id.hex().upper()
-        return f'Personalization successful for OBU ID 0x{obu_id_hex}!'
-    except:
-        raise PersonalizationError(f'Personalization for {perso_id} was unsuccessful!')
+    if method == 'TRP_4010_20B_USET':
+        obu_eq_ref = '00037404'
+
+    dsrc_memory_data = {eid: el_dsrc_data.dsrcAttributesDict for eid, el_dsrc_data in perso_task_data.dsrcMemoryData.items()}
+    obu_id_hex = await dsrc_perso_l7.kapsch_trp_4010_20b_pl_perso(
+        dsrc_memory_data = dsrc_memory_data,
+        expected_obu_eq_ref = obu_eq_ref
+        )
+
+    # for eid, element_dsrc_data in perso_task_data.items():
+    #     element_dsrc_data
+    #     result = await dsrc_perso_l7.kapsch_trp_4010_20b_pl_perso_single_eid(eid, expected_obu_eq_ref=obu_eq_ref)
+    return f'Personalization successful for OBU ID 0x{obu_id_hex}!'
 
 class PersoValidationError(Exception):
     pass
