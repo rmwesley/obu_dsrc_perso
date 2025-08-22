@@ -406,15 +406,16 @@ def rename_transaction_data_file(equOBUId_hex:str='00000000'):
     transaction_data_filepath = transaction_data_filepath.rename(new_filepath)
 
 def search_json_action_transaction_data_for_attribute_data(action_request_jval, action_response_jval, attribute_id:int):
-    if 'gstrq' in action_request_jval['actionParameter']:
-        if attribute_id in action_request_jval['actionParameter']['gstrq']['attributeIdList']:
-            try:
-                for attribute_data in action_response_jval['responseParameter']['gstrs']['attributeList']:
-                    if attribute_data['attributeId'] == attribute_id:
-                        return attribute_data['attributeValue']
-            except KeyError:
-                bcm_logger.error(f'ACTION response does not contain data for Attribute Id ({attribute_id})!!')
-                return {}
+    if 'actionParameter' in action_request_jval:
+        if 'gstrq' in action_request_jval['actionParameter']:
+            if attribute_id in action_request_jval['actionParameter']['gstrq']['attributeIdList']:
+                try:
+                    for attribute_data in action_response_jval['responseParameter']['gstrs']['attributeList']:
+                        if attribute_data['attributeId'] == attribute_id:
+                            return attribute_data['attributeValue']
+                except KeyError:
+                    bcm_logger.error(f'ACTION response does not contain data for Attribute Id ({attribute_id})!!')
+                    return {}
     return {}
 
 def search_json_get_transaction_data_for_attribute_data(get_request_jval, get_response_jval, attribute_id:int):
