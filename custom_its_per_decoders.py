@@ -4,6 +4,8 @@ import baudot
 import logging
 import io
 
+custom_per_decoders_logger = logging.getLogger(__name__)
+
 # DEPRECATED
 def decode_get_response_param(response_t_apdu_value):
     custom_per_decoders_logger.debug("We now obtain the GET_STAMPED.response object from the T_APDU response!")
@@ -83,7 +85,60 @@ def decode_baudot_country_code_from_hex_str(baudot_country_code_with_msb_to_left
     baudot_country_code_with_lsb_to_right_int = int(baudot_country_code_12_bits, 16) >> 2
     return decode_baudot_country_code_from_int(baudot_country_code_with_lsb_to_right_int)
 
-custom_per_decoders_logger = logging.getLogger()
+class NoCardmeAppPresentInVst(Exception):
+    pass
+# Get EFC-CM, RndOBE and AC_CR-KeyRef values from any VST app with CARDME support!
+# If no CARDME-compliant app is present, no AC_CR-KeyRef and RndOBE will be found...
+def vst_decode_efc_cm_rnd_obe_and_ac_cr_from_any_cardme_app_in_vst(vst_value:dict):
+    for application_data in vst_value['applications']:
+        eid = application_data['eid']
+        try:
+            vst_app_param = application_data['parameter'][1]
+            if len(vst_app_param) == 16:
+                # Length 16: CARDME!! This VST Parameter contains AC_CR-KeyRef and RndOBE values!
+                return decode_efc_cm_rnd_obe_and_ac_cr_from_cardme_app_param(vst_app_param)
+        except KeyError:
+            # VST app without parameter, lookup next...
+            continue
+    raise NoCardmeAppPresentInVst('VST does not have any CARDME applications!')
+
+class EidNotFound(Exception):
+    pass
+def vst_decode_efc_cm_rnd_obe_and_ac_cr_from_cardme_app_in_vst_with_eid(eid:int, vst_value:dict):
+    for application_data in vst_value['applications']:
+        if eid == application_data['eid']:
+            try:
+                vst_app_param = application_data['parameter'][1]
+                if len(vst_app_param) == 16:
+                    # Length 16: CARDME!! This VST Parameter contains AC_CR-KeyRef and RndOBE values!
+                    return decode_efc_cm_rnd_obe_and_ac_cr_from_cardme_app_param(vst_app_param)
+            except:
+                raise NoCardmeAppPresentInVst(f'EID {eid} does not have a CARDME application!')
+    raise EidNotFound(f'EID {eid} not found in VST!')
+
+class NotCardmeVstParam(Exception):
+    pass
+def decode_efc_cm_rnd_obe_and_ac_cr_from_cardme_app_param(vst_app_param:bytes):
+    if len(vst_app_param) != 16:
+        raise NotCardmeVstParam('CARDME VST Parameter must have length 16!!!')
+
+    efc_cm_uper_bytes = vst_app_param[0:6]
+    try:
+        efc_asn_compilation.EfcDataDictionary.EfcContextMark.from_uper(vst_app_param[0:6])
+    except efc_asn_compilation.ASN1ObjErr:
+        custom_per_decoders_logger.error('Error when decode EFC-CM in VST!', exc_info=True)
+        raise NotCardmeVstParam('Invalid EFC-CM in CARDME app!')
+
+    if vst_app_param[6:8] != b'\x02\x02':
+        raise NotCardmeVstParam('AC_CR should be a OCTET STRING of length 2!')
+    ac_cr_key_ref = int.from_bytes(vst_app_param[8:10], "big")
+
+    if vst_app_param[10:12] != b'\x02\x04':
+        raise NotCardmeVstParam('RndOBE should be a OCTET STRING of length 4!')
+    rnd_obe = int.from_bytes(vst_app_param[12:16], 'big')
+
+    return efc_cm_uper_bytes, ac_cr_key_ref, rnd_obe
+
 def decode_vst_parameter_oct_str_bytes(parameter_bytes):
     custom_per_decoders_logger.debug("Decoding VST Parameter bytes...")
     parameter_size = len(parameter_bytes)
