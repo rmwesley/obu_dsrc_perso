@@ -59,7 +59,7 @@ async def send_request_to_get_eq_obu_id(eid:int):
 class ObuSetAccessDenied(Exception):
     pass
 
-async def write_dsrc_data_with_uset_key(eid:int, attribute_dict, obu_equipment_ref):
+async def write_dsrc_data_to_efc_element_with_uset_key(eid:int, attribute_dict, obu_equipment_ref):
     obu_id_hex = await send_request_to_get_eq_obu_id(eid)
 
     decoded_vst_param = dsrc_l7_rse.decode_vst_parameter_from_eid(eid=eid)
@@ -100,7 +100,7 @@ async def kapsch_trp_4010_20b_pl_perso_single_eid(eid:int, attribute_dict, expec
 
     obu_id = await dsrc_l7_rse.send_get_request(eid, attrIdList=[24]) #equOBUId
 
-    await write_dsrc_data_with_uset_key(eid, attribute_dict, obu_equipment_ref)
+    await write_dsrc_data_to_efc_element_with_uset_key(eid, attribute_dict, obu_equipment_ref)
 
     await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
 
@@ -115,7 +115,7 @@ async def kapsch_trp_4010_20b_pl_perso(dsrc_memory_data, expected_obu_eq_ref):
 
     obu_ids = set()
     for eid, attribute_dict in dsrc_memory_data.items():
-        obu_id_hex = await write_dsrc_data_with_uset_key(eid, attribute_dict, obu_equipment_ref)
+        obu_id_hex = await write_dsrc_data_to_efc_element_with_uset_key(eid, attribute_dict, obu_equipment_ref)
 
         obu_ids.add(obu_id_hex)
         if len(obu_ids) > 1:
