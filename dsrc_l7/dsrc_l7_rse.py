@@ -686,7 +686,7 @@ async def send_get_request(eid, accessCredentialsPresent:bool = False, attrIdLis
     return response_t_apdu_value
 
 # SET.request only exists for EFC, LAC UNI (AIDs 1, 20 and 29)! Not for CCC (AID 20).
-async def send_set_request(eid, access_credentials, attrList, close_transaction=False):
+async def send_set_request(eid, access_credentials:int, attrList, close_transaction=False):
     global TApdu_container
     aid = 1
     # SET.Request is filled with 1 bit valued at 0
@@ -702,9 +702,10 @@ async def send_set_request(eid, access_credentials, attrList, close_transaction=
 
     t_apdu_with_set_request_value = ('set-request', set_req_value)
 
+    prev = TApdu_container
     TApdu_container = efc_asn_compilation.EfcDsrcGeneric.T_APDUs
     response_t_apdu_value = await send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_set_request_value, close_transaction=close_transaction)
-    TApdu_container = efc_asn_compilation.EfcCcc.CccTApdus
+    TApdu_container = prev
 
     bcm_logger.debug(f"SET.Response value: {efc_asn_compilation.EfcDsrcGeneric.T_APDUs._val[1]}")
 

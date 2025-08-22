@@ -34,6 +34,10 @@ def get_eid_in_vst_with_valid_contract_in_current_td(vst_value: dict = None) -> 
         obu_contract_ref = f'{efc_cm_hex}{manufacturer_id:04X}{equipment_class:04X}'
         obu_contract_ref_list.append(obu_contract_ref)
         if is_device_info_valid_in_current_td(efc_cm_bytes, manufacturer_id, equipment_class):
-            return eid
+            return application_data['eid']
+            # return {
+            #     'eid': application_data['eid'],
+            #     'obu_contract_ref': obu_contract_ref
+            # }
     dsrc_contracts_logger.error(f'No valid EFC-CM (contract) found in current Toll Domain for OBU Eq Refs: {obu_contract_ref_list}')
     raise NoValidObeEfcmFoundInVst(f'No valid EFC-CM (contract) found in current Toll Domain for the OBU Eq Refs: {obu_contract_ref_list}')

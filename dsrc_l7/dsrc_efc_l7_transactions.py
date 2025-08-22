@@ -29,8 +29,7 @@ async def get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value: d
 
 async def cardme_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
-    result = await get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value=last_vst_value)
-    eid = result['eid']
+    eid = await get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value=last_vst_value)
     if force_eid is not None:
         eid = force_eid
     # Getting payment info!! (Core part)

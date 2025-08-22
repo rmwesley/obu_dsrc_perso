@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel, model_validator, field_validator
 from typing import Dict, List, Literal
 from enum import Enum
@@ -18,7 +18,10 @@ obu_dsrc_perso_router_logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(arg_router: APIRouter):
     print('Initializing DSRC L7 for Perso App!!')
-    await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
+    try:
+        await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
+    except Exception as e:
+        print(e)
     yield
     await dsrc_l7_rse.change_trx_mode('Stopped')
 
@@ -58,29 +61,57 @@ class PersoTaskData(BaseModel):
         "json_schema_extra": {
             "examples": [
                 {
+                    "obuModelRef": '00037404',
+                    "dsrcMemoryData": {
+                        "2": {
+                            "dsrc_asn1_attr_container_path": "EfcDsrcGeneric.EfcContainer",
+                            "dsrcAttributesDict": {
+                                "17": "3150",
+                                "18": "32000000",
+                                "19": "33005D",
+                                "20": "340C800FA00000",
+                                "22": "3620000024"
+                            }
+                        }
+                    }
+                },
+                {
+                    "obuModelRef": '00037404',
+                    "dsrcMemoryData": {
+                        "2": {
+                            "dsrc_asn1_attr_container_path": "EfcDsrcGeneric.EfcContainer",
+                            "dsrcAttributesDict": {
+                                "17": "3151",
+                                "18": "32000000",
+                                "19": "33001A",
+                                "20": "34070811300000",
+                                "22": "3660000024"
+                            }
+                        }
+                    }
+                },
+                {
                     "obuModelRef": '00075113',
                     "dsrcMemoryData": {
                         "4": {
                             "dsrc_asn1_attr_container_path": "EfcDsrcGeneric.EfcContainer",
                             "dsrcAttributesDict": {
-                                "17": "3120",
-                                "18": "32202020",
-                                "19": "332020",
-                                "20": "34202020202020",
-                                "21": "352020",
-                                "22": "3620202020"
-                                }
+                                "17": "3150",
+                                "18": "32000000",
+                                "19": "33001A",
+                                "20": "34070811300000",
+                                "22": "3660000024"
+                            }
                         },
                         "7": {
                             "dsrc_asn1_attr_container_path": "EfcDsrcGeneric.EfcContainer",
                             "dsrcAttributesDict": {
-                                "17": "3120",
-                                "18": "32202020",
-                                "19": "332020",
-                                "20": "34202020202020",
-                                "21": "352020",
-                                "22": "3620202020"
-                                }
+                                "17": "3150",
+                                "18": "32000000",
+                                "19": "33001A",
+                                "20": "34070811300000",
+                                "22": "3660000024"
+                            }
                         }
                     }
                 }
@@ -120,7 +151,8 @@ def get_perso_data(perso_id: str) -> PersoTaskData:
     perso_data_filepath = perso_tasks_dirpath / f'{perso_id}.json'
 
     with perso_data_filepath.open('r') as json_file:
-        perso_task_data = PersoTaskData.parse_file(json_file)
+        json_str = json_file.read()
+        perso_task_data = PersoTaskData.model_validate_json(json_str)
     return perso_task_data
 
 # PersoMethods = Literal['TRP_4010_20B_USET']

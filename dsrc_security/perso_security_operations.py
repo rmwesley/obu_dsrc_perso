@@ -6,16 +6,16 @@ import typing
 
 perso_logger = logging.getLogger(__name__)
 
-with open('../security_info/tsp_obu_setup/axxes_kapsch_tis_uset_master_keysets_v1.0.0.json', 'r') as json_file:
+with open('../security_info/tsp_obu_setup/axxes_kapsch_tis_uset_master_keysets_v1.2.0.json', 'r') as json_file:
     uset_master_keysets = json.load(json_file)
 
 uset_mks_by_obu_ref = {}
-with open('../security_info/tsp_obu_setup/axxes_keyset_name_by_obu_model_v1.0.0.json', 'r') as json_file:
+with open('../security_info/tsp_obu_setup/axxes_keyset_name_by_obu_model_v1.1.0.json', 'r') as json_file:
     perso_config = json.load(json_file)
     for obu_ref, keyset_name in perso_config.items():
         uset_mks_by_obu_ref[obu_ref] = uset_master_keysets[keyset_name]
-        
-default_uset_key_type = 'Stock'
+
+default_uset_key_type = 'Exploit'
 TRP_4010_20B_MK_TYPES = typing.Literal['Factory', 'Stock', 'Exploit']
 def set_default_key_type(uset_key_type:TRP_4010_20B_MK_TYPES):
     global default_uset_key_type
@@ -40,7 +40,7 @@ def compute_uset_derived_key_8_bytes_mk(uset_master_key:bytes, ac_cr_key_ref:int
     cipher = DES.new(key=uset_master_key[0:8], mode=DES3.MODE_ECB)
     ciphertext = cipher.encrypt(plaintext)
 
-    return ciphertext * 4
+    return ciphertext
 
 def compute_uset_derived_key_16_bytes_mk(uset_master_key:bytes, ac_cr_key_ref:int) -> bytes:
     ac_cr_key_ref_bytes = ac_cr_key_ref.to_bytes(length=2)
@@ -49,7 +49,7 @@ def compute_uset_derived_key_16_bytes_mk(uset_master_key:bytes, ac_cr_key_ref:in
     cipher = DES3.new(key=uset_master_key[0:16], mode=DES3.MODE_ECB)
     ciphertext = cipher.encrypt(plaintext)
 
-    return ciphertext * 2
+    return ciphertext
 
 def compute_uset_derived_key_32_bytes_mk(uset_master_key:bytes, ac_cr_key_ref:int) -> bytes:
     ac_cr_key_ref_bytes = ac_cr_key_ref.to_bytes(length=2)
@@ -132,6 +132,7 @@ def compute_access_credentials_with_8_bytes_uset_key(rnd_obe:int, uset_derived_k
     return ac_cr
 
 def compute_access_credentials_with_16_bytes_uset_key(rnd_obe:int, uset_derived_key) -> bytes:
+    print(uset_derived_key)
     cipher = DES3.new(uset_derived_key, DES3.MODE_ECB)
     output = cipher.encrypt(rnd_obe.to_bytes(4) + bytearray(4))
 
