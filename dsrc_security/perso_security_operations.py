@@ -15,7 +15,7 @@ with open('../security_info/tsp_obu_setup/axxes_keyset_name_by_obu_model_v1.1.0.
     for obu_ref, keyset_name in perso_config.items():
         uset_mks_by_obu_ref[obu_ref] = {}
         for env_name, env_master_uset_key_info in uset_master_keysets[keyset_name].items():
-            uset_mks_by_obu_ref[obu_ref][env_name] = env_master_uset_key_info['mk_hex_value']
+            uset_mks_by_obu_ref[obu_ref][env_name] = bytes.fromhex(env_master_uset_key_info['mk_hex_value'])
 
 default_uset_key_type = 'Exploit'
 TRP_4010_20B_MK_TYPES = typing.Literal['Factory', 'Stock', 'Exploit']
@@ -79,8 +79,7 @@ def compute_uset_derived_key_for_obu_model(obu_eq_ref:str, ac_cr_key_ref:int, us
     if not uset_key_type:
         uset_key_type = default_uset_key_type
 
-    uset_mk_hex = uset_mks_by_obu_ref[obu_eq_ref][uset_key_type]
-    uset_mk_bytes = bytes.fromhex(uset_mk_hex)
+    uset_mk_bytes = uset_mks_by_obu_ref[obu_eq_ref][uset_key_type]
 
     return compute_uset_derived_key(uset_master_key=uset_mk_bytes, ac_cr_key_ref=ac_cr_key_ref)
 
@@ -116,8 +115,7 @@ def decrypt_uset_derived_key_for_obu_model(obu_eq_ref:str, ciphertext:bytes, use
     if not uset_key_type:
         uset_key_type = default_uset_key_type
 
-    uset_mk_hex = uset_mks_by_obu_ref[obu_eq_ref][uset_key_type]
-    uset_mk_bytes = bytes.fromhex(uset_mk_hex)
+    uset_mk_bytes = bytes.fromhex(uset_mks_by_obu_ref[obu_eq_ref][uset_key_type])
 
     return decrypt_uset_derived_key(uset_master_key=uset_mk_bytes, ciphertext=ciphertext)
 
