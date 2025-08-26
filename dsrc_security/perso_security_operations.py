@@ -6,7 +6,7 @@ import typing
 
 perso_logger = logging.getLogger(__name__)
 
-with open('../security_info/tsp_obu_setup/axxes_kapsch_tis_uset_master_keysets_v2.0.0.json', 'r') as json_file:
+with open('../security_info/tsp_obu_setup/axxes_kapsch_uset_master_keysets_v2.0.0.json', 'r') as json_file:
     uset_master_keysets = json.load(json_file)
 
 uset_mks_by_obu_ref = {}
