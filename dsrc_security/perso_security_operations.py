@@ -132,7 +132,7 @@ def compute_access_credentials_with_8_bytes_uset_key(rnd_obe:int, uset_derived_k
     return ac_cr
 
 def compute_access_credentials_with_16_bytes_uset_key(rnd_obe:int, uset_derived_key) -> bytes:
-    print(uset_derived_key)
+    # print(uset_derived_key)
     cipher = DES3.new(uset_derived_key, DES3.MODE_ECB)
     output = cipher.encrypt(rnd_obe.to_bytes(4) + bytearray(4))
 
@@ -143,15 +143,13 @@ compute_access_credentials_with_32_bytes_uset_key = compute_access_credentials_w
 
 def compute_access_credentials_with_uset_key(rnd_obe:int, uset_derived_key) -> bytes:
     if len(uset_derived_key) == 8:
-        ac_cr = compute_access_credentials_with_8_bytes_uset_key(rnd_obe, uset_derived_key)
+        uset_ac_cr = compute_access_credentials_with_8_bytes_uset_key(rnd_obe, uset_derived_key)
     if len(uset_derived_key) == 16:
-        ac_cr = compute_access_credentials_with_16_bytes_uset_key(rnd_obe, uset_derived_key)
+        uset_ac_cr = compute_access_credentials_with_16_bytes_uset_key(rnd_obe, uset_derived_key)
     if len(uset_derived_key) == 32:
-        ac_cr = compute_access_credentials_with_32_bytes_uset_key(rnd_obe, uset_derived_key)
-    return ac_cr
+        uset_ac_cr = compute_access_credentials_with_32_bytes_uset_key(rnd_obe, uset_derived_key)
+    return uset_ac_cr
 
-def compute_access_credentials_for_obu_model(obu_eq_ref:str, ac_cr_key_ref:int, rnd_obe:int, uset_key_type=default_uset_key_type) -> bytes:
+def compute_kapsch_uset_access_credentials_for_obu_model(obu_eq_ref:str, ac_cr_key_ref:int, rnd_obe:int, uset_key_type=default_uset_key_type) -> bytes:
     uset_derived_key = compute_uset_derived_key_for_obu_model(obu_eq_ref, ac_cr_key_ref, uset_key_type)
     return compute_access_credentials_with_uset_key(rnd_obe, uset_derived_key)
-
-set_default_key_type('Stock')
