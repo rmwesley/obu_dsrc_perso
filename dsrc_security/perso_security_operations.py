@@ -23,14 +23,6 @@ def set_default_key_type(uset_key_type:TRP_4010_20B_MK_TYPES):
     global default_uset_key_type
     default_uset_key_type = uset_key_type
 
-# def notify_obu_with_no_contract(obu_eq_ref:str):
-#     efc_cm = obu_eq_ref[0:12]
-#     if efc_cm in ['00000000000000', '010101010101', '020202020202', '030303030303']:
-#         raise NoValidObeEfcmFoundInVst(f'OBU has invalid EFC-CM: (0x{efc_cm_hex})!')
-
-# def get_mks_from_keyset_name(keyset_name):
-#     return master_keys[keyset_name]
-
 class ObuModelUnknown(Exception):
     pass
 

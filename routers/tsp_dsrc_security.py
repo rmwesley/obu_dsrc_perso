@@ -82,3 +82,39 @@ def decrypt_uset_key(req_body: UsetDerivedKeyDecryptionReq):
         ciphertext=ciphertext,
         uset_key_type=req_body.uset_key_type)
     return plaintext_bytes.hex().upper()
+
+class ComputeUsetAcCr(BaseModel):
+    obu_eq_ref: str
+    ac_cr_key_ref_hex: str
+    rnd_obe_hex: str
+    uset_key_type: perso_security_operations.TRP_4010_20B_MK_TYPES | None
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "obu_eq_ref": "00037404",
+                    "ac_cr_key_ref_hex": "0053",
+                    "rnd_obe_hex": "257B EF72",
+                    "uset_key_type": "Exploit"
+                },
+                {
+                    "obu_eq_ref": "00037404",
+                    "ac_cr_key_ref_hex": "0053",
+                    "rnd_obe_hex": "3F9D A89C",
+                    "uset_key_type": "Stock"
+                }
+            ]
+        }
+    }
+
+@router.post("/compute_uset_ac_cr")
+def compute_uset_ac_cr(req_body: ComputeUsetAcCr):
+    ac_cr_key_ref = int.from_bytes(bytes.fromhex(req_body.ac_cr_key_ref_hex))
+    rnd_obe = int.from_bytes(bytes.fromhex(req_body.rnd_obe_hex))
+    plaintext_bytes = perso_security_operations.compute_kapsch_uset_access_credentials_for_obu_model(
+        obu_eq_ref=req_body.obu_eq_ref,
+        ac_cr_key_ref=ac_cr_key_ref,
+        rnd_obe=rnd_obe,
+        uset_key_type=req_body.uset_key_type)
+    return plaintext_bytes.hex().upper()
