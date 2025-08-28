@@ -171,8 +171,6 @@ def get_perso_data(perso_id: str) -> PersoTaskData:
         perso_task_data = PersoTaskData.model_validate_json(json_str)
     return perso_task_data
 
-# PersoMethods = Literal['TRP_4010_20B_USET']
-# async def apply_personalization_data_to_obu(perso_state:PersoTaskState, perso_id:str, perso_method: PersoMethods):
 @router.post('/persos/{perso_id}/kapsch_dsrc_uset_perso_apply/')
 async def apply_kapsch_personalization_data_to_obu(perso_id:str, obu_eq_ref = '00037404', uset_key_type:str = 'Stock'):
     '''Request application of personalization to OBU through a DSRC beacon'''
@@ -186,10 +184,9 @@ async def apply_kapsch_personalization_data_to_obu(perso_id:str, obu_eq_ref = '0
         uset_key_type = uset_key_type
         )
 
-    # for eid, element_dsrc_data in perso_task_data.items():
-    #     element_dsrc_data
-    #     result = await dsrc_perso_l7.kapsch_trp_4010_20b_pl_perso_single_eid(eid, expected_obu_eq_ref=obu_eq_ref)
-    return f'Personalization successful for OBU ID 0x{obu_id_hex}!'
+    return {
+        'equOBUId_hex': obu_id_hex
+    }
 
 class PersoValidationError(Exception):
     pass
