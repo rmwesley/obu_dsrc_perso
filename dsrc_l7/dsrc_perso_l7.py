@@ -3,6 +3,7 @@ import typing
 
 from dsrc_l7 import dsrc_l7_rse
 from dsrc_security import dsrc_contracts, perso_security_operations
+import custom_its_per_decoders
 
 from ASN.compiled_DSRC_instances import AXXESv1_2
 
@@ -43,6 +44,52 @@ async def send_set_request(eid, access_credentials, attrList, close_transaction=
     dsrc_l7_perso_logger.debug(f"SET.Response value: {AXXESv1_2.EfcDsrcGeneric.T_APDUs._val[1]}")
 
     return response_t_apdu_value
+
+class AcCrKeyRefNotFound(Exception):
+    pass
+async def get_rnd_obe_and_ac_cr_key_ref_for_obe_from_cardme_app_in_vst(serial_number=None):
+    try:
+        # Works only if the OBU has an active CARDME application being presented in its VST!!
+        cardme_eid, efc_cm, ac_cr_key_ref, rnd_obe = custom_its_per_decoders.vst_decode_eid_efc_cm_rnd_obe_and_ac_cr_from_any_cardme_app_in_vst(dsrc_l7_rse.last_vst_value)
+        return ac_cr_key_ref, rnd_obe
+    except custom_its_per_decoders.NoCardmeAppPresentInVst:
+        dsrc_l7_perso_logger.warning('No CARDME apps were presented in VST!!')
+    if serial_number is not None:
+        # An OBU Serial Number was manually scanned and inputted to the script!!
+        # We can derive the AC_CR-KeyRef from the corresponding Equipment OBU ID!!
+        ac_cr_key_ref = compute_kapsch_ac_cr_key_ref_from_serial_number(serial_number)
+    else:
+        # Worst case scenario: No CARDME app in VST and no manually scanned Serial Number!
+        # Tryhard method: GET.request to Attribute 24 (equOBUId) on all available EIDs!!!
+        eq_obu_id = try_to_get_obu_id_from_any_eid_in_last_vst()
+        if eq_obu_id is None:
+            raise AcCrKeyRefNotFound("Please scan the OBU's serial number so we can determine its AC_CR-KeyRef! The OBU ID is not present in any EID...")
+        ac_cr_key_ref = compute_kapsch_ac_cr_key_ref_from_eq_obu_id(eq_obu_id)
+    # Good! Now we have the AC_CR-KeyRef! Onto the RndOBE value...
+    rnd_obe = await send_get_nonce_action_req_and_decode_rnd_obe_value(eid=0)
+    return ac_cr_key_ref, rnd_obe
+
+async def get_ac_cr_key_ref_from_any_cardme_app_and_rnd_obe_with_get_nonce(serial_number=None):
+    try:
+        # Works only if the OBU has an active CARDME application being presented in its VST!!
+        cardme_eid, efc_cm, ac_cr_key_ref, rnd_obe = custom_its_per_decoders.vst_decode_eid_efc_cm_rnd_obe_and_ac_cr_from_any_cardme_app_in_vst(dsrc_l7_rse.last_vst_value)
+    except custom_its_per_decoders.NoCardmeAppPresentInVst:
+        dsrc_l7_perso_logger.warning('No CARDME apps were presented in VST!!')
+    rnd_obe = await send_get_nonce_action_req_and_decode_rnd_obe_value(eid=0)
+    return ac_cr_key_ref, rnd_obe
+
+async def get_rnd_obe_and_ac_cr_key_ref_for_obe_element_or_another_cardme_elment_with_rnd_obe_set_to_0(eid:int, scanned_serial_number='0300000000002533') -> tuple[int, int]:
+    try:
+        # Works only if the OBU has an active CARDME application being presented in its VST!!
+        cardme_eid, efc_cm, ac_cr_key_ref, rnd_obe = custom_its_per_decoders.vst_decode_eid_efc_cm_rnd_obe_and_ac_cr_from_any_cardme_app_in_vst(dsrc_l7_rse.last_vst_value)
+        if cardme_eid != eid:
+            # AC_CR-KeyRef is a global value, but not rnd_obe...
+            rnd_obe = 0
+    except (custom_its_per_decoders.VstAppNotCardme, custom_its_per_decoders.EidNotFound):
+        dsrc_l7_perso_logger.warning(f'VST app with EID {eid} is not CARDME')
+        ac_cr_key_ref = 0
+        rnd_obe = 0
+    return ac_cr_key_ref, rnd_obe
 
 async def send_request_to_get_eq_obu_id(eid:int):
     if eid == 0:
