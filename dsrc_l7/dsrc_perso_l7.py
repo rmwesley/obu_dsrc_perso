@@ -176,20 +176,40 @@ async def perso_kapsch_element_with_uset(eid, obu_equipment_ref, attribute_dict,
     uset_access_credentials = perso_security_operations.compute_kapsch_uset_access_credentials_for_obu_model(obu_equipment_ref, ac_cr_key_ref, rnd_obe, uset_key_type)
     await write_dsrc_data_to_kapsch_efc_element_with_kapsch_uset_ac_cr(eid, attribute_dict, uset_access_credentials)
 
-async def kapsch_trp_4010_20b_pl_perso(dsrc_memory_data, expected_obu_eq_ref):
+async def kapsch_trp_4010_20b_pl_perso(dsrc_memory_data, expected_obu_eq_ref, uset_key_type=None, scanned_serial_number=None):
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=[0, 1])
     obu_equipment_ref = get_obu_model_from_vst_data(last_vst_value)
+    obu_id_hex = await try_to_get_obu_id_from_any_eid_in_last_vst()
 
     if obu_equipment_ref != expected_obu_eq_ref:
         raise WrongObuModel(f'Bad OBU ManufacturerId and/or EquipmentClass values!\nExpected: {expected_obu_eq_ref}. Obtained: {obu_equipment_ref}')
 
-    obu_ids = set()
+    # system_element_attrs = None
     for eid, attribute_dict in dsrc_memory_data.items():
-        obu_id_hex = await write_dsrc_data_to_efc_element_with_uset_key(eid, attribute_dict, obu_equipment_ref)
+        if eid == 0:
+            # Kapsch System Element!!!
+            # Leave it for later, since it uses a specific Access Key, not the USET key.
+            continue
 
-        obu_ids.add(obu_id_hex)
-        if len(obu_ids) > 1:
-            dsrc_l7_perso_logger.critical(f'OBU ID different between DSRC Elements during personalization!!! Current EID: {eid}. OBU IDs: {obu_ids}')
+        dsrc_l7_rse.get_parameter_for_eid(eid)
+        # if eid == 0:
+        #     # Kapsch System Element!!!
+        #     # Leave it for later, since it does not have the AC_CR-KeyRef value in the VST parameter!!
+        #     # We can also get the expected AC_CR-KeyRef from the OBU's serial number or equOBUId!!
+        #     system_element_attrs = attribute_dict
+        #     continue
+        perso_kapsch_element_with_uset(eid, obu_equipment_ref, attribute_dict, uset_key_type=uset_key_type, scanned_serial_number=scanned_serial_number)
+
+        # obu_ids.add(obu_id_hex)
+        # if len(obu_ids) > 1:
+        #     dsrc_l7_perso_logger.critical(f'OBU ID different between DSRC Elements during personalization!!! Current EID: {eid}. OBU IDs: {obu_ids}')
+
+    # if system_element_attrs is not None:
+    if 0 in dsrc_memory_data:
+        # Setup System Element
+        # Kapsch System Element uses AcK, not USET
+        system_element_attrs = dsrc_memory_data[0]
+        await perso_kapsch_element_with_uset(0, obu_equipment_ref, system_element_attrs, uset_key_type='SystemElementAcK', scanned_serial_number=scanned_serial_number)
 
     await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
 
