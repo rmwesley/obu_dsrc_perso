@@ -1,4 +1,3 @@
-# from ASN.compiled_DSRC_instances import LACv2_1 as efc_asn_compilation
 from ASN.compiled_DSRC_instances import AXXESv1_2 as efc_asn_compilation
 import baudot
 import logging
@@ -174,57 +173,6 @@ def decode_vst_parameter_oct_str_bytes(parameter_bytes):
         raise Exception(f"Invalid Parameter length {parameter_size} in VST!!")
     custom_per_decoders_logger.info(f"Decoded VST Parameter value: {decoded_vst_parameter}")
     return decoded_vst_parameter
-
-# class SystemElementNotFoundException(Exception):
-#     pass
-
-# def get_kapsch_system_element_vst_param_bytes(vst_value) -> bytes:
-#     custom_per_decoders_logger.debug(f"Getting Kapsch VST parameter bytes for EID 0 (System Element) from VST value {vst_value}")
-#     for application in vst_value['applications']:
-#         custom_per_decoders_logger.debug(f"Application details: {application}")
-#         if application['eid'] == 0:
-#             parameter_value = application['parameter'][1]
-#             custom_per_decoders_logger.info(f"Found EID 0 in VST!!! Parameter value in hex: {parameter_value.hex().upper()}")
-#             return parameter_value
-#     custom_per_decoders_logger.error(f"EID 0 is not present!")
-#     raise SystemElementNotFoundException(f'L7: EID 0 (Kapsch System Element) not present!')
-
-# def decode_kapsch_system_element_vst_param(kapsch_sys_el_vst_param_bytes):
-#     custom_per_decoders_logger.debug("Decoding Kapsch System Element VST Parameter bytes...")
-#     parameter_size = len(kapsch_sys_el_vst_param_bytes)
-#     if parameter_size != 10:
-#         raise Exception(f"Invalid Parameter length {parameter_size} in VST!!")
-#         raise
-#         efc_cm_uper_bytes = kapsch_sys_el_vst_param_bytes[0:6]
-#         efc_asn_compilation.EfcDataDictionary.EfcContextMark.from_uper(efc_cm_uper_bytes)
-#         custom_per_decoders_logger.debug(f"EFC-CM value: {efc_asn_compilation.EfcDataDictionary.EfcContextMark._val}")
-
-#         if kapsch_sys_el_vst_param_bytes[6:8] != b"\x02\x02":
-#             raise Exception("Incorrect container choice and size for AC_CR-Reference!!")
-#         ac_cr_reference = int.from_bytes(kapsch_sys_el_vst_param_bytes[8:10], "big")
-#         if kapsch_sys_el_vst_param_bytes[10:12] != b"\x02\x04":
-#             raise Exception("Incorrect container choice and size for RndOBE!!")
-#         rnd_obe = int.from_bytes(kapsch_sys_el_vst_param_bytes[12:16], 'big')
-#         decoded_vst_parameter = {
-#             "EFC-ContextMark": efc_cm_uper_bytes.hex().upper(),
-#             "AC_CR-KeyReference": ac_cr_reference,
-#             "RndOBE": rnd_obe
-#             }
-#     elif parameter_size == 6:
-#         efc_cm_uper_bytes = kapsch_sys_el_vst_param_bytes[0:6]
-#         efc_asn_compilation.EfcDataDictionary.EfcContextMark.from_uper(efc_cm_uper_bytes)
-#         custom_per_decoders_logger.debug(f"EFC-CM value: {efc_asn_compilation.EfcDataDictionary.EfcContextMark._val}")
-#         decoded_vst_parameter = {
-#             "EFC-ContextMark": efc_cm_uper_bytes.hex(),
-#             }
-#     custom_per_decoders_logger.info(f"Decoded VST Parameter value: {decoded_vst_parameter}")
-#     return decoded_vst_parameter
-
-# def contract_provider_hex_str_to_iso3166_numeric(contract_provider:str) -> int:
-#     # first_5bits = (country_code >> 11) & 0b11111
-#     # second_5bits = (country_code >> 6) & 0b11111
-#     iso3166_alpha2 = custom_its_per_decoders.decode_baudot_country_code(contract_provider)
-#     iso3166_numeric3_dec_str = iso3166.countries_by_alpha2.get(iso3166_alpha2).numeric
 
 def decode_jer_dsrc_wgs_84_lat_long(signed_lat_long_int:int) -> str:
     # signed_lat_long_int += 2 << 30
