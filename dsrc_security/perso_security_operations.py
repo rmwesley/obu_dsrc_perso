@@ -6,7 +6,7 @@ import typing
 
 perso_logger = logging.getLogger(__name__)
 
-with open('../security_info/tsp_obu_setup/axxes_kapsch_uset_master_keysets_v2.0.0.json', 'r') as json_file:
+with open('../security_info/tsp_obu_setup/axxes_kapsch_uset_master_keysets_v2.1.1.json', 'r') as json_file:
     uset_master_keysets = json.load(json_file)
 
 uset_mks_by_obu_ref = {}
@@ -18,7 +18,7 @@ with open('../security_info/tsp_obu_setup/axxes_keyset_name_by_obu_model_v1.1.0.
             uset_mks_by_obu_ref[obu_ref][env_name] = bytes.fromhex(env_master_uset_key_info['mk_hex_value'])
 
 default_uset_key_type = 'Exploit'
-TRP_4010_20B_MK_TYPES = typing.Literal['Factory', 'Stock', 'Exploit']
+TRP_4010_20B_MK_TYPES = typing.Literal['SystemElementAcK', 'Stock', 'Exploit']
 def set_default_key_type(uset_key_type:TRP_4010_20B_MK_TYPES):
     global default_uset_key_type
     default_uset_key_type = uset_key_type
