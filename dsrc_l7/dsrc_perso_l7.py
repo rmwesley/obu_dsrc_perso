@@ -184,27 +184,13 @@ async def kapsch_trp_4010_20b_pl_perso(dsrc_memory_data, expected_obu_eq_ref, us
     if obu_equipment_ref != expected_obu_eq_ref:
         raise WrongObuModel(f'Bad OBU ManufacturerId and/or EquipmentClass values!\nExpected: {expected_obu_eq_ref}. Obtained: {obu_equipment_ref}')
 
-    # system_element_attrs = None
     for eid, attribute_dict in dsrc_memory_data.items():
         if eid == 0:
-            # Kapsch System Element!!!
-            # Leave it for later, since it uses a specific Access Key, not the USET key.
             continue
 
         dsrc_l7_rse.get_parameter_for_eid(eid)
-        # if eid == 0:
-        #     # Kapsch System Element!!!
-        #     # Leave it for later, since it does not have the AC_CR-KeyRef value in the VST parameter!!
-        #     # We can also get the expected AC_CR-KeyRef from the OBU's serial number or equOBUId!!
-        #     system_element_attrs = attribute_dict
-        #     continue
         perso_kapsch_element_with_uset(eid, obu_equipment_ref, attribute_dict, uset_key_type=uset_key_type, scanned_serial_number=scanned_serial_number)
 
-        # obu_ids.add(obu_id_hex)
-        # if len(obu_ids) > 1:
-        #     dsrc_l7_perso_logger.critical(f'OBU ID different between DSRC Elements during personalization!!! Current EID: {eid}. OBU IDs: {obu_ids}')
-
-    # if system_element_attrs is not None:
     if 0 in dsrc_memory_data:
         # Setup System Element
         # Kapsch System Element uses AcK, not USET
