@@ -77,28 +77,6 @@ async def get_ac_cr_key_ref_from_any_cardme_app_and_rnd_obe_with_get_nonce(seria
     rnd_obe = await send_get_nonce_action_req_and_decode_rnd_obe_value(eid=0)
     return ac_cr_key_ref, rnd_obe
 
-# async def get_rnd_obe_and_ac_cr_key_ref_for_obe_element(eid:int, scanned_serial_number='0300000000002533') -> tuple[int, int]:
-#     try:
-#         # Works only if the VST application is CARDME!!
-#         cardme_eid, efc_cm, ac_cr_key_ref, rnd_obe = custom_its_per_decoders.vst_decode_efc_cm_rnd_obe_and_ac_cr_from_cardme_app_in_vst_with_eid(eid, dsrc_l7_rse.last_vst_value)
-#         return ac_cr_key_ref, rnd_obe
-#     except (custom_its_per_decoders.VstAppNotCardme, custom_its_per_decoders.EidNotFound):
-#         dsrc_l7_perso_logger.warning(f'VST app with EID {eid} is not CARDME')
-#     if scanned_serial_number is not None:
-#         # An OBU Serial Number was manually scanned and inputted to the script!!
-#         # We can derive the AC_CR-KeyRef from the corresponding Equipment OBU ID!!
-#         ac_cr_key_ref = compute_kapsch_ac_cr_key_ref_from_serial_number(scanned_serial_number)
-#     else:
-#         # Worst case scenario: VST app is not CARDME and no manually scanned Serial Number was provided!
-#         # Tryhard method: GET.request to Attribute 24 (equOBUId) on all available EIDs!!!
-#         eq_obu_id_hex = await try_to_get_obu_id_from_any_eid_in_last_vst()
-#         if eq_obu_id_hex is None:
-#             raise AcCrKeyRefNotFound("Please scan the OBU's serial number so we can determine its AC_CR-KeyRef! The OBU ID is not present in any EID...")
-#         ac_cr_key_ref = compute_kapsch_ac_cr_key_ref_from_eq_obu_id(eq_obu_id_hex)
-#     # Good! Now we have the AC_CR-KeyRef! Onto the RndOBE value...
-#     rnd_obe = await send_get_nonce_action_req_and_decode_rnd_obe_value(eid=eid)
-#     return ac_cr_key_ref, rnd_obe
-
 async def get_rnd_obe_and_ac_cr_key_ref_for_obe_element_or_another_cardme_elment_with_rnd_obe_set_to_0(eid:int, scanned_serial_number='0300000000002533') -> tuple[int, int]:
     try:
         # Works only if the OBU has an active CARDME application being presented in its VST!!
@@ -111,20 +89,6 @@ async def get_rnd_obe_and_ac_cr_key_ref_for_obe_element_or_another_cardme_elment
         ac_cr_key_ref = 0
         rnd_obe = 0
     return ac_cr_key_ref, rnd_obe
-
-# Doesn't work! AC_CR-KeyRef value is protected in Kapsch's SystemElement!!!
-# async def send_request_to_get_kapsch_ac_cr_key_ref():
-#     response_t_apdu_jval = await dsrc_l7_rse.send_get_request(eid=0, attrIdList=[17])
-#     get_resp_jval = response_t_apdu_jval['getResponse']
-
-#     if 'ret' in get_resp_jval:
-#         if get_resp_jval['ret'] != 0:
-#             raise Exception(f'GET.response ReturnStatus({get_resp_jval['ret']})')
-#     for attribute_data in get_resp_jval['attributelist']:
-#         if attribute_data['attributeId'] == 17:
-#             ac_cr_key_ref_bytes = attribute_data['attributeValue']['octetstring']
-#             ac_cr_key_ref = int.from_bytes(ac_cr_key_ref_bytes)
-#             return ac_cr_key_ref
 
 # Get RndOBE by sending a GET_NONCE.request to the OBE!!
 async def send_get_nonce_action_req(eid):
@@ -169,23 +133,6 @@ async def try_to_get_obu_id_from_any_eid_in_last_vst():
         if eq_obu_id is not None:
             return eq_obu_id
 
-# All functions to compute AC_CR-KeyRef from OBU ID/Serial Number seem incorrect!!
-# def compute_kapsch_ac_cr_key_ref_from_eq_obu_id(eq_obu_id: bytes | str) -> int:
-#     if type(eq_obu_id) == str:
-#         eq_obu_id_bytes = bytes.fromhex(eq_obu_id)
-#     elif type(eq_obu_id) == bytes:
-#         eq_obu_id_bytes = eq_obu_id
-#     ac_cr_keyref = (eq_obu_id_bytes[3] + 1) % 0xFF
-#     return ac_cr_keyref
-
-# def compute_kapsch_eq_obu_id_from_serial_number(serial_number: str) -> bytes:
-#     # Kapsch TRP (transponder) serial number format: 03 (Kapsch) XXXXXXXXXX (OBU ID) YYWW (Production week)
-#     eq_obu_id_dec_str = serial_number[2:10]
-#     return int(eq_obu_id_dec_str, 10).to_bytes(4)
-
-# def compute_kapsch_ac_cr_key_ref_from_serial_number(serial_number: str) -> int:
-#     return compute_kapsch_ac_cr_key_ref_from_eq_obu_id(compute_kapsch_eq_obu_id_from_serial_number(serial_number))
-
 class ObuSetAccessDenied(Exception):
     pass
 
@@ -208,34 +155,6 @@ async def write_dsrc_data_to_kapsch_efc_element_with_kapsch_uset_ac_cr(eid:int, 
 
     await dsrc_l7_rse.set_mmi(eid=eid)
 
-# async def use_ac_cr_key_ref_to_write_dsrc_data_to_kapsch_efc_element(eid:int, attribute_dict, obu_equipment_ref, ac_cr_key_ref:int):
-#     rnd_obe = await send_get_nonce_action_req_and_decode_rnd_obe_value(eid=0)
-#     access_credentials = perso_security_operations.compute_kapsch_uset_access_credentials_for_obu_model(obu_equipment_ref, ac_cr_key_ref, rnd_obe)
-
-#     return write_dsrc_data_to_kapsch_efc_element_with_kapsch_uset_ac_cr(eid, attribute_dict, access_credentials)
-
-# async def get_security_info_and_write_dsrc_data_to_kapsch_efc_element_with_uset_key(eid:int, attribute_dict, obu_equipment_ref):
-#     rnd_obe = await send_get_nonce_action_req_and_decode_rnd_obe_value(eid=0)
-#     ac_cr_key_ref = compute_kapsch_ac_cr_key_ref_from_eq_obu_id()
-#     access_credentials = perso_security_operations.compute_kapsch_uset_access_credentials_for_obu_model(obu_equipment_ref, ac_cr_key_ref, rnd_obe)
-
-#     return write_dsrc_data_to_kapsch_efc_element_with_kapsch_uset_ac_cr(eid, attribute_dict, access_credentials)
-
-# async def use_eq_obu_id_to_write_dsrc_data_to_kapsch_efc_element(eid:int, attribute_dict, obu_equipment_ref, eq_obu_id):
-#     ac_cr_key_ref = compute_kapsch_ac_cr_key_ref_from_eq_obu_id(eq_obu_id)
-#     return use_ac_cr_key_ref_to_write_dsrc_data_to_kapsch_efc_element(eid, attribute_dict, obu_equipment_ref, ac_cr_key_ref)
-
-# async def use_security_data_from_vst_and_write_dsrc_data_to_efc_element_with_uset_key(eid:int, attribute_dict, obu_equipment_ref):
-#     decoded_vst_param = dsrc_l7_rse.decode_vst_parameter_from_eid(eid=eid)
-#     ac_cr_key_ref = decoded_vst_param['AC_CR-KeyReference']
-#     rnd_obe = decoded_vst_param['RndOBE']
-#     access_credentials = perso_security_operations.compute_kapsch_uset_access_credentials_for_obu_model(obu_equipment_ref, ac_cr_key_ref, rnd_obe)
-
-#     return write_dsrc_data_to_kapsch_efc_element_with_kapsch_uset_ac_cr(eid, attribute_dict, access_credentials)
-
-# async def write_dsrc_data_to_kapsch_system_element_with_uset_key_and_ac_cr_key_ref(attribute_dict, obu_equipment_ref, expected_ac_cr_key_ref):
-#     return derive_ac_cr_key_ref_from_obu_id_and_write_dsrc_data_to_kapsch_efc_element_with_uset_key
-
 class WrongObuModel(Exception):
     pass
 
@@ -254,8 +173,6 @@ async def kapsch_trp_4010_20b_pl_perso_single_eid(eid:int, attribute_dict, expec
 
 async def perso_kapsch_element_with_uset(eid, obu_equipment_ref, attribute_dict, uset_key_type=None, scanned_serial_number:str=None):
     ac_cr_key_ref, rnd_obe = await get_ac_cr_key_ref_from_any_cardme_app_and_rnd_obe_with_get_nonce(scanned_serial_number)
-    # print(f'AC_CR-KeyRef: 0x{ac_cr_key_ref:04X}')
-    # print(f'RndOBE: 0x{rnd_obe:08X}')
     uset_access_credentials = perso_security_operations.compute_kapsch_uset_access_credentials_for_obu_model(obu_equipment_ref, ac_cr_key_ref, rnd_obe, uset_key_type)
     await write_dsrc_data_to_kapsch_efc_element_with_kapsch_uset_ac_cr(eid, attribute_dict, uset_access_credentials)
 
