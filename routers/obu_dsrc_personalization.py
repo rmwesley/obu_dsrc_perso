@@ -9,7 +9,8 @@ import pathlib
 import logging
 from contextlib import asynccontextmanager
 
-from dsrc_l7 import dsrc_l7_rse, dsrc_perso_l7
+from dsrc_l7 import dsrc_l7_rse
+from dsrc_l7 import dsrc_perso_l7
 from pycrate.pycrate_asn1c.err import ASN1ObjErr
 from ASN.compiled_DSRC_instances import AXXESv1_2
 
@@ -72,6 +73,21 @@ class PersoTaskData(BaseModel):
                                 "20": "340C800FA00000",
                                 "22": "3620000024"
                             }
+                        }
+                    }
+                },
+                {
+                    "obuModelRef": "00037404",
+                    "dsrcMemoryData": {
+                        "0": {
+                        "dsrcAttributesDict": {
+                            "33": "02020301"
+                        },
+                        "dsrc_asn1_attr_container_path": "EfcDsrcGeneric.EfcContainer"
+                        },
+                        "2": {
+                        "dsrcAttributesDict": {},
+                        "dsrc_asn1_attr_container_path": "EfcDsrcGeneric.EfcContainer"
                         }
                     }
                 },
@@ -157,18 +173,17 @@ def get_perso_data(perso_id: str) -> PersoTaskData:
 
 # PersoMethods = Literal['TRP_4010_20B_USET']
 # async def apply_personalization_data_to_obu(perso_state:PersoTaskState, perso_id:str, perso_method: PersoMethods):
-@router.post('/persos/{perso_id}')
-async def apply_personalization_data_to_obu(perso_state:PersoTaskState, perso_id:str):
+@router.post('/persos/{perso_id}/kapsch_dsrc_uset_perso_apply/')
+async def apply_kapsch_personalization_data_to_obu(perso_id:str, obu_eq_ref = '00037404', uset_key_type:str = 'Stock'):
     '''Request application of personalization to OBU through a DSRC beacon'''
 
     perso_task_data = get_perso_data(perso_id)
-    if method == 'TRP_4010_20B_USET':
-        obu_eq_ref = '00037404'
 
     dsrc_memory_data = {eid: el_dsrc_data.dsrcAttributesDict for eid, el_dsrc_data in perso_task_data.dsrcMemoryData.items()}
     obu_id_hex = await dsrc_perso_l7.kapsch_trp_4010_20b_pl_perso(
         dsrc_memory_data = dsrc_memory_data,
-        expected_obu_eq_ref = obu_eq_ref
+        expected_obu_eq_ref = obu_eq_ref,
+        uset_key_type = uset_key_type
         )
 
     # for eid, element_dsrc_data in perso_task_data.items():
@@ -184,7 +199,7 @@ def validate_obu_data_and_finish_perso(perso_id:str):
     '''Validate that an OBU was personalized properly.
     In a proper SupplyChain process, the personalization request's state must be PENDING, not FINISHED!'''
     try:
-        obu_id: bytes(8)
+        obu_id = bytes(8)
         obu_id_hex = obu_id.hex().upper()
         perso_state = 'finished'
         return f'Personalization validated for OBU ID 0x{obu_id_hex}!'
