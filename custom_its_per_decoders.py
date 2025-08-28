@@ -89,7 +89,7 @@ class NoCardmeAppPresentInVst(Exception):
     pass
 # Get EFC-CM, RndOBE and AC_CR-KeyRef values from any VST app with CARDME support!
 # If no CARDME-compliant app is present, no AC_CR-KeyRef and RndOBE will be found...
-def vst_decode_eid_efc_cm_rnd_obe_and_ac_cr_from_any_cardme_app_in_vst(vst_value:dict):
+def vst_decode_eid_efc_cm_rnd_obe_and_ac_cr_from_any_cardme_app_in_vst(vst_value:dict) -> tuple[int, bytes, int, int]:
     for application_data in vst_value['applications']:
         eid = application_data['eid']
         try:
@@ -106,7 +106,7 @@ class EidNotFound(Exception):
     pass
 class VstAppNotCardme(Exception):
     pass
-def vst_decode_efc_cm_rnd_obe_and_ac_cr_from_cardme_app_in_vst_with_eid(eid:int, vst_value:dict):
+def vst_decode_efc_cm_rnd_obe_and_ac_cr_from_cardme_app_in_vst_with_eid(eid:int, vst_value:dict) -> tuple[bytes, int, int]:
     for application_data in vst_value['applications']:
         if eid == application_data['eid']:
             try:
@@ -120,7 +120,7 @@ def vst_decode_efc_cm_rnd_obe_and_ac_cr_from_cardme_app_in_vst_with_eid(eid:int,
 
 class NotCardmeVstParam(Exception):
     pass
-def decode_efc_cm_rnd_obe_and_ac_cr_from_cardme_app_param(vst_app_param:bytes):
+def decode_efc_cm_rnd_obe_and_ac_cr_from_cardme_app_param(vst_app_param:bytes) -> tuple[bytes, int, int]:
     if len(vst_app_param) != 16:
         raise NotCardmeVstParam('CARDME VST Parameter must have length 16!!!')
 
@@ -172,7 +172,7 @@ def decode_vst_parameter_oct_str_bytes(parameter_bytes):
         return {}
     else:
         raise Exception(f"Invalid Parameter length {parameter_size} in VST!!")
-    custom_per_decoders_logger.debug(f"Decoded VST Parameter value: {decoded_vst_parameter}")
+    custom_per_decoders_logger.info(f"Decoded VST Parameter value: {decoded_vst_parameter}")
     return decoded_vst_parameter
 
 # def contract_provider_hex_str_to_iso3166_numeric(contract_provider:str) -> int:
