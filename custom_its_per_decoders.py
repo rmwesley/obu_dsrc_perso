@@ -104,6 +104,8 @@ def vst_decode_efc_cm_rnd_obe_and_ac_cr_from_any_cardme_app_in_vst(vst_value:dic
 
 class EidNotFound(Exception):
     pass
+class VstAppNotCardme(Exception):
+    pass
 def vst_decode_efc_cm_rnd_obe_and_ac_cr_from_cardme_app_in_vst_with_eid(eid:int, vst_value:dict):
     for application_data in vst_value['applications']:
         if eid == application_data['eid']:
@@ -113,7 +115,7 @@ def vst_decode_efc_cm_rnd_obe_and_ac_cr_from_cardme_app_in_vst_with_eid(eid:int,
                     # Length 16: CARDME!! This VST Parameter contains AC_CR-KeyRef and RndOBE values!
                     return decode_efc_cm_rnd_obe_and_ac_cr_from_cardme_app_param(vst_app_param)
             except:
-                raise NoCardmeAppPresentInVst(f'EID {eid} does not have a CARDME application!')
+                raise VstAppNotCardme(f'VST app with EID {eid} is not a CARDME application!')
     raise EidNotFound(f'EID {eid} not found in VST!')
 
 class NotCardmeVstParam(Exception):
