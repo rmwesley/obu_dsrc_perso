@@ -40,8 +40,7 @@ async def send_set_request(eid, access_credentials, attrList, close_transaction=
 
     t_apdu_with_get_request_value = ('setRequest', set_req_value)
     response_t_apdu_value = await dsrc_l7_rse.send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_get_request_value, close_transaction=close_transaction)
-
-    dsrc_l7_perso_logger.debug(f"SET.Response value: {AXXESv1_2.EfcDsrcGeneric.T_APDUs._val[1]}")
+    dsrc_l7_perso_logger.debug(f"SET.Response value: {dsrc_l7_rse.last_response_t_apdu_value[1]}")
 
     return response_t_apdu_value
 
@@ -121,8 +120,6 @@ async def send_request_to_get_eq_obu_id(eid:int):
     response_t_apdu_jval = await dsrc_l7_rse.send_get_request(eid, attrIdList=[24]) #equOBUId
     get_resp_jval = response_t_apdu_jval['getResponse']
 
-    # if get_resp_jval['ret'] != 0:
-    #     raise Exception(f'GET.response Return Status: {get_resp_jval['ret']}')
     for attribute_data in get_resp_jval['attributelist']:
         if attribute_data['attributeId'] == 24:
             return attribute_data['attributeValue']['equOBUId'].upper()
@@ -130,16 +127,7 @@ async def send_request_to_get_eq_obu_id(eid:int):
 class ObuSetAccessDenied(Exception):
     pass
 
-async def write_dsrc_data_to_efc_element_with_uset_key(eid:int, attribute_dict, obu_equipment_ref):
-    obu_id_hex = await send_request_to_get_eq_obu_id(eid)
-
-    decoded_vst_param = dsrc_l7_rse.decode_vst_parameter_from_eid(eid=eid)
-    rnd_obe = decoded_vst_param['RndOBE']
-    ac_cr_key_ref = decoded_vst_param['AC_CR-KeyReference']
-
-    uset_key = perso_security_operations.compute_uset_derived_key_for_obu_model(obu_equipment_ref, ac_cr_key_ref)
-
-    access_credentials = perso_security_operations.compute_access_credentials_for_obu_model(obu_equipment_ref, ac_cr_key_ref, rnd_obe=rnd_obe)
+async def write_dsrc_data_to_kapsch_efc_element_with_kapsch_uset_ac_cr(eid:int, attribute_dict:dict, access_credentials:bytes):
     for attribute_id, attribute_value_hex in attribute_dict.items():
         attribute_value_uper_bytes = bytes.fromhex(attribute_value_hex)
         AXXESv1_2.EfcDsrcGeneric.EfcContainer.from_uper(attribute_value_uper_bytes)
@@ -153,11 +141,10 @@ async def write_dsrc_data_to_efc_element_with_uset_key(eid:int, attribute_dict, 
         result = await dsrc_l7_rse.send_set_request(eid, access_credentials=access_credentials, attrList=attribute_list)
         if 'ret' in result['set-response']:
             if result['set-response']['ret'] == 1:
-                dsrc_l7_perso_logger.error(f'Cannot set attribute for OBU with model {obu_equipment_ref} and ID 0x{obu_id_hex}! SET.response: {result}')
-                raise ObuSetAccessDenied(f'Access Denied: Cannot set attribute for OBU with model {obu_equipment_ref} and ID 0x{obu_id_hex}!')
+                dsrc_l7_perso_logger.error(f'Cannot SET attribute for OBU! SET.response: {result}')
+                raise ObuSetAccessDenied(f'Access Denied: Cannot SET attribute for OBU!')
 
     await dsrc_l7_rse.set_mmi(eid=eid)
-    return obu_id_hex
 
 class WrongObuModel(Exception):
     pass
@@ -169,13 +156,18 @@ async def kapsch_trp_4010_20b_pl_perso_single_eid(eid:int, attribute_dict, expec
     if obu_equipment_ref != expected_obu_eq_ref:
         raise WrongObuModel(f'Bad OBU ManufacturerId and/or EquipmentClass values!\nExpected: {expected_obu_eq_ref}. Obtained: {obu_equipment_ref}')
 
-    obu_id = await dsrc_l7_rse.send_get_request(eid, attrIdList=[24]) #equOBUId
-
-    await write_dsrc_data_to_efc_element_with_uset_key(eid, attribute_dict, obu_equipment_ref)
+    ac_cr_key_ref, rnd_obe = await get_ac_cr_key_ref_from_any_cardme_app_and_rnd_obe_with_get_nonce(scanned_serial_number)
+    uset_access_credentials = perso_security_operations.compute_kapsch_uset_access_credentials_for_obu_model(obu_equipment_ref, ac_cr_key_ref, rnd_obe, uset_key_type)
+    await write_dsrc_data_to_kapsch_efc_element_with_kapsch_uset_ac_cr(eid, attribute_dict, uset_access_credentials)
 
     await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
 
-    return obu_id
+async def perso_kapsch_element_with_uset(eid, obu_equipment_ref, attribute_dict, uset_key_type=None, scanned_serial_number:str=None):
+    ac_cr_key_ref, rnd_obe = await get_ac_cr_key_ref_from_any_cardme_app_and_rnd_obe_with_get_nonce(scanned_serial_number)
+    # print(f'AC_CR-KeyRef: 0x{ac_cr_key_ref:04X}')
+    # print(f'RndOBE: 0x{rnd_obe:08X}')
+    uset_access_credentials = perso_security_operations.compute_kapsch_uset_access_credentials_for_obu_model(obu_equipment_ref, ac_cr_key_ref, rnd_obe, uset_key_type)
+    await write_dsrc_data_to_kapsch_efc_element_with_kapsch_uset_ac_cr(eid, attribute_dict, uset_access_credentials)
 
 async def kapsch_trp_4010_20b_pl_perso(dsrc_memory_data, expected_obu_eq_ref):
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=[0, 1])
