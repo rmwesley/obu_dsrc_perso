@@ -91,6 +91,30 @@ async def get_rnd_obe_and_ac_cr_key_ref_for_obe_element_or_another_cardme_elment
         rnd_obe = 0
     return ac_cr_key_ref, rnd_obe
 
+# Get RndOBE by sending a GET_NONCE.request to the OBE!!
+async def send_get_nonce_action_req(eid):
+    # ACTION.request with a GET_NONCE.request ActionType (6)!!
+    action_param_get_nonce_req_value = None
+    action_req_value = {
+        'mode': True,
+        'eid': eid,
+        'actionType': 6,
+    }
+    dsrc_l7_perso_logger.debug(f"ACTION.Request value: {action_req_value}")
+
+    t_apdu_with_action_request_value = ('actionRequest', action_req_value)
+    await dsrc_l7_rse.send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_action_request_value)
+
+    dsrc_l7_perso_logger.debug(f"ACTION.response with GET_NONCE.Response value: {dsrc_l7_rse.last_response_t_apdu_value}")
+
+    return dsrc_l7_rse.last_response_t_apdu_value
+
+# Decode RndOBE from GET_NONCE.request!!
+async def send_get_nonce_action_req_and_decode_rnd_obe_value(eid):
+    t_apdu_val = await send_get_nonce_action_req(eid)
+    rnd_obe_bytes = t_apdu_val[1]['responseParameter'][1]
+    return int.from_bytes(rnd_obe_bytes)
+
 async def send_request_to_get_eq_obu_id(eid:int):
     if eid == 0:
         return
