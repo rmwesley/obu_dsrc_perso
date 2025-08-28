@@ -124,6 +124,13 @@ async def send_request_to_get_eq_obu_id(eid:int):
         if attribute_data['attributeId'] == 24:
             return attribute_data['attributeValue']['equOBUId'].upper()
 
+async def try_to_get_obu_id_from_any_eid_in_last_vst():
+    for vst_app_data in dsrc_l7_rse.last_vst_value['applications']:
+        eid = vst_app_data['eid']
+        eq_obu_id = await send_request_to_get_eq_obu_id(eid)
+        if eq_obu_id is not None:
+            return eq_obu_id
+
 class ObuSetAccessDenied(Exception):
     pass
 
