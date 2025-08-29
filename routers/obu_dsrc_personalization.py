@@ -23,6 +23,7 @@ async def lifespan(arg_router: APIRouter):
         await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
     except Exception as e:
         print(e)
+        print('Please set the beacon configuration properly to initialize it via BAC L7!')
     yield
     await dsrc_l7_rse.change_trx_mode('Stopped')
 
