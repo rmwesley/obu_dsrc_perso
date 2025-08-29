@@ -71,7 +71,7 @@ async def initialize_bcm(aid=20):
     bcm_logger.info("Initialized RSE DSRC L7!!")
 
     bcm_logger.debug("We now update/get the BeaconID (according to the beacon HW itself) before sending the BST")
-    await update_beacon_state()
+    await check_and_update_beacon_state()
 
 def reset_beacon():
     global beacon_bac_l7_wrapper
@@ -176,6 +176,8 @@ class EIDNotFoundException(Exception):
     pass
 class AbortedInitPhase(Exception):
     pass
+class NoBeaconInitialized(Exception):
+    pass
 
 # Start sending a BST
 async def start_bst_emission_and_await_vst(bst_value: dict):
@@ -219,7 +221,7 @@ async def start_bst_emission_and_await_vst(bst_value: dict):
 
     bcm_logger.debug("We now get the lastest BeaconID just after starting the BST")
 
-    await update_beacon_state()
+    await check_and_update_beacon_state()
 
     return initialization_request_jval
 
@@ -247,7 +249,7 @@ async def initialize_transaction(
 
     global initialization_data
 
-    await update_beacon_state()
+    await check_and_update_beacon_state()
 
     try:
         if beacon_bac_l7_wrapper._is_transaction_in_progress():
@@ -562,8 +564,12 @@ def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jva
         json.dump(transaction_data_json, json_file, indent=2)
     return transaction_data_json
 
-async def update_beacon_state():
+async def check_and_update_beacon_state():
     global current_beacon_name
+    if 'current_beacon_name' not in globals():
+        bcm_logger.critical('No beacon is set!! Please fix the RSE config for abeacon to be initialized properly via BAC L7.')
+        raise NoBeaconInitialized('No beacon is set!! Please fix the RSE config for abeacon to be initialized properly via BAC L7.')
+
     await beacon_bac_l7_wrapper._pertel_get_communication_count()
 
     if current_beacon_name == 'TGBV':
