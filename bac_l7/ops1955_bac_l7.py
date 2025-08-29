@@ -6,6 +6,9 @@ with open('settings/beacon_manager_config.json', 'r') as beacon_manager_settings
     chosen_beacon_name = beacon_manager_settings['default_beacon_name']
     bac_l2_config = beacon_manager_settings[chosen_beacon_name]['bac_l2_config']
 
+class Ops1955BacL7Exception(Exception):
+    pass
+
 class Ops1955BacL7(pertel_bac_l7.PertelBacL7):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -64,9 +67,9 @@ class Ops1955BacL7(pertel_bac_l7.PertelBacL7):
 
         error_code_int = response[1]
         if error_code_int == 0x03:
-            raise Exception("Transceiver not OK")
+            raise Ops1955BacL7Exception("Kapsch transceiver not OK")
         if error_code_int == 0x0B:
-            raise Exception("Command refused because the parameters are wrong")
+            raise Ops1955BacL7Exception("Command refused because the parameters are wrong")
         return response
 
     async def _kapsch_cd_set_dsrc_config_from_settings(self) -> bytes:
