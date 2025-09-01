@@ -192,6 +192,27 @@ async def kapsch_trp_4010_20b_pl_perso(obu_model, dsrc_memory_data, uset_key_typ
 
     return obu_id_hex
 
+async def kapsch_element_switch_uset_keys(eid, obu_model, curr_uset_key_type=None, new_uset_key_type=None):
+    if eid == 0:
+        # We do not update/switch the Access/USET key for Kapsch's SystemElement (EID 0)!
+        continue
+    for eid, key_info in uset_key_ref_by_obu_model_and_eid[obu_model].items():
+        uset_key_eid, new_uset_attribute_dict = perso_security_operations.get_eid_and_new_uset_attribute_dict(eid, expected_obu_eq_ref, obu_model, ac_cr_key_ref, new_uset_key_type)
+        await perso_kapsch_element_with_uset(uset_key_eid, obu_equipment_ref, new_uset_attribute_dict, uset_key_type=curr_uset_key_type)
+
+async def kapsch_switch_uset_keys(obu_model, curr_uset_key_type=None, new_uset_key_type=None):
+    _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=[1])
+    obu_equipment_ref = get_obu_model_from_vst_data(last_vst_value)
+    obu_id_hex = await try_to_get_obu_id_from_any_eid_in_last_vst()
+
+    for application_data in vst_value['applications']:
+        eid = application_data['eid']
+        await kapsch_element_switch_uset_keys(eid, obu_model, curr_uset_key_type, new_uset_key_type)
+
+    await dsrc_l7_rse.send_close_transaction_setmmi(eid=eid)
+
+    return obu_id_hex
+
 async def validate_cardme_perso(force_eid=None):
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=[0, 1])
 
