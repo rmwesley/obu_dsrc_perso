@@ -34,16 +34,16 @@ perso_tasks_dirpath = pathlib.Path(f'local_file_storage/dsrc_perso_tasks')
 with pathlib.Path('settings/toll_domain_config.json').open('r') as json_file:
     td_conf_by_td_name = json.load(json_file)['td_conf_by_td_name']
 
-# class DsrcAttributesDict(Dict[int, str]):
+# class dsrc_attributes_dict(Dict[int, str]):
 #     pass
 
 class ElementDsrcData(BaseModel):
     dsrc_asn1_attr_container_path: str = 'EfcDsrcGeneric.EfcContainer'
-    dsrcAttributesDict: Dict[int, str]
+    dsrc_attributes_dict: Dict[int, str]
 
     @model_validator(mode='after')
     def check_attribute_ids_and_values(self):
-        for attribute_id, attribute_value_hex in self.dsrcAttributesDict.items():
+        for attribute_id, attribute_value_hex in self.dsrc_attributes_dict.items():
             if attribute_id > 127 or attribute_id < 0:
                 raise ValueError(f'Invalid Attribute Id value: {attribute_id}')
             attr_val_bytes = bytes.fromhex(attribute_value_hex)
@@ -56,18 +56,18 @@ class ElementDsrcData(BaseModel):
         return self
 
 class PersoTaskData(BaseModel):
-    obuModel: str
-    dsrcMemoryData: Dict[int, ElementDsrcData]
+    obu_model: str
+    dsrc_memory_data: Dict[int, ElementDsrcData]
 
     model_config = {
         "json_schema_extra": {
             "examples": [
                 {
-                    "obuModel": 'TRP_4010_20B_PL',
-                    "dsrcMemoryData": {
+                    "obu_model": 'TRP_4010_20B_PL',
+                    "dsrc_memory_data": {
                         "2": {
                             "dsrc_asn1_attr_container_path": "EfcDsrcGeneric.EfcContainer",
-                            "dsrcAttributesDict": {
+                            "dsrc_attributes_dict": {
                                 "17": "3150",
                                 "18": "32000000",
                                 "19": "33005D",
@@ -78,26 +78,26 @@ class PersoTaskData(BaseModel):
                     }
                 },
                 {
-                    "obuModel": "TRP_4010_20B_PL",
-                    "dsrcMemoryData": {
+                    "obu_model": "TRP_4010_20B_PL",
+                    "dsrc_memory_data": {
                         "0": {
-                        "dsrcAttributesDict": {
+                        "dsrc_attributes_dict": {
                             "33": "02020301"
                         },
                         "dsrc_asn1_attr_container_path": "EfcDsrcGeneric.EfcContainer"
                         },
                         "2": {
-                        "dsrcAttributesDict": {},
+                        "dsrc_attributes_dict": {},
                         "dsrc_asn1_attr_container_path": "EfcDsrcGeneric.EfcContainer"
                         }
                     }
                 },
                 {
-                    "obuModel": 'TRP_4010_20B_PL',
-                    "dsrcMemoryData": {
+                    "obu_model": 'TRP_4010_20B_PL',
+                    "dsrc_memory_data": {
                         "2": {
                             "dsrc_asn1_attr_container_path": "EfcDsrcGeneric.EfcContainer",
-                            "dsrcAttributesDict": {
+                            "dsrc_attributes_dict": {
                                 "17": "3151",
                                 "18": "32000000",
                                 "19": "33001A",
@@ -153,9 +153,9 @@ async def apply_kapsch_personalization_data_to_obu(perso_id:str, uset_key_type:s
 
     perso_task_data = get_perso_data(perso_id)
 
-    dsrc_memory_data = {eid: el_dsrc_data.dsrcAttributesDict for eid, el_dsrc_data in perso_task_data.dsrcMemoryData.items()}
+    dsrc_memory_data = {eid: el_dsrc_data.dsrc_attributes_dict for eid, el_dsrc_data in perso_task_data.dsrc_memory_data.items()}
     obu_id_hex = await dsrc_perso_l7.kapsch_trp_4010_20b_pl_perso(
-        obu_model = perso_task_data['obuModel'],
+        obu_model = perso_task_data['obu_model'],
         dsrc_memory_data = dsrc_memory_data,
         uset_key_type = uset_key_type
         )
@@ -192,8 +192,8 @@ def validate_obu_data_and_finish_perso(perso_id:str):
 #     else:
 #         raise HTTPException(400, f'Invalid Toll Domain Name: ({td_name})')
 
-# def validate_efc_toll_domain_dsrc_data(tollDomain: str, dsrcAttributesDict:DsrcAttributesDict):
-#     for attribute_id, attribute_value in dsrcAttributesDict.items():
+# def validate_efc_toll_domain_dsrc_data(tollDomain: str, dsrc_attributes_dict:dsrc_attributes_dict):
+#     for attribute_id, attribute_value in dsrc_attributes_dict.items():
 #         try:
 #             # Validate attribute value against EfcContainer!
 #             attributeValueUper = bytes.fromhex(attribute_value)
@@ -209,9 +209,9 @@ async def apply_kapsch_personalization_data_to_obu(perso_task_data:PersoTaskData
     except dsrc_l7_rse.NoBeaconInitialized as e:
         raise HTTPException(409, detail=str(e))
 
-    dsrc_memory_data = {eid: el_dsrc_data.dsrcAttributesDict for eid, el_dsrc_data in perso_task_data.dsrcMemoryData.items()}
+    dsrc_memory_data = {eid: el_dsrc_data.dsrc_attributes_dict for eid, el_dsrc_data in perso_task_data.dsrc_memory_data.items()}
     obu_id_hex = await dsrc_perso_l7.kapsch_trp_4010_20b_pl_perso(
-        obu_model = perso_task_data['obuModel'],
+        obu_model = perso_task_data['obu_model'],
         dsrc_memory_data = dsrc_memory_data,
         uset_key_type = uset_key_type
         )
@@ -221,17 +221,17 @@ async def apply_kapsch_personalization_data_to_obu(perso_task_data:PersoTaskData
     }
 
 class UsetSwitchPayload(BaseModel):
-    obuModel: str
-    currentUsetKeyType: str
-    newUsetKeyType: str
+    obu_model: str
+    current_uset_key_type: str
+    new_uset_key_type: str
 
     model_config = {
         "json_schema_extra": {
             "examples": [
                 {
-                    "obuModel": "TRP_4010_20B_PL",
-                    "currentUsetKeyType": "Stock",
-                    "newUsetKeyType": "Exploit"
+                    "obu_model": "TRP_4010_20B_PL",
+                    "current_uset_key_type": "Stock",
+                    "new_uset_key_type": "Exploit"
                 }
             ]
         }
@@ -242,9 +242,9 @@ async def switch_kapsch_obu_uset_keys(req_body: UsetSwitchPayload):
     '''Request application of personalization to OBU through a DSRC beacon'''
 
     obu_id_hex = await dsrc_perso_l7.kapsch_switch_uset_keys(
-        obu_model = req_body.obuModel,
-        curr_uset_key_type = req_body.currentUsetKeyType,
-        new_uset_key_type = req_body.newUsetKeyType
+        obu_model = req_body.obu_model,
+        curr_uset_key_type = req_body.current_uset_key_type,
+        new_uset_key_type = req_body.new_uset_key_type
         )
 
     return {
@@ -252,15 +252,15 @@ async def switch_kapsch_obu_uset_keys(req_body: UsetSwitchPayload):
     }
 
 class UsetForcePayload(BaseModel):
-    obuModel: str
-    newUsetKeyType: str
+    obu_model: str
+    new_uset_key_type: str
 
     model_config = {
         "json_schema_extra": {
             "examples": [
                 {
-                    "obuModel": "TRP_4010_20B_PL",
-                    "newUsetKeyType": "Stock"
+                    "obu_model": "TRP_4010_20B_PL",
+                    "new_uset_key_type": "Stock"
                 }
             ]
         }
@@ -271,8 +271,8 @@ async def force_kapsch_obu_uset_keys(req_body: UsetForcePayload):
     '''Request application of personalization to OBU through a DSRC beacon'''
 
     obu_id_hex = await dsrc_perso_l7.kapsch_force_uset_key(
-        obu_model = req_body.obuModel,
-        new_uset_key_type = req_body.newUsetKeyType
+        obu_model = req_body.obu_model,
+        new_uset_key_type = req_body.new_uset_key_type
         )
 
     return {
@@ -281,19 +281,19 @@ async def force_kapsch_obu_uset_keys(req_body: UsetForcePayload):
 
 class PersonalizeAndSwitchUsetKeys(BaseModel):
     perso_task_data: PersoTaskData
-    currentUsetKeyType: str
-    newUsetKeyType: str
+    current_uset_key_type: str
+    new_uset_key_type: str
 
 @router.post('/kapsch_dsrc_uset_perso_apply_and_switch_uset_keys/')
 async def apply_kapsch_personalization_data_to_obu_and_switch_uset_keys(req_body:PersonalizeAndSwitchUsetKeys):
     '''Request application of personalization to OBU through a DSRC beacon'''
-    obu_id_hex = apply_kapsch_personalization_data_to_obu(req_body.perso_task_data, req_body.currentUsetKeyType)
+    obu_id_hex = apply_kapsch_personalization_data_to_obu(req_body.perso_task_data, req_body.current_uset_key_type)
     switch_kapsch_obu_uset_keys()
 
     second_obu_id_hex = await dsrc_perso_l7.kapsch_switch_uset_keys(
-        obu_model = req_body.perso_task_data.obuModel,
-        curr_uset_key_type = req_body.currentUsetKeyType,
-        new_uset_key_type = req_body.newUsetKeyType
+        obu_model = req_body.perso_task_data.obu_model,
+        curr_uset_key_type = req_body.current_uset_key_type,
+        new_uset_key_type = req_body.new_uset_key_type
         )
     if obu_id_hex != second_obu_id_hex:
         raise HTTPException(status_code=409, detail='OBU ID changed during personalization procedure!!')
