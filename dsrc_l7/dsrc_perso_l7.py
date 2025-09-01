@@ -160,14 +160,14 @@ async def kapsch_trp_4010_20b_pl_perso_single_eid(eid:int, attribute_dict, obu_m
     obu_eq_ref = get_obu_model_from_vst_data(last_vst_value)
 
     ac_cr_key_ref, rnd_obe = await get_ac_cr_key_ref_from_any_cardme_app_and_rnd_obe_with_get_nonce()
-    uset_access_credentials = perso_security_operations.compute_kapsch_uset_access_credentials_for_obu_model(obu_model, ac_cr_key_ref, rnd_obe, uset_key_type)
+    uset_access_credentials = perso_security_operations.check_obu_model_and_compute_kapsch_uset_access_credentials_for_obu_model(obu_eq_ref, obu_model, ac_cr_key_ref, rnd_obe, uset_key_type)
     await write_dsrc_data_to_kapsch_efc_element_with_kapsch_uset_ac_cr(eid, attribute_dict, uset_access_credentials)
 
     await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
 
 async def perso_kapsch_element_with_uset(eid, obu_eq_ref, obu_model, attribute_dict, uset_key_type=None):
     ac_cr_key_ref, rnd_obe = await get_ac_cr_key_ref_from_any_cardme_app_and_rnd_obe_with_get_nonce()
-    uset_access_credentials = perso_security_operations.compute_kapsch_uset_access_credentials_for_obu_model(obu_model, ac_cr_key_ref, rnd_obe, uset_key_type)
+    uset_access_credentials = perso_security_operations.check_obu_model_and_compute_kapsch_uset_access_credentials_for_obu_model(obu_eq_ref, obu_model, ac_cr_key_ref, rnd_obe, uset_key_type)
     await write_dsrc_data_to_kapsch_efc_element_with_kapsch_uset_ac_cr(eid, attribute_dict, uset_access_credentials)
 
 async def kapsch_trp_4010_20b_pl_perso(obu_model, dsrc_memory_data, uset_key_type=None):
