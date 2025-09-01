@@ -157,3 +157,23 @@ def check_obu_model_and_compute_kapsch_uset_access_credentials_for_obu_model(exp
         raise InvalidObuModel(f'OBU with Manufacturer Id/Equipment Class 0x{expected_obu_eq_ref} is not of model {obu_model}')
 
     return compute_kapsch_uset_access_credentials_for_obu_model(obu_model, ac_cr_key_ref, rnd_obe, uset_key_type)
+
+# USET key update dict preparation function
+def get_eid_and_new_uset_attribute_dict(eid:int, obu_model:str, ac_cr_key_ref:int, new_uset_key_type=default_uset_key_type) -> tuple[int, dict]:
+    uset_key_info = perso_security_conf[obu_model]['dsrc_mem_key_locations'][eid]['uset_key']
+
+    uset_key_eid = eid
+    # USET key EID is normally the same EID, otherwise, the key is stored in another element.
+    # This is a workaround used for TIS-VL EFC elements, since they use attribute IDs 111 through 118 for historization (D-HIS)!
+    if 'external_eid' in uset_key_info:
+        uset_key_eid = uset_key_info['external_eid']
+
+    uset_key_attr_id = uset_key_info['storage_attr_id']
+    uset_key_bytes = compute_uset_derived_key_for_obu_model(obu_model, ac_cr_key_ref, new_uset_key_type)
+
+    # 0x02 = EfcContainer CHOICE tag for OCTET STRING
+    uset_key_octet_string_uper_hex = f'02{len(uset_key_bytes):02X}{uset_key_bytes.hex().upper()}'
+    new_uset_attr_dict = {
+        uset_key_attr_id: uset_key_octet_string_uper_hex
+    }
+    return uset_key_eid, new_uset_attr_dict
