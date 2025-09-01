@@ -211,9 +211,41 @@ async def apply_kapsch_personalization_data_to_obu(perso_task_data:PersoTaskData
 
     dsrc_memory_data = {eid: el_dsrc_data.dsrcAttributesDict for eid, el_dsrc_data in perso_task_data.dsrcMemoryData.items()}
     obu_id_hex = await dsrc_perso_l7.kapsch_trp_4010_20b_pl_perso(
+        obu_model = perso_task_data['obuModel'],
         dsrc_memory_data = dsrc_memory_data,
-        expected_obu_eq_ref = obu_eq_ref,
         uset_key_type = uset_key_type
+        )
+
+    return {
+        'equOBUId_hex': obu_id_hex
+    }
+
+class UsetSwitchPayload(BaseModel):
+    obuModel: str
+    currentUsetKeyType: str
+    newUsetKeyType: str
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "obuModel": "TRP_4010_20B_PL",
+                    "currentUsetKeyType": "Stock",
+                    "newUsetKeyType": "Exploit"
+                }
+            ]
+        }
+    }
+
+@router.post('/kapsch_dsrc_switch_uset_keys/')
+async def switch_kapsch_obu_uset_keys(req_body: UsetSwitchPayload):
+    '''Request application of personalization to OBU through a DSRC beacon'''
+
+    dsrc_memory_data = {eid: el_dsrc_data.dsrcAttributesDict for eid, el_dsrc_data in perso_task_data.dsrcMemoryData.items()}
+    obu_id_hex = await dsrc_perso_l7.kapsch_switch_uset_keys(
+        obu_model = req_body.obuModel,
+        curr_uset_key_type = req_body.currentUsetKeyType,
+        new_uset_key_type = req_body.newUsetKeyType
         )
 
     return {
