@@ -251,3 +251,31 @@ async def switch_kapsch_obu_uset_keys(req_body: UsetSwitchPayload):
     return {
         'equOBUId_hex': obu_id_hex
     }
+
+class UsetForcePayload(BaseModel):
+    obuModel: str
+    newUsetKeyType: str
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "obuModel": "TRP_4010_20B_PL",
+                    "newUsetKeyType": "Stock"
+                }
+            ]
+        }
+    }
+
+@router.post('/kapsch_dsrc_force_uset_keys/')
+async def force_kapsch_obu_uset_keys(req_body: UsetForcePayload):
+    '''Request application of personalization to OBU through a DSRC beacon'''
+
+    obu_id_hex = await dsrc_perso_l7.kapsch_force_uset_key(
+        obu_model = req_body.obuModel,
+        new_uset_key_type = req_body.newUsetKeyType
+        )
+
+    return {
+        'equOBUId_hex': obu_id_hex
+    }
