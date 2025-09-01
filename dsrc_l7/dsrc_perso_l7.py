@@ -213,6 +213,23 @@ async def kapsch_switch_uset_keys(obu_model, curr_uset_key_type=None, new_uset_k
 
     return obu_id_hex
 
+async def kapsch_force_uset_key(obu_model, new_uset_key_type=None):
+    _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=[1])
+    obu_equipment_ref = get_obu_model_from_vst_data(last_vst_value)
+    obu_id_hex = await try_to_get_obu_id_from_any_eid_in_last_vst()
+
+    for application_data in vst_value['applications']:
+        eid = application_data['eid']
+        if eid == 0:
+            # We do not update/switch the Access/USET key for Kapsch's SystemElement (EID 0)!
+            continue
+        for curr_uset_key_type in ['SystemElementAcK', 'Stock', 'Exploit']:
+            await kapsch_element_switch_uset_keys(eid, obu_model, curr_uset_key_type, new_uset_key_type)
+
+    await dsrc_l7_rse.send_close_transaction_setmmi(eid=eid)
+
+    return obu_id_hex
+
 async def validate_cardme_perso(force_eid=None):
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=[0, 1])
 
