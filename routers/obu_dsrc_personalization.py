@@ -241,7 +241,6 @@ class UsetSwitchPayload(BaseModel):
 async def switch_kapsch_obu_uset_keys(req_body: UsetSwitchPayload):
     '''Request application of personalization to OBU through a DSRC beacon'''
 
-    dsrc_memory_data = {eid: el_dsrc_data.dsrcAttributesDict for eid, el_dsrc_data in perso_task_data.dsrcMemoryData.items()}
     obu_id_hex = await dsrc_perso_l7.kapsch_switch_uset_keys(
         obu_model = req_body.obuModel,
         curr_uset_key_type = req_body.currentUsetKeyType,
@@ -275,6 +274,29 @@ async def force_kapsch_obu_uset_keys(req_body: UsetForcePayload):
         obu_model = req_body.obuModel,
         new_uset_key_type = req_body.newUsetKeyType
         )
+
+    return {
+        'equOBUId_hex': obu_id_hex
+    }
+
+class PersonalizeAndSwitchUsetKeys(BaseModel):
+    perso_task_data: PersoTaskData
+    currentUsetKeyType: str
+    newUsetKeyType: str
+
+@router.post('/kapsch_dsrc_uset_perso_apply_and_switch_uset_keys/')
+async def apply_kapsch_personalization_data_to_obu_and_switch_uset_keys(req_body:PersonalizeAndSwitchUsetKeys):
+    '''Request application of personalization to OBU through a DSRC beacon'''
+    obu_id_hex = apply_kapsch_personalization_data_to_obu(req_body.perso_task_data, req_body.currentUsetKeyType)
+    switch_kapsch_obu_uset_keys()
+
+    second_obu_id_hex = await dsrc_perso_l7.kapsch_switch_uset_keys(
+        obu_model = req_body.perso_task_data.obuModel,
+        curr_uset_key_type = req_body.currentUsetKeyType,
+        new_uset_key_type = req_body.newUsetKeyType
+        )
+    if obu_id_hex != second_obu_id_hex:
+        raise HTTPException(status_code=409, detail='OBU ID changed during personalization procedure!!')
 
     return {
         'equOBUId_hex': obu_id_hex
