@@ -77,7 +77,7 @@ async def get_ac_cr_key_ref_from_any_cardme_app_and_rnd_obe_with_get_nonce(seria
     rnd_obe = await send_get_nonce_action_req_and_decode_rnd_obe_value(eid=0)
     return ac_cr_key_ref, rnd_obe
 
-async def get_rnd_obe_and_ac_cr_key_ref_for_obe_element_or_another_cardme_elment_with_rnd_obe_set_to_0(eid:int, scanned_serial_number='0300000000002533') -> tuple[int, int]:
+async def get_rnd_obe_and_ac_cr_key_ref_for_obe_element_or_another_cardme_elment_with_rnd_obe_set_to_0(eid:int) -> tuple[int, int]:
     try:
         # Works only if the OBU has an active CARDME application being presented in its VST!!
         cardme_eid, efc_cm, ac_cr_key_ref, rnd_obe = custom_its_per_decoders.vst_decode_eid_efc_cm_rnd_obe_and_ac_cr_from_any_cardme_app_in_vst(dsrc_l7_rse.last_vst_value)
@@ -155,49 +155,40 @@ async def write_dsrc_data_to_kapsch_efc_element_with_kapsch_uset_ac_cr(eid:int, 
 
     await dsrc_l7_rse.set_mmi(eid=eid)
 
-class WrongObuModel(Exception):
-    pass
-
-async def kapsch_trp_4010_20b_pl_perso_single_eid(eid:int, attribute_dict, expected_obu_eq_ref):
+async def kapsch_trp_4010_20b_pl_perso_single_eid(eid:int, attribute_dict, obu_model):
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=[0, 1])
-    obu_equipment_ref = get_obu_model_from_vst_data(last_vst_value)
+    obu_eq_ref = get_obu_model_from_vst_data(last_vst_value)
 
-    if obu_equipment_ref != expected_obu_eq_ref:
-        raise WrongObuModel(f'Bad OBU ManufacturerId and/or EquipmentClass values!\nExpected: {expected_obu_eq_ref}. Obtained: {obu_equipment_ref}')
-
-    ac_cr_key_ref, rnd_obe = await get_ac_cr_key_ref_from_any_cardme_app_and_rnd_obe_with_get_nonce(scanned_serial_number)
-    uset_access_credentials = perso_security_operations.compute_kapsch_uset_access_credentials_for_obu_model(obu_equipment_ref, ac_cr_key_ref, rnd_obe, uset_key_type)
+    ac_cr_key_ref, rnd_obe = await get_ac_cr_key_ref_from_any_cardme_app_and_rnd_obe_with_get_nonce()
+    uset_access_credentials = perso_security_operations.compute_kapsch_uset_access_credentials_for_obu_model(obu_model, ac_cr_key_ref, rnd_obe, uset_key_type)
     await write_dsrc_data_to_kapsch_efc_element_with_kapsch_uset_ac_cr(eid, attribute_dict, uset_access_credentials)
 
     await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
 
-async def perso_kapsch_element_with_uset(eid, obu_equipment_ref, attribute_dict, uset_key_type=None, scanned_serial_number:str=None):
-    ac_cr_key_ref, rnd_obe = await get_ac_cr_key_ref_from_any_cardme_app_and_rnd_obe_with_get_nonce(scanned_serial_number)
-    uset_access_credentials = perso_security_operations.compute_kapsch_uset_access_credentials_for_obu_model(obu_equipment_ref, ac_cr_key_ref, rnd_obe, uset_key_type)
+async def perso_kapsch_element_with_uset(eid, obu_eq_ref, obu_model, attribute_dict, uset_key_type=None):
+    ac_cr_key_ref, rnd_obe = await get_ac_cr_key_ref_from_any_cardme_app_and_rnd_obe_with_get_nonce()
+    uset_access_credentials = perso_security_operations.compute_kapsch_uset_access_credentials_for_obu_model(obu_model, ac_cr_key_ref, rnd_obe, uset_key_type)
     await write_dsrc_data_to_kapsch_efc_element_with_kapsch_uset_ac_cr(eid, attribute_dict, uset_access_credentials)
 
-async def kapsch_trp_4010_20b_pl_perso(dsrc_memory_data, expected_obu_eq_ref, uset_key_type=None, scanned_serial_number=None):
+async def kapsch_trp_4010_20b_pl_perso(obu_model, dsrc_memory_data, uset_key_type=None):
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=[0, 1])
-    obu_equipment_ref = get_obu_model_from_vst_data(last_vst_value)
+    obu_eq_ref = get_obu_model_from_vst_data(last_vst_value)
     obu_id_hex = await try_to_get_obu_id_from_any_eid_in_last_vst()
-
-    if obu_equipment_ref != expected_obu_eq_ref:
-        raise WrongObuModel(f'Bad OBU ManufacturerId and/or EquipmentClass values!\nExpected: {expected_obu_eq_ref}. Obtained: {obu_equipment_ref}')
 
     for eid, attribute_dict in dsrc_memory_data.items():
         if eid == 0:
             continue
 
         dsrc_l7_rse.get_parameter_for_eid(eid)
-        perso_kapsch_element_with_uset(eid, obu_equipment_ref, attribute_dict, uset_key_type=uset_key_type, scanned_serial_number=scanned_serial_number)
+        perso_kapsch_element_with_uset(eid, obu_eq_ref, obu_model, attribute_dict, uset_key_type=uset_key_type)
 
     if 0 in dsrc_memory_data:
         # Setup System Element
         # Kapsch System Element uses AcK, not USET
         system_element_attrs = dsrc_memory_data[0]
-        await perso_kapsch_element_with_uset(0, obu_equipment_ref, system_element_attrs, uset_key_type='SystemElementAcK', scanned_serial_number=scanned_serial_number)
+        await perso_kapsch_element_with_uset(0, obu_eq_ref, obu_model, system_element_attrs, uset_key_type='SystemElementAcK')
 
-    await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
+    await dsrc_l7_rse.send_close_transaction_setmmi(eid=eid)
 
     return obu_id_hex
 

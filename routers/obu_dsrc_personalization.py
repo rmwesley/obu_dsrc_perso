@@ -56,14 +56,14 @@ class ElementDsrcData(BaseModel):
         return self
 
 class PersoTaskData(BaseModel):
-    obuModelRef: str
+    obuModel: str
     dsrcMemoryData: Dict[int, ElementDsrcData]
 
     model_config = {
         "json_schema_extra": {
             "examples": [
                 {
-                    "obuModelRef": '00037404',
+                    "obuModel": 'TRP_4010_20B_PL',
                     "dsrcMemoryData": {
                         "2": {
                             "dsrc_asn1_attr_container_path": "EfcDsrcGeneric.EfcContainer",
@@ -78,7 +78,7 @@ class PersoTaskData(BaseModel):
                     }
                 },
                 {
-                    "obuModelRef": "00037404",
+                    "obuModel": "TRP_4010_20B_PL",
                     "dsrcMemoryData": {
                         "0": {
                         "dsrcAttributesDict": {
@@ -93,37 +93,12 @@ class PersoTaskData(BaseModel):
                     }
                 },
                 {
-                    "obuModelRef": '00037404',
+                    "obuModel": 'TRP_4010_20B_PL',
                     "dsrcMemoryData": {
                         "2": {
                             "dsrc_asn1_attr_container_path": "EfcDsrcGeneric.EfcContainer",
                             "dsrcAttributesDict": {
                                 "17": "3151",
-                                "18": "32000000",
-                                "19": "33001A",
-                                "20": "34070811300000",
-                                "22": "3660000024"
-                            }
-                        }
-                    }
-                },
-                {
-                    "obuModelRef": '00075113',
-                    "dsrcMemoryData": {
-                        "4": {
-                            "dsrc_asn1_attr_container_path": "EfcDsrcGeneric.EfcContainer",
-                            "dsrcAttributesDict": {
-                                "17": "3150",
-                                "18": "32000000",
-                                "19": "33001A",
-                                "20": "34070811300000",
-                                "22": "3660000024"
-                            }
-                        },
-                        "7": {
-                            "dsrc_asn1_attr_container_path": "EfcDsrcGeneric.EfcContainer",
-                            "dsrcAttributesDict": {
-                                "17": "3150",
                                 "18": "32000000",
                                 "19": "33001A",
                                 "20": "34070811300000",
@@ -173,15 +148,15 @@ def get_perso_data(perso_id: str) -> PersoTaskData:
     return perso_task_data
 
 @router.post('/persos/{perso_id}/kapsch_dsrc_uset_perso_apply/')
-async def apply_kapsch_personalization_data_to_obu(perso_id:str, obu_eq_ref = '00037404', uset_key_type:str = 'Stock'):
+async def apply_kapsch_personalization_data_to_obu(perso_id:str, uset_key_type:str = 'Stock'):
     '''Request application of personalization to OBU through a DSRC beacon'''
 
     perso_task_data = get_perso_data(perso_id)
 
     dsrc_memory_data = {eid: el_dsrc_data.dsrcAttributesDict for eid, el_dsrc_data in perso_task_data.dsrcMemoryData.items()}
     obu_id_hex = await dsrc_perso_l7.kapsch_trp_4010_20b_pl_perso(
+        obu_model = perso_task_data['obuModel'],
         dsrc_memory_data = dsrc_memory_data,
-        expected_obu_eq_ref = obu_eq_ref,
         uset_key_type = uset_key_type
         )
 
@@ -225,8 +200,9 @@ def validate_obu_data_and_finish_perso(perso_id:str):
 #             attribute_value = AXXESv1_2.EfcDsrcGeneric.EfcContainer.from_uper(attributeValueUper)
 #         except ASN1ObjErr:
 #             raise Exception(f'Invalid Attribute value (0x{attribute_value})! It should be a UPER-encoded Hex string representing an ISO14906 EfcContainer ASN1 value!')
+
 @router.post('/kapsch_dsrc_uset_perso_apply/')
-async def apply_kapsch_personalization_data_to_obu(perso_task_data:PersoTaskData, obu_eq_ref:str = '00037404', uset_key_type:str = 'Stock'):
+async def apply_kapsch_personalization_data_to_obu(perso_task_data:PersoTaskData, uset_key_type:str = 'Stock'):
     '''Request application of personalization to OBU through a DSRC beacon'''
     try:
         await dsrc_l7_rse.check_and_update_beacon_state()

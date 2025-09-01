@@ -12,9 +12,9 @@ with open('../security_info/tsp_obu_setup/axxes_kapsch_uset_mksets_v1.0.0.json',
 uset_mks_by_obu_model_and_key_type = {}
 with open('../security_info/tsp_obu_setup/axxes_kapsch_uset_mkset_by_obu_model_v1.0.0.json', 'r') as json_file:
     perso_security_conf = json.load(json_file)
-    for obu_eq_ref, obu_model_sec_info in perso_security_conf.items():
+    for obu_model, obu_model_sec_info in perso_security_conf.items():
         for uset_key_type, keyset_name in obu_model_sec_info['master_key_info'].items():
-            uset_mks_by_obu_model_and_key_type[obu_eq_ref][uset_key_type] = bytes.fromhex(uset_mksets[keyset_name]['mk_hex_value'])
+            uset_mks_by_obu_model_and_key_type[obu_model][uset_key_type] = bytes.fromhex(uset_mksets[keyset_name]['mk_hex_value'])
 
 default_uset_key_type = 'Exploit'
 TRP_4010_20B_MK_TYPES = typing.Literal['SystemElementAcK', 'Stock', 'Exploit']
@@ -66,11 +66,11 @@ def compute_uset_derived_key(uset_master_key:bytes, ac_cr_key_ref:int) -> bytes:
     perso_logger.info(f"Derived USET key: 0x{uset_derived_key.hex().upper()}")
     return uset_derived_key
 
-def compute_uset_derived_key_for_obu_model(obu_eq_ref:str, ac_cr_key_ref:int, uset_key_type=default_uset_key_type) -> bytes:
+def compute_uset_derived_key_for_obu_model(obu_model:str, ac_cr_key_ref:int, uset_key_type=default_uset_key_type) -> bytes:
     if not uset_key_type:
         uset_key_type = default_uset_key_type
 
-    uset_mk_bytes = uset_mks_by_obu_model_and_key_type[obu_eq_ref][uset_key_type]
+    uset_mk_bytes = uset_mks_by_obu_model_and_key_type[obu_model][uset_key_type]
 
     return compute_uset_derived_key(uset_master_key=uset_mk_bytes, ac_cr_key_ref=ac_cr_key_ref)
 
@@ -102,11 +102,11 @@ def decrypt_uset_derived_key(uset_master_key:bytes, ciphertext:bytes) -> bytes:
     if len(uset_master_key) == 32:
         return decrypt_uset_derived_key_32_bytes_mk(uset_master_key, ciphertext)
 
-def decrypt_uset_derived_key_for_obu_model(obu_eq_ref:str, ciphertext:bytes, uset_key_type=default_uset_key_type) -> bytes:
+def decrypt_uset_derived_key_for_obu_model(obu_model:str, ciphertext:bytes, uset_key_type=default_uset_key_type) -> bytes:
     if not uset_key_type:
         uset_key_type = default_uset_key_type
 
-    uset_mk_bytes = bytes.fromhex(uset_mks_by_obu_model_and_key_type[obu_eq_ref][uset_key_type])
+    uset_mk_bytes = bytes.fromhex(uset_mks_by_obu_model_and_key_type[obu_model][uset_key_type])
 
     return decrypt_uset_derived_key(uset_master_key=uset_mk_bytes, ciphertext=ciphertext)
 
@@ -141,9 +141,9 @@ def compute_access_credentials_with_uset_key(rnd_obe:int, uset_derived_key) -> b
         uset_ac_cr = compute_access_credentials_with_32_bytes_uset_key(rnd_obe, uset_derived_key)
     return uset_ac_cr
 
-def compute_kapsch_uset_access_credentials_for_obu_model(obu_eq_ref:str, ac_cr_key_ref:int, rnd_obe:int, uset_key_type=default_uset_key_type) -> bytes:
+def compute_kapsch_uset_access_credentials_for_obu_model(obu_model:str, ac_cr_key_ref:int, rnd_obe:int, uset_key_type=default_uset_key_type) -> bytes:
     if uset_key_type is None:
         uset_key_type = default_uset_key_type
 
-    uset_derived_key = compute_uset_derived_key_for_obu_model(obu_eq_ref, ac_cr_key_ref, uset_key_type)
+    uset_derived_key = compute_uset_derived_key_for_obu_model(obu_model, ac_cr_key_ref, uset_key_type)
     return compute_access_credentials_with_uset_key(rnd_obe, uset_derived_key)
