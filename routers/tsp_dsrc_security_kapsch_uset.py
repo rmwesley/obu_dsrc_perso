@@ -10,7 +10,7 @@ import logging
 security_router_logger = logging.getLogger(__name__)
 
 router = APIRouter(
-    prefix="/security",
+    prefix="/kapsch-sec",
     tags=["TSP DSRC Security Interface"])
 
 class ComputeUsetDerivedKeyReq(BaseModel):
