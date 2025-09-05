@@ -10,7 +10,7 @@ import kapsch_uset_derivation
 perso_secops_logger = logging.getLogger(__name__)
 
 uset_mkset_name_by_obu_model_and_key_type = {}
-with open('../security_info/tsp_obu_setup/axxes_kapsch_uset_mkset_by_obu_model_v1.0.0.json', 'r') as json_file:
+with open('../security_info/tsp_obu_setup/axxes_kapsch_uset_mkset_by_obu_model_v2.0.0.json', 'r') as json_file:
     uset_mkset_name_by_obu_model_and_key_type = json.load(json_file)
 
 default_uset_key_type = 'Exploit'
@@ -23,7 +23,7 @@ def compute_uset_derived_key_for_obu_model(obu_model:str, ac_cr_key_ref:int, use
     if not uset_key_type:
         uset_key_type = default_uset_key_type
 
-    uset_mkset_name = uset_mkset_name_by_obu_model_and_key_type[obu_model][uset_key_type]
+    uset_mkset_name = uset_mkset_name_by_obu_model_and_key_type[obu_model]['uset_mk_info'][uset_key_type]
 
     return kapsch_uset_derivation.compute_uset_derived_key(uset_mkset_name=uset_mkset_name, ac_cr_key_ref=ac_cr_key_ref)
 
@@ -31,7 +31,7 @@ def decrypt_uset_derived_key_for_obu_model(obu_model:str, ciphertext:bytes, uset
     if not uset_key_type:
         uset_key_type = default_uset_key_type
 
-    uset_mkset_name = uset_mkset_name_by_obu_model_and_key_type[obu_model][uset_key_type]
+    uset_mkset_name = uset_mkset_name_by_obu_model_and_key_type[obu_model]['uset_mk_info'][uset_key_type]
 
     return kapsch_uset_derivation.decrypt_uset_derived_key(uset_mkset_name=uset_mkset_name, ciphertext=ciphertext)
 
@@ -81,7 +81,7 @@ class InvalidObuModel(Exception):
 def check_obu_model_and_compute_kapsch_uset_access_credentials_for_obu_model(expected_obu_eq_ref:str, obu_model:str, ac_cr_key_ref:int, rnd_obe:int, uset_key_type=default_uset_key_type) -> bytes:
     if uset_key_type is None:
         uset_key_type = default_uset_key_type
-    if expected_obu_eq_ref not in uset_mkset_name_by_obu_model_and_key_type[obu_model]:
+    if expected_obu_eq_ref not in uset_mkset_name_by_obu_model_and_key_type[obu_model]['supported_obu_eq_refs']:
         raise InvalidObuModel(f'OBU with Manufacturer Id/Equipment Class 0x{expected_obu_eq_ref} is not of model {obu_model}')
 
     return compute_kapsch_uset_access_credentials_for_obu_model(obu_model, ac_cr_key_ref, rnd_obe, uset_key_type)
