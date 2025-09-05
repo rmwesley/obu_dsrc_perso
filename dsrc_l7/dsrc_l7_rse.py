@@ -853,13 +853,13 @@ async def send_echo_action_request(eid=0, text='Hello, World!', close_transactio
     bcm_logger.debug(f"EfcContainer of Type 69 (OCTET STRING) value decoded with PER: {efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_uper()}")
 
     # ActionType is 15 or 0xF for ECHO.request
-    set_mmi_action_request_val = {
+    echo_action_request_val = {
         'mode': True,
         'eid': 0,
         'actionType': 0xF,
         'actionParameter': echo_rq_value
         }
-    t_apdu_with_echo_action_req_value = ('actionRequest', set_mmi_action_request_val)
+    t_apdu_with_echo_action_req_value = ('actionRequest', echo_action_request_val)
     bcm_logger.info(f"ACTION.request of Type 15 (ECHO) being now sent...")
 
     response_t_apdu_json = await send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_echo_action_req_value, close_transaction=close_transaction)
