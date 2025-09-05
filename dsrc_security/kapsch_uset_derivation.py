@@ -4,7 +4,7 @@ import logging
 
 kapsch_uset_logger = logging.getLogger(__name__)
 
-with open('../security_info/tsp_obu_setup/axxes_kapsch_uset_mksets_v1.0.0.json', 'r') as json_file:
+with open('../security_info/tsp_obu_setup/axxes_kapsch_uset_mksets_v2.0.0.json', 'r') as json_file:
     uset_mksets = json.load(json_file)
 
 # Not supported!!
@@ -49,7 +49,7 @@ def compute_uset_derived_key_with_mk(uset_master_key:bytes, ac_cr_key_ref:int) -
     return uset_derived_key
 
 def compute_uset_derived_key(uset_mkset_name:str, ac_cr_key_ref:int) -> bytes:
-    uset_master_key = bytes.fromhex(uset_mksets[uset_mkset_name])
+    uset_master_key = bytes.fromhex(uset_mksets[uset_mkset_name]['mk_hex_value'])
 
     return compute_uset_derived_key_with_mk(uset_master_key, ac_cr_key_ref)
 
@@ -82,6 +82,6 @@ def decrypt_uset_derived_key_with_mk(uset_master_key:bytes, ciphertext:bytes) ->
         return decrypt_uset_derived_key_32_bytes_mk(uset_master_key, ciphertext)
 
 def decrypt_uset_derived_key(uset_mkset_name:str, ciphertext:bytes) -> bytes:
-    uset_master_key = bytes.fromhex(uset_mksets[uset_mkset_name])
+    uset_master_key = bytes.fromhex(uset_mksets[uset_mkset_name]['mk_hex_value'])
 
     return decrypt_uset_derived_key_with_mk(uset_master_key, ciphertext)
