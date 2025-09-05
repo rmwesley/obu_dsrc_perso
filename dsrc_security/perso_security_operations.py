@@ -3,11 +3,22 @@ from Crypto.Cipher import DES, DES3
 import json
 import logging
 import typing
+import datetime
 
-import kapsch_uset_derivation
+from dsrc_security import kapsch_uset_derivation
 # import kapsch_sam_http_api_sec_ops as kapsch_uset_derivation
 
 perso_secops_logger = logging.getLogger(__name__)
+perso_secops_logger.setLevel(logging.DEBUG)
+
+startup_date = datetime.datetime.now()
+logs_date_prefix = startup_date.strftime('%y%m%d')
+
+# SETTING UP LOGGER FILE HANDLER
+file_handler = logging.FileHandler(f'logs/beacon_logs/{logs_date_prefix}_perso_secops.log')
+file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
+file_handler.setFormatter(file_formatter)
+perso_secops_logger.addHandler(file_handler)
 
 uset_mkset_name_by_obu_model_and_key_type = {}
 with open('../security_info/tsp_obu_setup/axxes_kapsch_uset_mkset_by_obu_model_v2.0.0.json', 'r') as json_file:
