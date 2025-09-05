@@ -105,3 +105,37 @@ def get_eid_and_new_uset_attribute_dict(eid:int, obu_model:str, ac_cr_key_ref:in
         uset_key_attr_id: uset_key_octet_string_uper_hex
     }
     return uset_key_eid, new_uset_attr_dict
+
+# USET key update dict preparation function
+def get_eid_and_new_uset_attribute_dict_generator_for_obu_model(obu_model:str, ac_cr_key_ref:int, new_uset_key_type=default_uset_key_type):
+    for eid, eid_sec_info in uset_mkset_name_by_obu_model_and_key_type[obu_model]['dsrc_mem_key_locations'].items():
+        if eid == 0:
+            # We do not update/switch the Access/USET key for Kapsch's SystemElement (EID 0)!
+            return
+
+        if 'uset_key' not in eid_sec_info:
+            perso_secops_logger.info(f'No USET keys for EID {eid} of OBU model {obu_model}!')
+            continue
+        uset_key_info = eid_sec_info['uset_key']
+
+        uset_key_eid = int(eid)
+        # USET key EID is normally the same EID, otherwise, the key is stored in another element.
+        # This is a workaround used for TIS-VL EFC elements, since they use attribute IDs 111 through 118 for historization (D-HIS)!
+        if 'external_eid' in uset_key_info:
+            uset_key_eid = int(uset_key_info['external_eid'])
+
+        uset_key_attr_id = int(uset_key_info['storage_attr_id'])
+        uset_key_bytes = compute_uset_derived_key_for_obu_model(obu_model, ac_cr_key_ref, new_uset_key_type)
+
+        # 0x02 = EfcContainer CHOICE tag for OCTET STRING
+        uset_key_octet_string_uper_hex = f'02{len(uset_key_bytes):02X}{uset_key_bytes.hex().upper()}'
+        new_uset_attr_dict = {
+            uset_key_attr_id: uset_key_octet_string_uper_hex
+        }
+        perso_secops_logger.debug(f'USET info for EID {eid}: Key in EID {uset_key_eid}, on attributes {new_uset_attr_dict}')
+        uset_key_storage_eid_and_attribute = {'uset_key_eid': uset_key_eid, 'attribute_dict': new_uset_attr_dict}
+        yield (eid, uset_key_storage_eid_and_attribute)
+
+# USET key update dict preparation function
+def get_new_uset_attribute_dict_by_eid_for_obu_model(obu_model:str, ac_cr_key_ref:int, new_uset_key_type=default_uset_key_type):
+    return dict(get_eid_and_new_uset_attribute_dict_generator_for_obu_model(obu_model, ac_cr_key_ref, new_uset_key_type))
