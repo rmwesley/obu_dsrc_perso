@@ -333,6 +333,7 @@ def compute_all_derived_keys_for_efc_cm_and_return_hex_dict(pan_8_msb:bytes, efc
 
 def compute_all_derived_keys_for_obu_contract_ref_and_return_hex_dict(pan_8_msb:bytes, obu_contract_ref:str, ac_cr_key_ref:int):
     master_keys = dsrc_td_security_operations.get_master_keys_with_device_contract_ref(obu_contract_ref)
+    efc_cm = obu_contract_ref[0:12]
     return compute_all_derived_keys_and_return_hex_dict(pan_8_msb, efc_cm, ac_cr_key_ref, master_keys)
 
 def compute_all_derived_keys_for_device_model(pan_8_msb:bytes, device_model_name:str, ac_cr_key_ref:int):

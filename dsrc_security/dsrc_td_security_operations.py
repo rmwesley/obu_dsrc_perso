@@ -97,7 +97,7 @@ def get_master_keys_with_device_info_in_current_td(efc_cm: bytes|int|str, manufa
             # Be careful if there are repeated EFC-CMs for different device models!!
             return get_master_keys_with_efc_cm_only(efc_cm)
         td_security_logger.debug(f'MasterKeys not found for device contract {device_contract_ref} on TD {current_toll_domain_name}!!!')
-        raise TollDomainMasterKeysNotFoundException(f'MasterKeys not found for device contract {device_contract_ref} on TD {current_toll_domain_name}!!!!!!')
+        raise TollDomainMasterKeysNotFoundException(f'MasterKeys not found for device contract {device_contract_ref} on TD {current_toll_domain_name}!!!')
 
 def get_master_keys_with_device_contract_ref(device_contract_ref: str):
     efc_cm_hex, manufacturer_id_hex, equipment_class_hex = dsrc_mk_by_device_and_td_loader.disassemble_device_contract_ref_hex_str(device_contract_ref)

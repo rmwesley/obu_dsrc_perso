@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import datetime
 
@@ -32,7 +33,7 @@ def get_obu_model_from_vst_data(vst_value: dict = None) -> str:
     manufacturer_id = obe_config['manufacturerID']
 
     obu_equipment_ref = f'{manufacturer_id:04X}{equipment_class:04X}'
-    dsrc_l7_perso_logger.error(f'OBU Equipment Reference: {obu_equipment_ref}')
+    dsrc_l7_perso_logger.info(f'OBU Equipment Reference: {obu_equipment_ref}')
     return obu_equipment_ref
 
 async def send_set_request(eid, access_credentials, attrList, close_transaction=False):
@@ -53,29 +54,29 @@ async def send_set_request(eid, access_credentials, attrList, close_transaction=
 
     return response_t_apdu_value
 
-class AcCrKeyRefNotFound(Exception):
-    pass
-async def get_rnd_obe_and_ac_cr_key_ref_for_obe_from_cardme_app_in_vst(serial_number=None):
-    try:
-        # Works only if the OBU has an active CARDME application being presented in its VST!!
-        cardme_eid, efc_cm, ac_cr_key_ref, rnd_obe = custom_its_per_decoders.vst_decode_eid_efc_cm_rnd_obe_and_ac_cr_from_any_cardme_app_in_vst(dsrc_l7_rse.last_vst_value)
-        return ac_cr_key_ref, rnd_obe
-    except custom_its_per_decoders.NoCardmeAppPresentInVst:
-        dsrc_l7_perso_logger.warning('No CARDME apps were presented in VST!!')
-    if serial_number is not None:
-        # An OBU Serial Number was manually scanned and inputted to the script!!
-        # We can derive the AC_CR-KeyRef from the corresponding Equipment OBU ID!!
-        ac_cr_key_ref = compute_kapsch_ac_cr_key_ref_from_serial_number(serial_number)
-    else:
-        # Worst case scenario: No CARDME app in VST and no manually scanned Serial Number!
-        # Tryhard method: GET.request to Attribute 24 (equOBUId) on all available EIDs!!!
-        eq_obu_id = try_to_get_obu_id_from_any_eid_in_last_vst()
-        if eq_obu_id is None:
-            raise AcCrKeyRefNotFound("Please scan the OBU's serial number so we can determine its AC_CR-KeyRef! The OBU ID is not present in any EID...")
-        ac_cr_key_ref = compute_kapsch_ac_cr_key_ref_from_eq_obu_id(eq_obu_id)
-    # Good! Now we have the AC_CR-KeyRef! Onto the RndOBE value...
-    rnd_obe = await send_get_nonce_action_req_and_decode_rnd_obe_value(eid=0)
-    return ac_cr_key_ref, rnd_obe
+# class AcCrKeyRefNotFound(Exception):
+#     pass
+# async def get_rnd_obe_and_ac_cr_key_ref_for_obe_from_cardme_app_in_vst(serial_number=None):
+#     try:
+#         # Works only if the OBU has an active CARDME application being presented in its VST!!
+#         cardme_eid, efc_cm, ac_cr_key_ref, rnd_obe = custom_its_per_decoders.vst_decode_eid_efc_cm_rnd_obe_and_ac_cr_from_any_cardme_app_in_vst(dsrc_l7_rse.last_vst_value)
+#         return ac_cr_key_ref, rnd_obe
+#     except custom_its_per_decoders.NoCardmeAppPresentInVst:
+#         dsrc_l7_perso_logger.warning('No CARDME apps were presented in VST!!')
+#     if serial_number is not None:
+#         # An OBU Serial Number was manually scanned and inputted to the script!!
+#         # We can derive the AC_CR-KeyRef from the corresponding Equipment OBU ID!!
+#         ac_cr_key_ref = compute_kapsch_ac_cr_key_ref_from_serial_number(serial_number)
+#     else:
+#         # Worst case scenario: No CARDME app in VST and no manually scanned Serial Number!
+#         # Tryhard method: GET.request to Attribute 24 (equOBUId) on all available EIDs!!!
+#         eq_obu_id = try_to_get_obu_id_from_any_eid_in_last_vst()
+#         if eq_obu_id is None:
+#             raise AcCrKeyRefNotFound("Please scan the OBU's serial number so we can determine its AC_CR-KeyRef! The OBU ID is not present in any EID...")
+#         ac_cr_key_ref = compute_kapsch_ac_cr_key_ref_from_eq_obu_id(eq_obu_id)
+#     # Good! Now we have the AC_CR-KeyRef! Onto the RndOBE value...
+#     rnd_obe = await send_get_nonce_action_req_and_decode_rnd_obe_value(eid=0)
+#     return ac_cr_key_ref, rnd_obe
 
 async def get_ac_cr_key_ref_from_any_cardme_app_and_rnd_obe_with_get_nonce(serial_number=None):
     try:
@@ -142,7 +143,7 @@ async def try_to_get_obu_id_from_any_eid_in_last_vst():
         if eq_obu_id is not None:
             return eq_obu_id
 
-class ObuSetAccessDenied(Exception):
+class SetResponseError(Exception):
     pass
 
 async def write_dsrc_data_to_kapsch_efc_element_with_kapsch_uset_ac_cr(eid:int, attribute_dict:dict, access_credentials:bytes):
@@ -159,12 +160,14 @@ async def write_dsrc_data_to_kapsch_efc_element_with_kapsch_uset_ac_cr(eid:int, 
         result = await dsrc_l7_rse.send_set_request(eid, access_credentials=access_credentials, attrList=attribute_list)
         if 'ret' in result['set-response']:
             if result['set-response']['ret'] == 1:
-                dsrc_l7_perso_logger.error(f'Cannot SET attribute for OBU! SET.response: {result}')
-                raise ObuSetAccessDenied(f'Access Denied: Cannot SET attribute for OBU!')
+                dsrc_l7_perso_logger.error(f'Access Denied: Cannot SET attribute for OBU! SET.response: {result}')
+            await dsrc_l7_rse.send_close_transaction_echo(eid=eid, text='Error')
+            raise SetResponseError(f'Error in set-response: {result['set-response']}')
+            # break
 
     await dsrc_l7_rse.set_mmi(eid=eid)
 
-async def kapsch_trp_4010_20b_pl_perso_single_eid(eid:int, attribute_dict, obu_model):
+async def kapsch_trp_4010_20b_pl_perso_single_eid(eid:int, attribute_dict, obu_model, uset_key_type=None):
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=[0, 1])
     obu_eq_ref = get_obu_model_from_vst_data(last_vst_value)
 
@@ -179,6 +182,7 @@ async def perso_kapsch_element_with_uset(eid, obu_eq_ref, obu_model, attribute_d
     uset_access_credentials = perso_security_operations.check_obu_model_and_compute_kapsch_uset_access_credentials_for_obu_model(obu_eq_ref, obu_model, ac_cr_key_ref, rnd_obe, uset_key_type)
     await write_dsrc_data_to_kapsch_efc_element_with_kapsch_uset_ac_cr(eid, attribute_dict, uset_access_credentials)
 
+SLEEP_BETWEEN_EIDS_S = 0.3
 async def kapsch_trp_4010_20b_pl_perso(obu_model, dsrc_memory_data, uset_key_type=None):
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=[0, 1])
     obu_eq_ref = get_obu_model_from_vst_data(last_vst_value)
@@ -190,6 +194,7 @@ async def kapsch_trp_4010_20b_pl_perso(obu_model, dsrc_memory_data, uset_key_typ
 
         dsrc_l7_rse.get_parameter_for_eid(eid)
         perso_kapsch_element_with_uset(eid, obu_eq_ref, obu_model, attribute_dict, uset_key_type=uset_key_type)
+        await asyncio.sleep(SLEEP_BETWEEN_EIDS_S)
 
     if 0 in dsrc_memory_data:
         # Setup System Element
@@ -201,24 +206,32 @@ async def kapsch_trp_4010_20b_pl_perso(obu_model, dsrc_memory_data, uset_key_typ
 
     return obu_id_hex
 
-async def kapsch_element_switch_uset_keys(eid, obu_model, curr_uset_key_type=None, new_uset_key_type=None):
-    if eid == 0:
-        # We do not update/switch the Access/USET key for Kapsch's SystemElement (EID 0)!
-        continue
-    for eid, key_info in uset_key_ref_by_obu_model_and_eid[obu_model].items():
-        uset_key_eid, new_uset_attribute_dict = perso_security_operations.get_eid_and_new_uset_attribute_dict(eid, expected_obu_eq_ref, obu_model, ac_cr_key_ref, new_uset_key_type)
-        await perso_kapsch_element_with_uset(uset_key_eid, obu_equipment_ref, new_uset_attribute_dict, uset_key_type=curr_uset_key_type)
+async def kapsch_element_switch_uset_keys(obu_model, obu_equipment_ref, ac_cr_key_ref, vst_value, curr_uset_key_type=None, new_uset_key_type=None):
+    vst_eid_list = [app['eid'] for app in vst_value['applications']]
+    dsrc_l7_perso_logger.info(f'OBU contains EIDs: {vst_eid_list}')
+
+    uset_element_attribute_dict_by_eid = perso_security_operations.get_new_uset_attribute_dict_by_eid_for_obu_model(obu_model, ac_cr_key_ref, new_uset_key_type)
+    for eid, uset_key_storage_eid_and_attribute in uset_element_attribute_dict_by_eid.items():
+        if eid not in vst_eid_list:
+            raise Exception(f'EID {eid} not in OBU VST EID list: {vst_eid_list}, so OBU is probably not of model {obu_model}')
+        uset_key_eid = uset_key_storage_eid_and_attribute['uset_key_eid']
+
+        if uset_key_eid not in vst_eid_list:
+            raise Exception(f'USET key storage EID {uset_key_eid} not in in OBU VST EID list: {vst_eid_list}, so OBU is probably not of model {obu_model}')
+
+        new_uset_attr_dict = uset_key_storage_eid_and_attribute['attribute_dict']
+        await perso_kapsch_element_with_uset(eid, obu_equipment_ref, obu_model, new_uset_attr_dict, uset_key_type=curr_uset_key_type)
 
 async def kapsch_switch_uset_keys(obu_model, curr_uset_key_type=None, new_uset_key_type=None):
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=[1])
+
+    ac_cr_key_ref, rnd_obe = await get_ac_cr_key_ref_from_any_cardme_app_and_rnd_obe_with_get_nonce()
     obu_equipment_ref = get_obu_model_from_vst_data(last_vst_value)
     obu_id_hex = await try_to_get_obu_id_from_any_eid_in_last_vst()
 
-    for application_data in vst_value['applications']:
-        eid = application_data['eid']
-        await kapsch_element_switch_uset_keys(eid, obu_model, curr_uset_key_type, new_uset_key_type)
+    await kapsch_element_switch_uset_keys(obu_model, obu_equipment_ref, ac_cr_key_ref, last_vst_value, curr_uset_key_type, new_uset_key_type)
 
-    await dsrc_l7_rse.send_close_transaction_setmmi(eid=eid)
+    await dsrc_l7_rse.send_close_transaction_setmmi(eid=0)
 
     return obu_id_hex
 
@@ -227,7 +240,7 @@ async def kapsch_force_uset_key(obu_model, new_uset_key_type=None):
     obu_equipment_ref = get_obu_model_from_vst_data(last_vst_value)
     obu_id_hex = await try_to_get_obu_id_from_any_eid_in_last_vst()
 
-    for application_data in vst_value['applications']:
+    for application_data in last_vst_value['applications']:
         eid = application_data['eid']
         if eid == 0:
             # We do not update/switch the Access/USET key for Kapsch's SystemElement (EID 0)!
