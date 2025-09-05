@@ -1,5 +1,5 @@
 import logging
-import typing
+import datetime
 
 from dsrc_l7 import dsrc_l7_rse
 from dsrc_security import dsrc_contracts, perso_security_operations
@@ -9,6 +9,15 @@ from ASN.compiled_DSRC_instances import AXXESv1_2
 
 dsrc_l7_perso_logger = logging.getLogger(__name__)
 dsrc_l7_perso_logger.setLevel(logging.DEBUG)
+
+startup_date = datetime.datetime.now()
+logs_date_prefix = startup_date.strftime('%y%m%d')
+
+# SETTING UP LOGGER FILE HANDLER
+file_handler = logging.FileHandler(f'logs/beacon_logs/{logs_date_prefix}_perso_l7.log')
+file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
+file_handler.setFormatter(file_formatter)
+dsrc_l7_perso_logger.addHandler(file_handler)
 
 async def init_perso_app():
     await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
