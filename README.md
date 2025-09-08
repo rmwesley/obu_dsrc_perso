@@ -18,6 +18,7 @@ Specifically, I installed Microsoft's Visual Studio **Build Tools** and then bui
 
 Required PIP packages for running beacon code:
 - pycrate
+- axxes_asn_compiles
 - pycryptodome
 - logging
 - threading
@@ -30,6 +31,8 @@ Required dependencies for deploying FastAPI app:
 - fastapi[standard]
 
 Required dependencies for EFC decoder:
+- pycrate
+- axxes_asn_compiles
 - requests_pkcs12
 - baudot
 
@@ -64,6 +67,9 @@ You can also directly set this environment variable in Python code like so:
 `os.environ['MK_PATH'] = r"..\master_keys.json"`
 
 This is exactly the code that is executed in the `main.py` module to set the `MK_PATH` environment variable
+
+# pycrate ASN compiles
+Add the path to the `axxes_asn_compiles` module in the **PYTHONPATH** environment variable.
 
 # MQTT setup
 Please start an MQTT broker and set up its connection info in the `settings/mqtt_broker_config.json` config file.
