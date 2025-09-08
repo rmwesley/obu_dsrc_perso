@@ -19,6 +19,7 @@ Specifically, I installed Microsoft's Visual Studio **Build Tools** and then bui
 Required PIP packages for running beacon code:
 - pycrate
 - axxes_asn_compiles
+- custom_its_decoders
 - pycryptodome
 - logging
 - threading
@@ -68,8 +69,11 @@ You can also directly set this environment variable in Python code like so:
 
 This is exactly the code that is executed in the `main.py` module to set the `MK_PATH` environment variable
 
-# pycrate ASN compiles
-Add the path to the `axxes_asn_compiles` module in the **PYTHONPATH** environment variable.
+# ASN PER decoding & encoding (dencoding procedures)
+## pycrate ASN compiles
+Add the path to the `axxes_asn_compiles` module to the **PYTHONPATH** environment variable.
+## Custom Intelligent Transport System decoders
+Add the path to the `custom_its_decoders` module to the **PYTHONPATH** environment variable.
 
 # MQTT setup
 Please start an MQTT broker and set up its connection info in the `settings/mqtt_broker_config.json` config file.
