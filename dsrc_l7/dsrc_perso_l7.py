@@ -78,6 +78,14 @@ async def send_set_request(eid, access_credentials, attrList, close_transaction=
 #     rnd_obe = await send_get_nonce_action_req_and_decode_rnd_obe_value(eid=0)
 #     return ac_cr_key_ref, rnd_obe
 
+async def get_ac_cr_key_ref_from_any_cardme_app(serial_number=None):
+    try:
+        # Works only if the OBU has an active CARDME application being presented in its VST!!
+        cardme_eid, efc_cm, ac_cr_key_ref, rnd_obe = custom_its_per_decoders.vst_decode_eid_efc_cm_rnd_obe_and_ac_cr_from_any_cardme_app_in_vst(dsrc_l7_rse.last_vst_value)
+    except custom_its_per_decoders.NoCardmeAppPresentInVst:
+        dsrc_l7_perso_logger.warning('No CARDME apps were presented in VST!!')
+    return ac_cr_key_ref
+
 async def get_ac_cr_key_ref_from_any_cardme_app_and_rnd_obe_with_get_nonce(serial_number=None):
     try:
         # Works only if the OBU has an active CARDME application being presented in its VST!!
@@ -170,16 +178,20 @@ async def write_dsrc_data_to_kapsch_efc_element_with_kapsch_uset_ac_cr(eid:int, 
 async def kapsch_trp_4010_20b_pl_perso_single_eid(eid:int, attribute_dict, obu_model, uset_key_type=None):
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=[0, 1])
     obu_eq_ref = get_obu_model_from_vst_data(last_vst_value)
-
-    ac_cr_key_ref, rnd_obe = await get_ac_cr_key_ref_from_any_cardme_app_and_rnd_obe_with_get_nonce()
     perso_security_operations.check_obu_model(obu_eq_ref, obu_model)
+
+    ac_cr_key_ref = await get_ac_cr_key_ref_from_any_cardme_app()
+    rnd_obe = await send_get_nonce_action_req(eid)
+
     uset_access_credentials = perso_security_operations.compute_kapsch_uset_access_credentials_for_obu_model(obu_eq_ref, obu_model, ac_cr_key_ref, rnd_obe, uset_key_type)
     await write_dsrc_data_to_kapsch_efc_element_with_kapsch_uset_ac_cr(eid, attribute_dict, uset_access_credentials)
 
     await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
 
 async def perso_kapsch_element_with_uset(eid, obu_eq_ref, obu_model, attribute_dict, uset_key_type=None):
-    ac_cr_key_ref, rnd_obe = await get_ac_cr_key_ref_from_any_cardme_app_and_rnd_obe_with_get_nonce()
+    ac_cr_key_ref = await get_ac_cr_key_ref_from_any_cardme_app()
+    rnd_obe = await send_get_nonce_action_req(eid)
+
     perso_security_operations.check_obu_model(obu_eq_ref, obu_model)
     uset_access_credentials = perso_security_operations.compute_kapsch_uset_access_credentials_for_obu_model(obu_eq_ref, obu_model, ac_cr_key_ref, rnd_obe, uset_key_type)
     await write_dsrc_data_to_kapsch_efc_element_with_kapsch_uset_ac_cr(eid, attribute_dict, uset_access_credentials)
