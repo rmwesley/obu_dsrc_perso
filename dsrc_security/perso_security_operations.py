@@ -5,8 +5,7 @@ import logging
 import typing
 import datetime
 
-from dsrc_security import kapsch_uset_derivation
-# import kapsch_sam_http_api_sec_ops as kapsch_uset_derivation
+from dsrc_security import kapsch_http_uset_key_obtention
 
 perso_secops_logger = logging.getLogger(__name__)
 perso_secops_logger.setLevel(logging.DEBUG)
@@ -25,18 +24,15 @@ with open('../security_info/tsp_obu_setup/axxes_kapsch_uset_mkset_by_obu_model_v
     uset_mkset_name_by_obu_model_and_key_type = json.load(json_file)
 
 default_uset_key_type = 'Exploit'
-TRP_4010_20B_MK_TYPES = typing.Literal['SystemElementAcK', 'Stock', 'Exploit']
-def set_default_key_type(uset_key_type:TRP_4010_20B_MK_TYPES):
+KAPSCH_USET_MK_TYPES = typing.Literal['SystemElementAcK', 'Stock', 'Exploit']
+def set_default_key_type(uset_key_type:KAPSCH_USET_MK_TYPES):
     global default_uset_key_type
     default_uset_key_type = uset_key_type
 
 def compute_uset_derived_key_for_obu_model(obu_model:str, ac_cr_key_ref:int, uset_key_type=default_uset_key_type) -> bytes:
     if not uset_key_type:
         uset_key_type = default_uset_key_type
-
-    uset_mkset_name = uset_mkset_name_by_obu_model_and_key_type[obu_model]['uset_mk_info'][uset_key_type]
-
-    return kapsch_uset_derivation.compute_uset_derived_key(uset_mkset_name=uset_mkset_name, ac_cr_key_ref=ac_cr_key_ref)
+    return kapsch_http_uset_key_obtention.compute_uset_derived_key_for_obu_model(obu_model, ac_cr_key_ref, uset_key_type)
 
 def decrypt_uset_derived_key_for_obu_model(obu_model:str, ciphertext:bytes, uset_key_type=default_uset_key_type) -> bytes:
     if not uset_key_type:
@@ -44,7 +40,7 @@ def decrypt_uset_derived_key_for_obu_model(obu_model:str, ciphertext:bytes, uset
 
     uset_mkset_name = uset_mkset_name_by_obu_model_and_key_type[obu_model]['uset_mk_info'][uset_key_type]
 
-    return kapsch_uset_derivation.decrypt_uset_derived_key(uset_mkset_name=uset_mkset_name, ciphertext=ciphertext)
+    return kapsch_http_uset_key_obtention.decrypt_uset_derived_key(uset_mkset_name=uset_mkset_name, ciphertext=ciphertext)
 
 class ObuModelUnknown(Exception):
     pass
@@ -84,8 +80,7 @@ def compute_kapsch_uset_access_credentials_for_obu_model(obu_model:str, ac_cr_ke
     if uset_key_type is None:
         uset_key_type = default_uset_key_type
 
-    uset_derived_key = compute_uset_derived_key_for_obu_model(obu_model, ac_cr_key_ref, uset_key_type)
-    return compute_access_credentials_with_uset_key(rnd_obe, uset_derived_key)
+    return kapsch_http_uset_key_obtention.compute_kapsch_uset_access_credentials_for_obu_model(obu_model, ac_cr_key_ref, rnd_obe, uset_key_type)
 
 class InvalidObuModel(Exception):
     pass
