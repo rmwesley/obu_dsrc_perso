@@ -58,4 +58,4 @@ async def default_toll_domain_transaction_loop(extra_td_list:list[str] = ['TIS']
 
 # Main execution
 if __name__ == "__main__":
-    asyncio.run(default_toll_domain_transaction_loop(extra_td_list=['TIS']))
+    asyncio.run(default_toll_domain_transaction_loop(extra_td_list=['TIS', 'VIA-T2', 'EasyGo']))
