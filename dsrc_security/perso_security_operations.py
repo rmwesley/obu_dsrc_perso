@@ -84,13 +84,9 @@ def compute_kapsch_uset_access_credentials_for_obu_model(obu_model:str, ac_cr_ke
 
 class InvalidObuModel(Exception):
     pass
-def check_obu_model_and_compute_kapsch_uset_access_credentials_for_obu_model(expected_obu_eq_ref:str, obu_model:str, ac_cr_key_ref:int, rnd_obe:int, uset_key_type=default_uset_key_type) -> bytes:
-    if uset_key_type is None:
-        uset_key_type = default_uset_key_type
+def check_obu_model(expected_obu_eq_ref:str, obu_model:str):
     if expected_obu_eq_ref not in uset_mkset_name_by_obu_model_and_key_type[obu_model]['supported_obu_eq_refs']:
         raise InvalidObuModel(f'OBU with Manufacturer Id/Equipment Class 0x{expected_obu_eq_ref} is not of model {obu_model}')
-
-    return compute_kapsch_uset_access_credentials_for_obu_model(obu_model, ac_cr_key_ref, rnd_obe, uset_key_type)
 
 # USET key update dict preparation function
 def get_eid_and_new_uset_attribute_dict(eid:int, obu_model:str, ac_cr_key_ref:int, new_uset_key_type=default_uset_key_type) -> tuple[int, dict]:
