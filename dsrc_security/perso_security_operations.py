@@ -1,11 +1,10 @@
-from Crypto.Cipher import DES, DES3
 
 import json
 import logging
 import typing
 import datetime
 
-from dsrc_security import kapsch_http_uset_key_obtention
+from dsrc_security import kapsch_http_uset_key_obtention, kapsch_uset_compute_ac_cr_locally
 
 perso_secops_logger = logging.getLogger(__name__)
 perso_secops_logger.setLevel(logging.DEBUG)
@@ -42,45 +41,18 @@ def decrypt_uset_derived_key_for_obu_model(obu_model:str, ciphertext:bytes, uset
 
     return kapsch_http_uset_key_obtention.decrypt_uset_derived_key(uset_mkset_name=uset_mkset_name, ciphertext=ciphertext)
 
-class ObuModelUnknown(Exception):
-    pass
-
-def compute_access_credentials_with_8_bytes_uset_key(rnd_obe:int, uset_derived_key) -> bytes:
-    # Prepare the DES cipher with the derivec Access Key/USET Key
-    cipher = DES.new(uset_derived_key, DES.MODE_ECB)
-    # The padding is automatically added to the right of RndOBE for DES
-    # We add 4 bytes of padding to the right of RndOBE
-    output = cipher.encrypt(rnd_obe.to_bytes(4) + bytearray(4))
-
-    # We now truncate this output to the 4 left-most bytes
-    ac_cr = output[:4]
-    perso_secops_logger.debug(f"Access Credentials in hex: {ac_cr.hex().upper()}")
-    return ac_cr
-
-def compute_access_credentials_with_16_bytes_uset_key(rnd_obe:int, uset_derived_key) -> bytes:
-    # print(uset_derived_key)
-    cipher = DES3.new(uset_derived_key, DES3.MODE_ECB)
-    output = cipher.encrypt(rnd_obe.to_bytes(4) + bytearray(4))
-
-    ac_cr = output[:4]
-    perso_secops_logger.debug(f"Access Credentials in hex: {ac_cr.hex().upper()}")
-    return ac_cr
-compute_access_credentials_with_32_bytes_uset_key = compute_access_credentials_with_16_bytes_uset_key
-
-def compute_access_credentials_with_uset_key(rnd_obe:int, uset_derived_key) -> bytes:
-    if len(uset_derived_key) == 8:
-        uset_ac_cr = compute_access_credentials_with_8_bytes_uset_key(rnd_obe, uset_derived_key)
-    if len(uset_derived_key) == 16:
-        uset_ac_cr = compute_access_credentials_with_16_bytes_uset_key(rnd_obe, uset_derived_key)
-    if len(uset_derived_key) == 32:
-        uset_ac_cr = compute_access_credentials_with_32_bytes_uset_key(rnd_obe, uset_derived_key)
-    return uset_ac_cr
-
+# This can be too slow for DSRC communication!
 def compute_kapsch_uset_access_credentials_for_obu_model(obu_model:str, ac_cr_key_ref:int, rnd_obe:int, uset_key_type=default_uset_key_type) -> bytes:
     if uset_key_type is None:
         uset_key_type = default_uset_key_type
 
     return kapsch_http_uset_key_obtention.compute_kapsch_uset_access_credentials_for_obu_model(obu_model, ac_cr_key_ref, rnd_obe, uset_key_type)
+
+# Compute AC_CR from the USET, that should be provided along with the OBU's personalization data, that is, before DSRC transaction phase starts!
+# This should happen in the end of the initialization phase, after a VST with the OBU's AC_CR-KeyRef value is provided!
+# That is, after VST, and before a GET_NONCE!
+def compute_kapsch_uset_access_credentials_from_a_provided_uset(rnd_obe:int, derived_uset_key:bytes) -> bytes:
+    return kapsch_uset_compute_ac_cr_locally.compute_access_credentials_with_uset_key(rnd_obe, derived_uset_key)
 
 class InvalidObuModel(Exception):
     pass
