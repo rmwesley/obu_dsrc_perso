@@ -14,7 +14,7 @@ def compute_uset_derived_key_via_mk_name(uset_mk_name:str, ac_cr_key_ref:int) ->
     route=f'/uset_masterkeys/{uset_mk_name}/derived_keys/{ac_cr_key_ref_hex}/'
     return send_get_request_to_web_service(route)
 
-def decrypt_kapsch_uset_key_via_mk_name(uset_mk_name:str, uset_derived_key_hex:str):
+def get_decrypted_kapsch_uset_key_via_mk_name(uset_mk_name:str, uset_derived_key_hex:str):
     route = f'/uset_masterkeys/{uset_mk_name}/decrypt_uset_key/{uset_derived_key_hex}'
     return send_get_request_to_web_service(route)
 
@@ -24,16 +24,16 @@ def compute_kapsch_uset_access_credentials_via_mk_name(uset_mk_name:str, ac_cr_k
     route = f'/uset_masterkeys/{uset_mk_name}/derived_keys/{ac_cr_key_ref_hex}/ac_cr/{rnd_obe_hex}'
     return requests.get(route)
 
-def compute_uset_derived_key_for_obu_model(obu_model:str, uset_key_type:UsetKeyTypes, ac_cr_key_ref:int) -> bytes:
+def get_uset_derived_key_for_obu_model(obu_model:str, uset_key_type, ac_cr_key_ref:int) -> bytes:
     ac_cr_key_ref_hex = f'{ac_cr_key_ref:04X}'
     route = f'/obu_models/{obu_model}/uset_key_types/{uset_key_type}/derived_keys/{ac_cr_key_ref_hex}'
     return send_get_request_to_web_service(route)
 
-def decrypt_kapsch_uset_key_for_obu_model(obu_model_name:str, uset_key_type:UsetKeyTypes, uset_derived_key_hex:str):
+def get_decrypted_kapsch_uset_key_for_obu_model(obu_model_name:str, uset_key_type, uset_derived_key_hex:str):
     route = f'/obu_models/{obu_model_name}/uset_key_types/{uset_key_type}/decrypt_uset_key/{uset_derived_key_hex}'
     return send_get_request_to_web_service(route)
 
-def compute_kapsch_uset_access_credentials_for_obu_model(obu_model:str, uset_key_type:UsetKeyTypes, ac_cr_key_ref:int, rnd_obe:int) -> bytes:
+def get_kapsch_uset_access_credentials_for_obu_model(obu_model:str, uset_key_type, ac_cr_key_ref:int, rnd_obe:int) -> bytes:
     ac_cr_key_ref_hex = f'{ac_cr_key_ref:04X}'
     rnd_obe_hex = f'{rnd_obe:08X}'
     route = f'/obu_models/{obu_model}/uset_key_types/{uset_key_type}/derived_keys/{ac_cr_key_ref_hex}/ac_cr/{rnd_obe_hex}'

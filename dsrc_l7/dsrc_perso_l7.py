@@ -178,7 +178,7 @@ async def write_dsrc_data_to_kapsch_efc_element_with_kapsch_uset_ac_cr(eid:int, 
 async def perso_kapsch_element_with_uset(eid, obu_eq_ref, obu_model, attribute_dict, uset_key_type=None):
     ac_cr_key_ref = await get_ac_cr_key_ref_from_any_cardme_app()
     perso_security_operations.check_obu_model(obu_eq_ref, obu_model)
-    derived_uset_key = perso_security_operations.compute_uset_derived_key_for_obu_model(obu_model, ac_cr_key_ref, uset_key_type)
+    derived_uset_key = perso_security_operations.get_uset_derived_key_for_obu_model(obu_model, ac_cr_key_ref, uset_key_type)
 
     rnd_obe = await send_get_nonce_action_req(eid)
 

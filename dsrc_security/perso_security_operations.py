@@ -28,10 +28,10 @@ def set_default_key_type(uset_key_type:KAPSCH_USET_MK_TYPES):
     global default_uset_key_type
     default_uset_key_type = uset_key_type
 
-def compute_uset_derived_key_for_obu_model(obu_model:str, ac_cr_key_ref:int, uset_key_type=default_uset_key_type) -> bytes:
+def get_uset_derived_key_for_obu_model(obu_model:str, ac_cr_key_ref:int, uset_key_type=default_uset_key_type) -> bytes:
     if not uset_key_type:
         uset_key_type = default_uset_key_type
-    return kapsch_http_uset_key_obtention.compute_uset_derived_key_for_obu_model(obu_model, ac_cr_key_ref, uset_key_type)
+    return kapsch_http_uset_key_obtention.get_uset_derived_key_for_obu_model(obu_model, ac_cr_key_ref, uset_key_type)
 
 def decrypt_uset_derived_key_for_obu_model(obu_model:str, ciphertext:bytes, uset_key_type=default_uset_key_type) -> bytes:
     if not uset_key_type:
@@ -42,11 +42,11 @@ def decrypt_uset_derived_key_for_obu_model(obu_model:str, ciphertext:bytes, uset
     return kapsch_http_uset_key_obtention.decrypt_uset_derived_key(uset_mkset_name=uset_mkset_name, ciphertext=ciphertext)
 
 # This can be too slow for DSRC communication!
-def compute_kapsch_uset_access_credentials_for_obu_model(obu_model:str, ac_cr_key_ref:int, rnd_obe:int, uset_key_type=default_uset_key_type) -> bytes:
+def get_kapsch_uset_access_credentials_for_obu_model(obu_model:str, ac_cr_key_ref:int, rnd_obe:int, uset_key_type=default_uset_key_type) -> bytes:
     if uset_key_type is None:
         uset_key_type = default_uset_key_type
 
-    return kapsch_http_uset_key_obtention.compute_kapsch_uset_access_credentials_for_obu_model(obu_model, ac_cr_key_ref, rnd_obe, uset_key_type)
+    return kapsch_http_uset_key_obtention.get_kapsch_uset_access_credentials_for_obu_model(obu_model, ac_cr_key_ref, rnd_obe, uset_key_type)
 
 # Compute AC_CR from the USET, that should be provided along with the OBU's personalization data, that is, before DSRC transaction phase starts!
 # This should happen in the end of the initialization phase, after a VST with the OBU's AC_CR-KeyRef value is provided!
@@ -71,7 +71,7 @@ def get_eid_and_new_uset_attribute_dict(eid:int, obu_model:str, ac_cr_key_ref:in
         uset_key_eid = uset_key_info['external_eid']
 
     uset_key_attr_id = uset_key_info['storage_attr_id']
-    uset_key_bytes = compute_uset_derived_key_for_obu_model(obu_model, ac_cr_key_ref, new_uset_key_type)
+    uset_key_bytes = get_uset_derived_key_for_obu_model(obu_model, ac_cr_key_ref, new_uset_key_type)
 
     # 0x02 = EfcContainer CHOICE tag for OCTET STRING
     uset_key_octet_string_uper_hex = f'02{len(uset_key_bytes):02X}{uset_key_bytes.hex().upper()}'
@@ -99,7 +99,7 @@ def get_eid_and_new_uset_attribute_dict_generator_for_obu_model(obu_model:str, a
             uset_key_eid = int(uset_key_info['external_eid'])
 
         uset_key_attr_id = int(uset_key_info['storage_attr_id'])
-        uset_key_bytes = compute_uset_derived_key_for_obu_model(obu_model, ac_cr_key_ref, new_uset_key_type)
+        uset_key_bytes = get_uset_derived_key_for_obu_model(obu_model, ac_cr_key_ref, new_uset_key_type)
 
         # 0x02 = EfcContainer CHOICE tag for OCTET STRING
         uset_key_octet_string_uper_hex = f'02{len(uset_key_bytes):02X}{uset_key_bytes.hex().upper()}'
