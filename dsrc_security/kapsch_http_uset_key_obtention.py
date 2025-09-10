@@ -1,5 +1,18 @@
 import json
+import datetime
 import requests
+
+import logging
+kapsch_http_uset_req_logger = logging.getLogger(__name__)
+
+startup_date = datetime.datetime.now()
+logs_date_prefix = startup_date.strftime('%y%m%d')
+
+# SETTING UP LOGGER FILE HANDLER
+file_handler = logging.FileHandler(f'logs/beacon_logs/{logs_date_prefix}_kapsch_http_logs.log')
+file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
+file_handler.setFormatter(file_formatter)
+kapsch_http_uset_req_logger.addHandler(file_handler)
 
 base_url = ''
 with open('settings/perso/kapsch_uset_app_config.json') as json_file:
@@ -11,6 +24,8 @@ def send_get_request_to_web_service(route:str):
 
     url = f'{base_url}/tsp_dsrc_sec/{route}'
     response = requests.get(url)
+    kapsch_http_uset_req_logger.debug(f'HTTP Response: {response}')
+    kapsch_http_uset_req_logger.debug(response.text)
     return response
 
 def compute_uset_derived_key_via_mk_name(uset_mk_name:str, ac_cr_key_ref:int) -> bytes:
