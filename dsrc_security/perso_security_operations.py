@@ -96,10 +96,11 @@ def get_eid_and_new_uset_attribute_dict(eid:int, obu_model:str, ac_cr_key_ref:in
 
 # USET key update dict preparation function
 def get_eid_and_new_uset_attribute_dict_generator_for_obu_model(obu_model:str, ac_cr_key_ref:int, new_uset_key_type=default_uset_key_type):
-    for eid, eid_sec_info in uset_mkset_name_by_obu_model_and_key_type[obu_model]['dsrc_mem_key_locations'].items():
+    for eid_str, eid_sec_info in uset_mkset_name_by_obu_model_and_key_type[obu_model]['dsrc_mem_key_locations'].items():
+        eid = int(eid_str, 10)
         if eid == 0:
             # We do not update/switch the Access/USET key for Kapsch's SystemElement (EID 0)!
-            return
+            continue
 
         if 'uset_key' not in eid_sec_info:
             perso_secops_logger.info(f'No USET keys for EID {eid} of OBU model {obu_model}!')
