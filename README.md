@@ -18,11 +18,16 @@ Specifically, I installed Microsoft's Visual Studio **Build Tools** and then bui
 
 Required PIP packages for running beacon code:
 - pycrate
+- baudot
+- iso3166
 - axxes_asn_compiles
 - custom_its_decoders
 - pycryptodome
 - logging
 - threading
+
+Required PIP packages for transaction data manager app:
+- pymongo
 
 Required packages for beacon proxy MQTT communication:
 - paho-mqtt
