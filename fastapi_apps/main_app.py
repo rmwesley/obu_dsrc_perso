@@ -2,12 +2,6 @@ from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from fastapi_apps.efc_decoding_app import efc_decoding_app
-
-from fastapi_apps.basic_des_app import des_app
-from fastapi_apps.tc_dsrc_security_app import tc_dsrc_security_app
-from fastapi_apps.tsp_dsrc_security_app import tsp_efc_security_app
-
 from fastapi_apps.beacon_client_app import beacon_client_app
 from fastapi_apps.dsrc_transaction_data_app import transaction_data_app
 from fastapi_apps.toll_domain_zones_app import td_zones_app
@@ -54,10 +48,6 @@ async def redirect_index_to_hmi():
 app.mount("/hmi", StaticFiles(directory="fronts/web/tolling_testing_web_front", html=True), name="tolling_testing_web_front_files")
 
 # Mount the subapps
-app.mount("/decoding", efc_decoding_app)
-app.mount("/des_app", des_app)
-app.mount("/tc_dsrc_sec", tc_dsrc_security_app)
-app.mount("/tsp_dsrc_sec", tsp_efc_security_app)
 app.mount("/beacon", beacon_client_app)
 app.mount("/dsrc-transactions/", transaction_data_app)
 app.mount("/td_zones", td_zones_app)
