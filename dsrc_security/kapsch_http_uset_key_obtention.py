@@ -1,13 +1,17 @@
 import json
 import requests
 
+base_url = ''
 with open('settings/perso/kapsch_uset_app_config.json') as json_file:
     kapsch_uset_app_config = json.load(json_file)
-    host = kapsch_uset_app_config['Host']
+    base_url = kapsch_uset_app_config['baseUrl']
 
 def send_get_request_to_web_service(route:str):
-    url = host + route
-    return requests.get(url)
+    global base_url
+
+    url = f'{base_url}/tsp_dsrc_sec/{route}'
+    response = requests.get(url)
+    return response
 
 def compute_uset_derived_key_via_mk_name(uset_mk_name:str, ac_cr_key_ref:int) -> bytes:
     ac_cr_key_ref_hex = f'{ac_cr_key_ref:04X}'
