@@ -37,20 +37,6 @@ Required dependencies for EFC decoder:
 - requests_pkcs12
 - baudot
 
-Required dependencies for DSRC security interface:
-- iso3166
-- baudot
-
-Required dependencies for DM API tests:
-- azure-cosmos
-- aiohttp
-- requests_oauthlib
-- jsondiff
-
-Required dependencies for EM API tests:
-- azure-storage-blob
-- csv
-
 Required dependencies for Toll Domain zones geography info app:
 - pyshp
 - shapely
@@ -75,121 +61,22 @@ Add the path to the `axxes_asn_compiles` module to the **PYTHONPATH** environmen
 ## Custom Intelligent Transport System decoders
 Add the path to the `custom_its_decoders` module to the **PYTHONPATH** environment variable.
 
-# MQTT setup
-Please start an MQTT broker and set up its connection info in the `settings/mqtt_broker_config.json` config file.
-For example, you can install the Eclipse Mosquitto MQTT broker on a machine and setup its connection info in the local config file.
-
-Just add the following to the `C:\Program Files\mosquitto\mosquitto.conf` config file on the remote machine:
-```
-# Plain MQTT protocol
-listener 8333
-# Enable logging
-log_dest file c:\ProgramData\mosquitto\log\mosquitto.log
-log_type all
-```
-And then use the 8333 port to communicate with the Mosquitto MQTT broker! :)
-
-You can also setup a password file for the broker with the `mosquitto_passwd` command-line utility:
-`mosquitto_passwd -c C:\ProgramData\mosquitto\password.txt beacon_proxy`
-Then simply enter the password twice (to confirm it).
-
-And then finally simply add a line to the `C:\Program Files\mosquitto\mosquitto.conf` file to
-reference the file containing the encrypted credentials that was just created:
-```
-password_file c:\ProgramData\mosquitto\password.txt
-```
-
-# DM API tester
-Please rewrite the Database SQL queries with prepared statements for safety.
-## DM API tester setup
-### DM database (Azure CosmosDB)
-Remember to set the connection settings for the DM Database in the `../conn_settings/dm_db/dm_db_creds.json` config file.
-
-### Microsoft Identity Platform OAuth 2.0 Web Application grant flow
-Do the same for the config for the MIP access_token obtention for the DM API.
-It is set on the `../conn_settings/dm_api/dm_api_auth_server_data.json` config file.
-
-### DM API deployment date and benchmark lookup date settings for non-reg tests
-To do the comparison non-regression tests, you need to manually set two dates in the `settings/deployment_dates/dm_api_tester_config.json` config file.
-The first is the start date for the Kapsch T6 benchmarks lookup.
-The second is the end date for the benchmarks lookup and also the deployment date of the new DM version.
-In a further update, it would be ideal to make these 4 separate dates, with end dates for the new DM version and for the benchmark lookups being optional (2 required).
-
-## DM JWT Access token obtention/update
-We use the `requests_oauthlib` Python package to get the access_token:
-https://requests-oauthlib.readthedocs.io/en/latest/oauth2_workflow.html#web-application-flow
-
-After the configuration is done, get the access_token JWT by running the `devices/dm/dm_auth_client.py` module and following the CLI instructions.
-For example, run:
-```
-python3 devices/dm/dm_auth_client.py
-```
-And then copy-paste the redirect-uri in the terminal.
-The access_token will be stored in the `devices/dm/local_auth_data/dm_access_token.txt` local file
-
-## Non-regression tests execution
-After all the setup is done and the access_token is updated, run the main module in the `devices/dm_api_tester/` directory.
-Example:
-```
-python3 ./devices/dm_api_tester/main.py
-```
-
-# EM API tester
-Please rewrite the Database SQL queries with prepared statements for safety.
-The access_token used is the same as the one for DM.
-So we use the same auth server client. Just execute the `dm_api_tester.dm_auth_client` Python module.
-
-## Non-regression tests validation/verification
-Go to the `local_file_storage/dm_api_non_reg/comparison_results` folder and get the latest file.
-Check the symmetric diffs for the personalization data for each GESCOM Package/OBU model perso sample (1 PAN for each).
-Validate that no breaking or imcompatible changes occurred after API's deployment.
-
 # Usage exemples
 ## Doing a hardcoded DSRC reading by executing main.py
 To execute main.py on the windows command line (cmd) or on PowerShell, just run:
 `.venv\Scripts\python.exe main.py`
 
-## Recalculating the derived keys for an instance in a personalization's request body (JSON)
-Inside the `devices/` subfolder, you will find some python modules to update personalization requests!
-Here I describe the procedure to generate a new personalization request json file with the derived keys recalculated and updated.
-
-1. Remember to set the correct keyset name in the MasterKey file json.
-You need to put the original personalizations inside the `perso_db.json` file.
-It is a JSON mapping each PAN to a unique personalization request.
-I manually updated the EFC-CM values (attribute 0) for the Asfinag (EG) instance for the MEDIA EG devices.
-
-2. Then, also update the `pan_ids_to_update` list (hardcoded for now) in the `update_derived_keys_in_perso.py` module.
-These are the only PANs that are going to be updated.
-
-3. Finally, update the masterkeys to be used in the `master_keys.json` file.
-
-After doing these 3 things, you can finally run the script :
-`.venv\Scripts\python.exe -m devices.update_derived_keys_in_perso`
-
-Then just take the contents of `proxy_format_fix.json` or `proxy_format_full.json`, validate and verify it, and send it to the Proxy.
-Use the `check_derived_keys.py` Python module to verify the derived keys.
-I also recommend to take the latest personalization sent and compare (do a diff) with the newly prepared one to confirm that only the attributes 111 through 118 and 120 were modified.
-
-# Generating SST004 InfoExchange Trust Objects for BALM (ISO 12855)
-Simply run `.venv\Scripts\python.exe TC_EETS_mks\sst004_xml_preparation.py`
-
-# Installing dependencies
-For the time being we cannot run scripts.
-So manually install dependencies with `pip`, which can be run via `python`.
-Exemple:
-`.venv\Scripts\python.exe -m pip install requests_pkcs12`
-
-# Deploying the Main FastAPI application with all 4 subapps
+# Deploying the Main FastAPI application with all subapps
 To deploy the Main FastAPI app on localhost:8000, just run:
-`.venv\Scripts\fastapi.exe dev .\efc_decoding_api_main.py`
+`.venv\Scripts\fastapi.exe dev .\main_app.py`
 Or deploy it with uvicorn:
 ` .\.venv\Scripts\python.exe -m uvicorn main_app:app --host 127.0.0.1 --port 8001`
 For some reason, the `beacon_client_app` is deployed if the main app is not named `app` when deploying with FastAPI.
 
 # Deploying the EFC decoding FastAPI in development mode
 To deploy the EFC decoding FastAPI on localhost:8000, just run:
-`.venv\Scripts\fastapi.exe dev .\efc_decoding_api_main.py`
-or even `.venv\Scripts\fastapi.exe dev efc_decoding_api_main.py --port 8001` if the port 8000 is occupied.
+`.venv\Scripts\fastapi.exe dev .\main_app.py`
+or even `.venv\Scripts\fastapi.exe dev main_app.py --port 8001` if the port 8000 is occupied.
 
 The main UI (HMI) is contained in the index.html file and it is served in the root.
 So just go to localhost:8000 in your browser to view the index.
