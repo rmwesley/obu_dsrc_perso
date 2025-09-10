@@ -26,6 +26,10 @@ Required PIP packages for running beacon code:
 - logging
 - threading
 
+Required PIP packages for DSRC personalization code:
+- All beacon code dependencies!
+- requests (for accessing HTTP Kapsch USET module)
+
 Required PIP packages for transaction data manager app:
 - pymongo
 
@@ -48,7 +52,6 @@ Required dependencies for Toll Domain zones geography info app:
 
 # Rememeber to copy the `master_keys.json` file!
 TODO: Securely handle secrets instead of keeping them in plaintext on a json file!!
-
 
 # Rememeber to set the MK_PATH environment variable!
 This is the variable containing the path to the masterkey sets used for DSRC key derivation.
