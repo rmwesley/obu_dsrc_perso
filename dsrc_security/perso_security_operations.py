@@ -29,9 +29,23 @@ def set_default_key_type(uset_key_type:KAPSCH_USET_MK_TYPES):
     default_uset_key_type = uset_key_type
 
 def perso_get_uset_derived_key_for_obu_model(obu_model:str, ac_cr_key_ref:int, uset_key_type=default_uset_key_type) -> bytes:
+    # Kapsch USET perso key needs to be 16 bytes in length
     if not uset_key_type:
         uset_key_type = default_uset_key_type
-    return kapsch_http_uset_key_obtention.get_uset_derived_key_for_obu_model(obu_model, ac_cr_key_ref, uset_key_type)
+    new_uset_key = kapsch_http_uset_key_obtention.get_uset_derived_key_for_obu_model(obu_model, uset_key_type, ac_cr_key_ref)
+
+    # Key length 4 is not supported!
+    if len(new_uset_key) == 4:
+        return new_uset_key * 4
+    # 8 bytes represents a single DES key
+    # In ECB mode, a symmetrical 3DES key (first 8 = last 8 bytes) is equivalent to a DES key
+    if len(new_uset_key) == 8:
+        return new_uset_key * 2
+    # 16 bytes, a true 3DES key
+    if len(new_uset_key) == 16:
+        return new_uset_key
+    else:
+        raise Exception('Bad USET key length!!')
 
 def decrypt_uset_derived_key_for_obu_model(obu_model:str, ciphertext:bytes, uset_key_type=default_uset_key_type) -> bytes:
     if not uset_key_type:
