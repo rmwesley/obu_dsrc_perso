@@ -60,6 +60,12 @@ You can also directly set this environment variable in Python code like so:
 
 This is exactly the code that is executed in the `main.py` module to set the `MK_PATH` environment variable
 
+# Installing dependencies
+For the time being we cannot run scripts.
+So manually install dependencies with `pip`, which can be run directly as a command or via `python -m pip`.
+I recommend to crate a Python `.venv/` (can be done through VSCode) and then execute:
+`.\.venv\Scripts\pip.exe install fastapi[standard] pymongo pycrate pycryptodome baudot iso3166 pyserial pyshp shapely`
+
 # ASN PER decoding & encoding (dencoding procedures)
 ## pycrate ASN compiles
 Add the path to the `axxes_asn_compiles` module to the **PYTHONPATH** environment variable.
