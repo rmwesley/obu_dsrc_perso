@@ -28,7 +28,7 @@ def set_default_key_type(uset_key_type:KAPSCH_USET_MK_TYPES):
     global default_uset_key_type
     default_uset_key_type = uset_key_type
 
-def get_uset_derived_key_for_obu_model(obu_model:str, ac_cr_key_ref:int, uset_key_type=default_uset_key_type) -> bytes:
+def perso_get_uset_derived_key_for_obu_model(obu_model:str, ac_cr_key_ref:int, uset_key_type=default_uset_key_type) -> bytes:
     if not uset_key_type:
         uset_key_type = default_uset_key_type
     return kapsch_http_uset_key_obtention.get_uset_derived_key_for_obu_model(obu_model, ac_cr_key_ref, uset_key_type)
@@ -71,7 +71,7 @@ def get_eid_and_new_uset_attribute_dict(eid:int, obu_model:str, ac_cr_key_ref:in
         uset_key_eid = uset_key_info['external_eid']
 
     uset_key_attr_id = uset_key_info['storage_attr_id']
-    uset_key_bytes = get_uset_derived_key_for_obu_model(obu_model, ac_cr_key_ref, new_uset_key_type)
+    uset_key_bytes = perso_get_uset_derived_key_for_obu_model(obu_model, ac_cr_key_ref, new_uset_key_type)
 
     # 0x02 = EfcContainer CHOICE tag for OCTET STRING
     uset_key_octet_string_uper_hex = f'02{len(uset_key_bytes):02X}{uset_key_bytes.hex().upper()}'
@@ -99,7 +99,7 @@ def get_eid_and_new_uset_attribute_dict_generator_for_obu_model(obu_model:str, a
             uset_key_eid = int(uset_key_info['external_eid'])
 
         uset_key_attr_id = int(uset_key_info['storage_attr_id'])
-        uset_key_bytes = get_uset_derived_key_for_obu_model(obu_model, ac_cr_key_ref, new_uset_key_type)
+        uset_key_bytes = perso_get_uset_derived_key_for_obu_model(obu_model, ac_cr_key_ref, new_uset_key_type)
 
         # 0x02 = EfcContainer CHOICE tag for OCTET STRING
         uset_key_octet_string_uper_hex = f'02{len(uset_key_bytes):02X}{uset_key_bytes.hex().upper()}'
