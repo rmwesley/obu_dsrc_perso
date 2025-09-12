@@ -19,11 +19,19 @@ with open('settings/perso/kapsch_uset_app_config.json') as json_file:
     kapsch_uset_app_config = json.load(json_file)
     base_url = kapsch_uset_app_config['baseUrl']
 
+class KapschHttpWsError(Exception):
+    pass
+http_ws_timeout = 0.2
 def send_get_request_to_web_service(route:str):
     global base_url
 
     url = f'{base_url}/tsp_dsrc_sec/{route}'
-    response = requests.get(url)
+    try:
+        response = requests.get(url, timeout=http_ws_timeout)
+    except requests.exceptions.ConnectTimeout as e:
+        raise KapschHttpWsError(f'HTTP GET {url} failed. (Connection timeout={http_ws_timeout}s)')
+        # raise KapschHttpWsError(str(e))
+
     kapsch_http_uset_req_logger.debug(f'HTTP Response: {response}')
     kapsch_http_uset_req_logger.debug(response.text)
     return response
