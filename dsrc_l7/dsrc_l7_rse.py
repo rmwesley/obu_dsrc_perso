@@ -310,6 +310,24 @@ async def initialize_transaction(
 
     return (bst_value, last_vst_value)
 
+async def init_and_close_transaction(
+        mand_applications=[],
+        callback:typing.Callable[[dict, dict], typing.Coroutine[None, None, typing.Any]] = None,
+        ):
+    bst_value, vst_value = await initialize_transaction(mand_applications=mand_applications)
+    try:
+        result = await callback(bst_value, vst_value)
+        bcm_logger.info('Transaction successful! Closing ...')
+        await send_close_transaction_echo()
+        return result
+    except RuntimeError:
+        bcm_logger.error('Error during transaction! Closing...')
+        await send_close_transaction_echo()
+
+class ObuResponseTimeout(Exception):
+    pass
+class CommandRefused(Exception):
+    pass
 async def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close_transaction=False) -> dict:
     global TApdu_container
     if close_transaction:
