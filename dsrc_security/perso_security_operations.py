@@ -36,11 +36,11 @@ def perso_get_uset_derived_key_for_obu_model(obu_model:str, ac_cr_key_ref:int, u
 
     # Key length 4 is not supported!
     if len(new_uset_key) == 4:
-        return new_uset_key * 4
+        return new_uset_key
     # 8 bytes represents a single DES key
     # In ECB mode, a symmetrical 3DES key (first 8 = last 8 bytes) is equivalent to a DES key
     if len(new_uset_key) == 8:
-        return new_uset_key * 2
+        return new_uset_key
     # 16 bytes, a true 3DES key
     if len(new_uset_key) == 16:
         return new_uset_key
