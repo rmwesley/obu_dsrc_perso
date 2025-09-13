@@ -180,6 +180,27 @@ class NoBeaconInitialized(Exception):
     pass
 
 # Start sending a BST
+async def try_to_start_bst_emission_and_await_vst(fragmented_t_apdu_with_bst: bytes):
+    # Finally start BST emission!!
+    if 'bst_timeout_delay' in beacon_manager_config[current_beacon_name]['dsrc_l7_config']:
+        bst_timeout_delay = beacon_manager_config[current_beacon_name]['dsrc_l7_config']['bst_timeout_delay']
+        try:
+            vst_awaitable = beacon_bac_l7_wrapper._pertel_start_bst_emission_and_await_vst(fragmented_t_apdu_with_bst)
+            response = await asyncio.wait_for(vst_awaitable, timeout=bst_timeout_delay)
+        except TimeoutError as exc:
+            bcm_logger.error('BST response timeout!')
+            await beacon_bac_l7_wrapper._pertel_stop_bst_emission()
+            # raise exc
+            raise AbortedInitPhase('BST response timeout!')
+    else:
+        response = await beacon_bac_l7_wrapper._pertel_start_bst_emission_and_await_vst(fragmented_t_apdu_with_bst)
+
+    if response[1] == 2:
+        bcm_logger.critical("A Transaction is unclosed!!")
+        raise UnclosedTransactionException("A Transaction is unclosed!!")
+
+    return response
+
 async def start_bst_emission_and_await_vst(bst_value: dict):
     global TApdu_container
     global current_beacon_name
@@ -198,26 +219,17 @@ async def start_bst_emission_and_await_vst(bst_value: dict):
     last_sent_t_apdu_containing_bst = TApdu_container.to_uper()
     bcm_logger.info(f"T_APDU containing BST (UPER hex): {TApdu_container.to_uper().hex().upper()}")
 
-    fragmented_t_apdu = frag_header + last_sent_t_apdu_containing_bst
+    fragmented_t_apdu_with_bst = frag_header + last_sent_t_apdu_containing_bst
     bcm_logger.info(f"RSE is now emitting BST and awaiting VST from OBE...")
 
-    # Finally start BST emission!!
-    if 'bst_timeout_delay' in beacon_manager_config[current_beacon_name]['dsrc_l7_config']:
-        bst_timeout_delay = beacon_manager_config[current_beacon_name]['dsrc_l7_config']['bst_timeout_delay']
-        try:
-            response = await asyncio.wait_for(beacon_bac_l7_wrapper._pertel_start_bst_emission_and_await_vst(fragmented_t_apdu), timeout=bst_timeout_delay)
-        except TimeoutError as exc:
-            bcm_logger.error('BST response timeout!')
-            await beacon_bac_l7_wrapper._pertel_stop_bst_emission()
-            # raise exc
-            raise AbortedInitPhase('BST response timeout!')
-    else:
-        response = await beacon_bac_l7_wrapper._pertel_start_bst_emission_and_await_vst(fragmented_t_apdu)
-
-    if response[1] == 2:
-        bcm_logger.critical("Transaction unclosed!!")
+    try:
+        response = await try_to_start_bst_emission_and_await_vst(fragmented_t_apdu_with_bst)
+    except UnclosedTransactionException:
+        bcm_logger.info('Closing unclosed leftover transaction...')
         await send_close_transaction_echo()
-        exit()
+        await asyncio.sleep(0.1)
+
+        response = await try_to_start_bst_emission_and_await_vst(fragmented_t_apdu_with_bst)
 
     bcm_logger.debug("We now get the lastest BeaconID just after starting the BST")
 
