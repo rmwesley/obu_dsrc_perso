@@ -311,22 +311,56 @@ async def kapsch_force_uset_key(obu_model, curr_uset_key_type=None, new_uset_key
 
     return obu_id_hex
 
-async def kapsch_force_uset_key(obu_model, new_uset_key_type=None):
-    _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=[1])
+class WrongObuModelEidNotSupported(Exception):
+    pass
+SLEEP_BETWEEN_TRANSACTIONS_S = 0.0
+ACCESS_DENIAL_TIMEOUT_S = 0.0
+async def kapsch_force_uset_key_for_eid(eid, obu_model, curr_uset_key_type=None, new_uset_key_type=None):
+    _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=[1, 29])
+    dsrc_l7_perso_logger.info(f'Initialized transaction: {last_vst_value}')
+
+    ac_cr_key_ref, rnd_obe = await get_ac_cr_key_ref_from_any_cardme_app_and_rnd_obe_with_get_nonce()
     obu_equipment_ref = get_obu_model_from_vst_data(last_vst_value)
     obu_id_hex = await try_to_get_obu_id_from_any_eid_in_last_vst()
 
-    for application_data in last_vst_value['applications']:
-        eid = application_data['eid']
-        if eid == 0:
-            # We do not update/switch the Access/USET key for Kapsch's SystemElement (EID 0)!
-            continue
-        for curr_uset_key_type in ['SystemElementAcK', 'Stock', 'Exploit']:
-            await kapsch_element_switch_uset_keys(eid, obu_model, curr_uset_key_type, new_uset_key_type)
+    new_uset_element_attribute_dict_by_eid = perso_security_operations.get_new_uset_attribute_dict_by_eid_for_obu_model(obu_model, ac_cr_key_ref, new_uset_key_type)
+    try:
+        new_uset_element_attribute_dict_by_eid[eid]
+    except KeyError:
+        raise WrongObuModelEidNotSupported(f'EID {eid} not supported by this OBU model!')
 
-    await dsrc_l7_rse.send_close_transaction_setmmi(eid=eid)
+    try:
+        await kapsch_transaction_set_uset_key_for_one_element(eid, obu_model, obu_equipment_ref, ac_cr_key_ref, last_vst_value, curr_uset_key_type, new_uset_key_type)
+    except SetRequestAccessDenied:
+        dsrc_l7_perso_logger.error(f'AccessDenied on EID ({eid}) with USET key type ({curr_uset_key_type}) and OBU model ({obu_model}).')
+
+        # We are forcing, so we wait and initialize a transaction again each time we are denied access...
+        await asyncio.sleep(ACCESS_DENIAL_TIMEOUT_S)
+        _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=[1, 29])
+        dsrc_l7_perso_logger.info(f'Reinitialized transaction...')
+    await asyncio.sleep(SLEEP_BETWEEN_TRANSACTIONS_S)
+
+    await dsrc_l7_rse.send_close_transaction_setmmi(eid=0)
 
     return obu_id_hex
+
+    # _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=[1, 29])
+
+    # ac_cr_key_ref, rnd_obe = await get_ac_cr_key_ref_from_any_cardme_app_and_rnd_obe_with_get_nonce()
+    # obu_equipment_ref = get_obu_model_from_vst_data(last_vst_value)
+    # obu_id_hex = await try_to_get_obu_id_from_any_eid_in_last_vst()
+
+    # for application_data in last_vst_value['applications']:
+    #     eid = application_data['eid']
+    #     if eid == 0:
+    #         # We do not update/switch the Access/USET key for Kapsch's SystemElement (EID 0)!
+    #         continue
+    #     for curr_uset_key_type in ['SystemElementAcK', 'Stock', 'Exploit']:
+    #         await kapsch_element_switch_uset_keys(eid, obu_model, curr_uset_key_type, new_uset_key_type)
+
+    # await dsrc_l7_rse.send_close_transaction_setmmi(eid=eid)
+
+    # return obu_id_hex
 
 async def validate_cardme_perso(force_eid=None):
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=[0, 1])
