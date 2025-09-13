@@ -3,7 +3,7 @@ import logging
 import datetime
 
 from dsrc_l7 import dsrc_l7_rse
-from dsrc_security import dsrc_contracts, perso_security_operations
+from dsrc_security import perso_security_operations
 import custom_its_per_decoders
 
 from ASN.compiled_DSRC_instances import AXXESv1_2
@@ -95,6 +95,12 @@ async def get_ac_cr_key_ref_from_any_cardme_app_and_rnd_obe_with_get_nonce(seria
     rnd_obe = await send_get_nonce_action_req_and_decode_rnd_obe_value(eid=0)
     return ac_cr_key_ref, rnd_obe
 
+async def obtain_rnd_obe_either_from_cardme_app_or_with_get_nonce(serial_number=None):
+    for eid, rnd_obe in custom_its_per_decoders.vst_decode_eid_rnd_obe_from_all_cardme_apps_in_vst(dsrc_l7_rse.last_vst_value):
+        if rnd_obe is None:
+            rnd_obe = await send_get_nonce_action_req_and_decode_rnd_obe_value(eid=0)
+        yield eid, rnd_obe
+
 async def get_rnd_obe_and_ac_cr_key_ref_for_obe_element_or_another_cardme_elment_with_rnd_obe_set_to_0(eid:int) -> tuple[int, int]:
     try:
         # Works only if the OBU has an active CARDME application being presented in its VST!!
@@ -153,7 +159,8 @@ async def try_to_get_obu_id_from_any_eid_in_last_vst():
 
 class SetResponseError(Exception):
     pass
-
+class SetRequestAccessDenied(SetResponseError):
+    pass
 async def write_dsrc_data_to_kapsch_efc_element_with_kapsch_uset_ac_cr(eid:int, attribute_dict:dict, access_credentials:bytes):
     for attribute_id, attribute_value_hex in attribute_dict.items():
         attribute_value_uper_bytes = bytes.fromhex(attribute_value_hex)
@@ -168,26 +175,40 @@ async def write_dsrc_data_to_kapsch_efc_element_with_kapsch_uset_ac_cr(eid:int, 
         result = await dsrc_l7_rse.send_set_request(eid, access_credentials=access_credentials, attrList=attribute_list)
         if 'ret' in result['set-response']:
             if result['set-response']['ret'] == 1:
-                dsrc_l7_perso_logger.error(f'Access Denied: Cannot SET attribute for OBU! SET.response: {result}')
+                dsrc_l7_perso_logger.error(f'Access Denied: Cannot SET attribute for OBU EID {eid}! SET.response: {result}')
+
+                # Close transaction before raising Exception (this should be handled elsewhere!!!)
+                await dsrc_l7_rse.send_close_transaction_echo(eid=eid, text='Error')
+                raise SetRequestAccessDenied(f'Access denied in set-response (ReturnStatus = 0x01): {result['set-response']}')
+            # Close transaction before raising Exception (this should be handled elsewhere!!!)
             await dsrc_l7_rse.send_close_transaction_echo(eid=eid, text='Error')
             raise SetResponseError(f'Error in set-response: {result['set-response']}')
-            # break
 
-    await dsrc_l7_rse.set_mmi(eid=eid)
+    #
+    await dsrc_l7_rse.send_echo_action_request(eid=eid, text=f'Perso EID {eid}!')
+
+async def obtain_nonce_and_perso_kapsch_element_with_ac_cr(eid, attribute_dict, derived_uset_key):
+    # try:
+    #     efc_cm, rnd_obe, ac_cr_key_ref = custom_its_per_decoders.vst_decode_efc_cm_rnd_obe_and_ac_cr_from_cardme_app_in_vst_with_eid(eid, dsrc_l7_rse.last_vst_value)
+    # except custom_its_per_decoders.VstAppNotCardme:
+    #     rnd_obe = await send_get_nonce_action_req_and_decode_rnd_obe_value(eid)
+    rnd_obe = await send_get_nonce_action_req_and_decode_rnd_obe_value(eid)
+
+    uset_access_credentials = perso_security_operations.compute_kapsch_uset_access_credentials_from_a_provided_uset(rnd_obe, derived_uset_key)
+    await write_dsrc_data_to_kapsch_efc_element_with_kapsch_uset_ac_cr(eid, attribute_dict, uset_access_credentials)
 
 async def perso_kapsch_element_with_uset(eid, obu_eq_ref, obu_model, attribute_dict, uset_key_type=None):
     ac_cr_key_ref = await get_ac_cr_key_ref_from_any_cardme_app()
     perso_security_operations.check_obu_model(obu_eq_ref, obu_model)
     derived_uset_key = perso_security_operations.perso_get_uset_derived_key_for_obu_model(obu_model, ac_cr_key_ref, uset_key_type)
 
-    rnd_obe = await send_get_nonce_action_req(eid)
+    await obtain_nonce_and_perso_kapsch_element_with_ac_cr(eid, attribute_dict, derived_uset_key)
 
-    uset_access_credentials = perso_security_operations.compute_kapsch_uset_access_credentials_from_a_provided_uset(rnd_obe, derived_uset_key)
-    await write_dsrc_data_to_kapsch_efc_element_with_kapsch_uset_ac_cr(eid, attribute_dict, uset_access_credentials)
-
-SLEEP_BETWEEN_EIDS_S = 0.3
+SLEEP_BETWEEN_EIDS_S = 0.05
 async def kapsch_trp_4010_20b_pl_perso(obu_model, dsrc_memory_data, uset_key_type=None):
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=[0, 1])
+    dsrc_l7_perso_logger.info(f'Initialized transaction: {last_vst_value}')
+
     obu_eq_ref = get_obu_model_from_vst_data(last_vst_value)
     obu_id_hex = await try_to_get_obu_id_from_any_eid_in_last_vst()
 
@@ -209,26 +230,67 @@ async def kapsch_trp_4010_20b_pl_perso(obu_model, dsrc_memory_data, uset_key_typ
 
     return obu_id_hex
 
-async def kapsch_element_switch_uset_keys(obu_model, obu_equipment_ref, ac_cr_key_ref, vst_value, curr_uset_key_type=None, new_uset_key_type=None):
+class WrongObuModelEidNotInVst(Exception):
+    pass
+async def kapsch_transaction_set_all_elements_uset_keys(obu_model, obu_equipment_ref, ac_cr_key_ref, vst_value, curr_uset_key_type=None, new_uset_key_type=None):
     vst_eid_list = [app['eid'] for app in vst_value['applications']]
     dsrc_l7_perso_logger.info(f'OBU contains EIDs: {vst_eid_list}')
 
-    uset_element_attribute_dict_by_eid = perso_security_operations.get_new_uset_attribute_dict_by_eid_for_obu_model(obu_model, ac_cr_key_ref, new_uset_key_type)
-    for eid, uset_key_storage_eid_and_attribute in uset_element_attribute_dict_by_eid.items():
+    # Get the new USETs that will replace the current ones!
+    new_uset_element_attribute_dict_by_eid = perso_security_operations.get_new_uset_attribute_dict_by_eid_for_obu_model(obu_model, ac_cr_key_ref, new_uset_key_type)
+
+    dsrc_l7_perso_logger.debug(f'New USET perso data: {new_uset_element_attribute_dict_by_eid}')
+    for eid, uset_key_storage_eid_and_attribute in new_uset_element_attribute_dict_by_eid.items():
         if eid not in vst_eid_list:
-            raise Exception(f'EID {eid} not in OBU VST EID list: {vst_eid_list}, so OBU is probably not of model {obu_model}')
+            raise WrongObuModelEidNotInVst(f'EID {eid} not in OBU VST EID list: {vst_eid_list}, so OBU is probably not of model {obu_model}')
         uset_key_eid = uset_key_storage_eid_and_attribute['uset_key_eid']
+        new_uset_attr_dict = uset_key_storage_eid_and_attribute['attribute_dict']
 
         if uset_key_eid not in vst_eid_list:
-            raise Exception(f'USET key storage EID {uset_key_eid} not in in OBU VST EID list: {vst_eid_list}, so OBU is probably not of model {obu_model}')
+            raise WrongObuModelEidNotInVst(f'USET key storage EID {uset_key_eid} not in in OBU VST EID list: {vst_eid_list}, so OBU is probably not of model {obu_model}')
 
-        new_uset_attr_dict = uset_key_storage_eid_and_attribute['attribute_dict']
-        await perso_kapsch_element_with_uset(eid, obu_equipment_ref, obu_model, new_uset_attr_dict, uset_key_type=curr_uset_key_type)
+        await perso_kapsch_element_with_uset(uset_key_eid, obu_equipment_ref, obu_model, new_uset_attr_dict, uset_key_type=curr_uset_key_type)
 
 async def kapsch_switch_uset_keys(obu_model, curr_uset_key_type=None, new_uset_key_type=None):
-    _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=[1])
 
-    ac_cr_key_ref, rnd_obe = await get_ac_cr_key_ref_from_any_cardme_app_and_rnd_obe_with_get_nonce()
+    async def kapsch_perso_transaction_phase_callback(bst_val, vst_val) -> str:
+        ac_cr_key_ref = await get_ac_cr_key_ref_from_any_cardme_app()
+        obu_equipment_ref = get_obu_model_from_vst_data(vst_val)
+        obu_id_hex = await try_to_get_obu_id_from_any_eid_in_last_vst()
+
+        await kapsch_transaction_set_all_elements_uset_keys(obu_model, obu_equipment_ref, ac_cr_key_ref, vst_val, curr_uset_key_type, new_uset_key_type)
+        return obu_id_hex
+
+    obu_id_hex = await dsrc_l7_rse.init_and_close_transaction(mand_applications=[1, 29], callback=kapsch_perso_transaction_phase_callback)
+
+    return obu_id_hex
+
+async def kapsch_transaction_set_uset_key_for_one_element(eid:int, obu_model, obu_equipment_ref, ac_cr_key_ref, vst_value, curr_uset_key_type=None, new_uset_key_type=None):
+    vst_eid_list = [app['eid'] for app in vst_value['applications']]
+    dsrc_l7_perso_logger.info(f'OBU contains EIDs: {vst_eid_list}')
+
+    # Get the new USETs that will replace the current ones!
+    new_uset_element_attribute_dict_by_eid = perso_security_operations.get_new_uset_attribute_dict_by_eid_for_obu_model(obu_model, ac_cr_key_ref, new_uset_key_type)
+    uset_key_storage_eid_and_attribute = new_uset_element_attribute_dict_by_eid[eid]
+
+    dsrc_l7_perso_logger.debug(f'New USET perso data for EID {eid}: {uset_key_storage_eid_and_attribute}')
+    if eid not in vst_eid_list:
+        raise WrongObuModelEidNotInVst(f'EID {eid} not in OBU VST EID list: {vst_eid_list}, so OBU is probably not of model {obu_model}')
+    uset_key_eid = uset_key_storage_eid_and_attribute['uset_key_eid']
+    new_uset_attr_dict = uset_key_storage_eid_and_attribute['attribute_dict']
+
+    if uset_key_eid not in vst_eid_list:
+        raise WrongObuModelEidNotInVst(f'USET key storage EID {uset_key_eid} not in in OBU VST EID list: {vst_eid_list}, so OBU is probably not of model {obu_model}')
+
+    await perso_kapsch_element_with_uset(uset_key_eid, obu_equipment_ref, obu_model, new_uset_attr_dict, uset_key_type=curr_uset_key_type)
+
+SLEEP_BETWEEN_TRANSACTIONS_S = 0.0
+ACCESS_DENIAL_TIMEOUT_S = 0.0
+async def kapsch_force_uset_key(obu_model, curr_uset_key_type=None, new_uset_key_type=None):
+    _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=[1, 29])
+    dsrc_l7_perso_logger.info(f'Initialized transaction: {last_vst_value}')
+
+    ac_cr_key_ref = await get_ac_cr_key_ref_from_any_cardme_app()
     obu_equipment_ref = get_obu_model_from_vst_data(last_vst_value)
     obu_id_hex = await try_to_get_obu_id_from_any_eid_in_last_vst()
 
