@@ -135,6 +135,8 @@ class PertelBacL7(bac_l2_host2beacon.BacHost):
         return response
 
     def get_vst(self) -> bytes:
+        if self.t_apdu_containing_vst is None:
+            raise Exception('No VST: No transaction in progress!!')
         return self.t_apdu_containing_vst
     def _is_transaction_in_progress(self) -> bool:
         return self.t_apdu_containing_vst != None
@@ -236,6 +238,7 @@ class PertelBacL7(bac_l2_host2beacon.BacHost):
         if response_content[1] != 0:
             bac_serial_wrapper_logger.error('BAC L2 error code present!!')
         else:
+            # Command 0x06 had a successful OBE response or an OBE timeout!
             # Transaction is over!! Setting VST to None!
             self.t_apdu_containing_vst = None
 
