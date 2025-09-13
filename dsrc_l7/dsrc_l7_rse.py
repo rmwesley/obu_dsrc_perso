@@ -904,7 +904,24 @@ async def set_mmi(eid=0, close_transaction=False):
     return t_apdu_with_action_response
 
 async def send_close_transaction_echo(eid=0, text="Hello, World!"):
-    return await send_echo_action_request(eid=eid, text=text, close_transaction=True)
+    try:
+        return await send_echo_action_request(eid=eid, text=text, close_transaction=True)
+    except ObuResponseTimeout as exc:
+        bcm_logger.error('OBU response timeout during SET_MMI request!')
+        # We optionally ignore OBU response timeouts during SET_MMI requests!
+        if not beacon_manager_config[current_beacon_name]['bac_l2_config']['IGNORE_OBU_TIMEOUTS_WHEN_CLOSING_TRANSACTION']:
+            raise exc
 
 async def send_close_transaction_setmmi(eid=0):
-    return await set_mmi(eid, close_transaction=True)
+    try:
+        return await set_mmi(eid, close_transaction=True)
+    except ObuResponseTimeout as exc:
+        bcm_logger.error('OBU response timeout during SET_MMI request!')
+        # We optionally ignore OBU response timeouts during SET_MMI requests!
+        if not beacon_manager_config[current_beacon_name]['bac_l2_config']['IGNORE_OBU_TIMEOUTS_WHEN_CLOSING_TRANSACTION']:
+            raise exc
+
+async def send_close_transaction_setmmi_if_transaction_open(eid=0):
+    if beacon_bac_l7_wrapper._is_transaction_in_progress():
+        return
+    return await send_close_transaction_setmmi(eid)
