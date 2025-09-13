@@ -1,10 +1,12 @@
 import sys
-import time
+from types import CoroutineType
+
+import pycrate_core.charpy
 
 from ASN.compiled_DSRC_instances import AXXESv1_2
 # from ASN.compiled_DSRC_instances import EFCv5
 EFCv5 = AXXESv1_2
-from ASN.compiled_DSRC_instances import CCCv1
+# from ASN.compiled_DSRC_instances import CCCv1
 # from ASN.compiled_DSRC_instances import LACv2_1 as efc_asn_compilation
 
 efc_asn_compilation = AXXESv1_2
@@ -605,8 +607,8 @@ def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jva
 async def check_and_update_beacon_state():
     global current_beacon_name
     if 'current_beacon_name' not in globals():
-        bcm_logger.critical('No beacon is set!! Please fix the RSE config for abeacon to be initialized properly via BAC L7.')
-        raise NoBeaconInitialized('No beacon is set!! Please fix the RSE config for abeacon to be initialized properly via BAC L7.')
+        bcm_logger.critical('No beacon is set!! Please fix the RSE config for a beacon to be initialized properly via BAC L7.')
+        raise NoBeaconInitialized('No beacon is set!! Please fix the RSE config for a beacon to be initialized properly via BAC L7.')
 
     await beacon_bac_l7_wrapper._pertel_get_communication_count()
 
@@ -633,13 +635,20 @@ def get_parameter_for_eid(eid):
         return b''
     return get_parameter_bytes_from_eid_on_vst_value(eid=eid)
 
+class TApduResponseDecodeError(Exception):
+    pass
 def decode_t_apdu_response_uper(t_apdu_with_response_bytes):
     global TApdu_container
     global last_response_t_apdu_value
     global last_response_t_apdu_json
 
     bcm_logger.debug(f"Decoding received response T-APDU...")
-    TApdu_container.from_uper(t_apdu_with_response_bytes)
+    try:
+        TApdu_container.from_uper(t_apdu_with_response_bytes)
+    except pycrate_core.charpy.CharpyErr:
+        bcm_logger.critical(f'[Pycrate UPER decoder] T-APDU response UPER decoding error!! T-APDU UPER hex value: {t_apdu_with_response_bytes.hex().upper()}')
+        raise TApduResponseDecodeError('T-APDU response UPER decoding error!!')
+
     last_response_t_apdu_value = TApdu_container._val
     bcm_logger.debug(f"Response T-APDU value: {last_response_t_apdu_value}")
 
