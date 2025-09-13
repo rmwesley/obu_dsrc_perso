@@ -10,6 +10,7 @@
         "stopbits": 2
       },
       "beacon_type": "TGB",
+      "IGNORE_OBU_TIMEOUTS_WHEN_CLOSING_TRANSACTION": true,
       "beacon_alarm_state_polling_ms": 2000,
       "SOURCE_MAX_RESPONSE_MAX_UNIT_INTERVALS": 1000,
       "DEST_MAX_REQUEST_MAX_UNIT_INTERVALS": 1000,
@@ -40,6 +41,7 @@
         "stopbits": 2
       },
       "beacon_type": "OPS1955",
+      "IGNORE_OBU_TIMEOUTS_WHEN_CLOSING_TRANSACTION": true,
       "beacon_alarm_state_polling_ms": 2000,
       "SOURCE_MAX_RESPONSE_MAX_UNIT_INTERVALS": 20000,
       "DEST_MAX_REQUEST_MAX_UNIT_INTERVALS": 20000,
