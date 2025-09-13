@@ -364,24 +364,28 @@ async def kapsch_force_uset_key_for_eid(eid, obu_model, curr_uset_key_type=None,
 
 async def validate_cardme_perso(force_eid=None):
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=[0, 1])
+    try:
+        dsrc_l7_perso_logger.info(f'Initialized transaction: {last_vst_value}')
 
-    if force_eid is not None:
-        eid = force_eid
-    else:
-        result = perso_security_operations.get_expected_eid_for_obu_model(last_vst_value)
-        eid = result['eid']
+        if force_eid is not None:
+            eid = force_eid
+        else:
+            result = perso_security_operations.get_expected_eid_for_obu_model(last_vst_value)
+            eid = result['eid']
 
-    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=True, attrIdList=[24]) # Get equOBUId
+        await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=True, attrIdList=[24]) # Get equOBUId
 
-    individualAttrId = [0, 32]
-    for attrId in individualAttrId:
-        response_t_apdu_val = await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=True, attrIdList=[attrId])
-        print(response_t_apdu_val)
+        individualAttrId = [0, 32]
+        for attrId in individualAttrId:
+            response_t_apdu_val = await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=True, attrIdList=[attrId])
+    except Exception as e:
+        dsrc_l7_perso_logger.critical(str(e))
 
     await dsrc_l7_rse.send_close_transaction_setmmi(eid=eid)
 
 async def validate_deperso(force_eid=None):
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=[0, 1])
+    dsrc_l7_perso_logger.info(f'Initialized transaction: {last_vst_value}')
 
     if force_eid is not None:
         eid = force_eid
@@ -394,7 +398,6 @@ async def validate_deperso(force_eid=None):
     individualAttrId = [0, 32]
     for attrId in individualAttrId:
         response_t_apdu_val = await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=True, attrIdList=[attrId])
-        print(response_t_apdu_val)
 
     await dsrc_l7_rse.send_close_transaction_setmmi(eid=eid)
 
