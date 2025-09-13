@@ -269,7 +269,7 @@ async def initialize_transaction(
             # bcm_logger.debug("We lock the thread until the opened transaction is closed!")
             raise BeaconManagerException("Transaction already in progress!!")
     except:
-        send_close_transaction_echo()
+        await send_close_transaction_echo()
 
     mand_applications = [{'aid': mandatory_aid} for mandatory_aid in mand_applications]
     bst_value = {
