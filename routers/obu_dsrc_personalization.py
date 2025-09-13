@@ -275,14 +275,26 @@ async def force_kapsch_obu_uset_keys(req_body: UsetSwitchPayload):
         'equOBUId_hex': obu_id_hex
     }
 
-@router.post('/kapsch_dsrc_force_uset_keys/')
-async def force_kapsch_obu_uset_keys(req_body: UsetForcePayload):
-    '''Request application of personalization to OBU through a DSRC beacon'''
+@router.post('/kapsch_dsrc_force_uset_key_for_eid/')
+async def force_kapsch_obu_uset_keys_for_eid(eid: int, req_body: UsetSwitchPayload):
+    '''Switch OBU USET keys for one EID'''
 
-    obu_id_hex = await dsrc_perso_l7.kapsch_force_uset_key(
-        obu_model = req_body.obu_model,
-        new_uset_key_type = req_body.new_uset_key_type
-        )
+    try:
+        try:
+            obu_id_hex = await dsrc_perso_l7.kapsch_force_uset_key_for_eid(
+                eid = eid,
+                obu_model = req_body.obu_model,
+                curr_uset_key_type = req_body.current_uset_key_type,
+                new_uset_key_type = req_body.new_uset_key_type
+                )
+        except dsrc_l7_rse.UnclosedTransactionException as e:
+            raise HTTPException(502, detail=str(e))
+
+    except dsrc_security.kapsch_http_uset_key_obtention.KapschHttpWsError as e:
+        raise HTTPException(502, detail={
+            "cause": "Kapsch HTTP USET computation service is unavailable!!",
+            "error_message": str(e),
+            })
 
     return {
         'equOBUId_hex': obu_id_hex
