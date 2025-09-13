@@ -333,9 +333,17 @@ async def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, clos
     )
     bac_l2_error_code = bac_l2_response[1]
     if bac_l2_error_code != 0:
+        # OBU Timeout (0x09 error code)
         if bac_l2_error_code == 0x09:
-            raise Exception('[BAC L2] Timeout OBE (0x09) received!!')
-        raise Exception(f'[BAC L2] Error code (0x{bac_l2_error_code:02X}) present in BAC L2 response!!')
+            raise ObuResponseTimeout('[BAC L2] Timeout OBE (0x09) received!!')
+        if bac_l2_error_code == 0x01:
+            raise CommandRefused(f'[BAC L2] Command Refused error (0x01)!!')
+        if bac_l2_error_code == 0x03:
+            raise Exception(f'[BAC L2] Command Refused due to beacon error (0x03)!!')
+
+        else:
+            bcm_logger.error(f'[BAC L2] Error code (0x{bac_l2_error_code:02X}) present in BAC L2 response!!')
+            raise Exception(f'[BAC L2] Error code (0x{bac_l2_error_code:02X}) present in BAC L2 response!!')
     beacon_bac_l7_wrapper.last_t_apdu_response_datagram
     fragmented_t_apdu_with_response_bytes = beacon_bac_l7_wrapper.last_t_apdu_response_datagram
     bcm_logger.info(f"Fragmented T-APDU response obtained from beacon in hex (UPER hex): {fragmented_t_apdu_with_response_bytes.hex().upper()}")
