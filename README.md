@@ -22,6 +22,7 @@ Required PIP packages for running beacon code:
 - iso3166
 - axxes_asn_compiles
 - custom_its_decoders
+- obu_dsrc_security
 - pycryptodome
 - logging
 - threading
@@ -69,7 +70,11 @@ So manually install dependencies with `pip`, which can be run directly as a comm
 I recommend to crate a Python `.venv/` (can be done through VSCode) and then execute:
 `.\.venv\Scripts\pip.exe install fastapi[standard] pymongo pycrate pycryptodome baudot iso3166 pyserial pyshp shapely requests`
 
-# ASN PER decoding & encoding (dencoding procedures)
+# OBU DSRC Security (Key derivation)
+Add the path to the `obu_dsrc_security` module to the **PYTHONPATH** environment variable.
+Also add it to Pylance's extra paths lists so Pylance's type hinting and autocomplete functionalities work properly in VSCode!
+
+# ASN PER decoding & encoding (dencoding procedures) dependencies
 ## pycrate ASN compiles
 Add the path to the `axxes_asn_compiles` module to the **PYTHONPATH** environment variable.
 ## Custom Intelligent Transport System decoders
