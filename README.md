@@ -67,7 +67,7 @@ This is exactly the code that is executed in the `main.py` module to set the `MK
 For the time being we cannot run scripts.
 So manually install dependencies with `pip`, which can be run directly as a command or via `python -m pip`.
 I recommend to crate a Python `.venv/` (can be done through VSCode) and then execute:
-`.\.venv\Scripts\pip.exe install fastapi[standard] pymongo pycrate pycryptodome baudot iso3166 pyserial pyshp shapely`
+`.\.venv\Scripts\pip.exe install fastapi[standard] pymongo pycrate pycryptodome baudot iso3166 pyserial pyshp shapely requests`
 
 # ASN PER decoding & encoding (dencoding procedures)
 ## pycrate ASN compiles
