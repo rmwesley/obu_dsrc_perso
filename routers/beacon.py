@@ -1,12 +1,9 @@
-from fastapi import APIRouter, HTTPException, Request
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
-
-from typing import Literal, Optional
-from enum import IntEnum
+from fastapi import APIRouter, HTTPException
 
 from dsrc_l7 import dsrc_l7_rse
-import dsrc_security.dsrc_key_derivation as dsrc_key_derivation
 
 router = APIRouter(
     prefix="/beacon",

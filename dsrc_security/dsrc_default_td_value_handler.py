@@ -1,6 +1,3 @@
-import os
-import json
-
 import logging
 td_config_logger = logging.getLogger(__name__)
 

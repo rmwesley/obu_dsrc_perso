@@ -1,9 +1,6 @@
 from Crypto.Cipher import DES3
 
-import os
 import json
-
-import logging
 
 # Loading the Master Keys from a JSON into a Python dict
 # This dict maps an EFC-CM in hex format to a MasterKeySet also in hex format

@@ -2,7 +2,6 @@ import time
 import logging
 import json
 import itertools
-import asyncio
 
 from dsrc_l7 import dsrc_l7_rse
 from dsrc_security import dsrc_contracts, dsrc_td_security_operations, dsrc_default_td_value_handler

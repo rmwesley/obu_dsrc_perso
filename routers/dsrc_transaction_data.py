@@ -1,10 +1,6 @@
-from fastapi import APIRouter, HTTPException, Request
-
 import datetime
-from pydantic import BaseModel, Field
-
-from typing import Literal, Optional
-from enum import IntEnum
+from pydantic import BaseModel
+from fastapi import APIRouter
 
 from services.db import transactions_data_db_operations
 

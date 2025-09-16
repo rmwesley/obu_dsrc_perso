@@ -1,4 +1,3 @@
-import os
 import iso3166
 import custom_its_per_decoders
 

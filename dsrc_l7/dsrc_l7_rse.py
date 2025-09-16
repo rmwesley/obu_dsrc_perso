@@ -1,5 +1,4 @@
 import sys
-from types import CoroutineType
 
 import pycrate_core.charpy
 
