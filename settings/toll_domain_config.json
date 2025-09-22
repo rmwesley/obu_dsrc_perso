@@ -43,7 +43,7 @@
         "td_name": "IT_CEN",
         "security_profile": "EN15509_level_0",
         "default_transaction_type": "CARDME",
-        "mandApplications": [29]
+        "mandApplications": [1, 29]
       }
     },
     "try_looking_up_master_keys_for_other_obes_with_same_efc_cm": false
