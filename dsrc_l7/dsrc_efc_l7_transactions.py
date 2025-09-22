@@ -468,7 +468,7 @@ async def loop_transactions_with_default_td_and_extra_tds(beep_state=None, extra
                     except dsrc_l7_rse.AbortedInitPhase as exc:
                         print('Timeout: No VST obtained!!')
                 except AbortedTransaction as exc:
-                    print(exc)
+                    print(repr(exc))
 
                 # Sleep between transactions
                 time.sleep(sleep_time)
