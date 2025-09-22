@@ -3,7 +3,6 @@ import asyncio
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
 from dsrc_l7 import dsrc_efc_l7_transactions, dsrc_l7_rse
-from dsrc_security import dsrc_td_security_operations
 
 import logging
 

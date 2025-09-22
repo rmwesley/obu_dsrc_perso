@@ -4,7 +4,7 @@ import json
 import itertools
 
 from dsrc_l7 import dsrc_l7_rse
-from dsrc_security import dsrc_contracts, dsrc_td_security_operations, dsrc_default_td_value_handler
+from dsrc_security import dsrc_contracts, tc_manage_toll_domains
 
 from ASN.compiled_DSRC_instances import AXXESv1_2
 EFCv5 = AXXESv1_2
@@ -395,11 +395,11 @@ def loop_transactions(beep_state=None):
             time.sleep(1)
 
 async def td_default_transaction(set_mmi=True):
-    current_td = dsrc_td_security_operations.current_toll_domain_name
+    current_td = tc_manage_toll_domains.current_toll_domain_name
 
     transaction_type = toll_domain_config['td_conf_by_td_name'][current_td]['default_transaction_type']
     default_mand_applications = toll_domain_config['td_conf_by_td_name'][current_td]['mandApplications']
-    accessCredentialsPresent = dsrc_td_security_operations.td_is_en15509_level_1()
+    accessCredentialsPresent = tc_manage_toll_domains.td_is_en15509_level_1()
     if transaction_type == 'CARDME':
         await cardme_transaction(mand_applications=default_mand_applications, accessCredentialsPresent=accessCredentialsPresent, set_mmi=set_mmi)
     elif transaction_type == 'PISTA':
@@ -425,7 +425,7 @@ async def loop_transactions_on_toll_domains(beep_state=None, td_list=['TIS', 'DE
             current_td = next(td_list_cycle)
             print(current_td)
             # Change Toll Domain
-            dsrc_td_security_operations.set_toll_domain(current_td)
+            tc_manage_toll_domains.set_toll_domain(current_td)
 
             # Execute default transaction for the current Toll Domain
             try:
@@ -451,7 +451,7 @@ async def loop_transactions_with_default_td_and_extra_tds(beep_state=None, extra
 
     # Reset TD list on each iteration, since the Default TD name can be updated!!
     while True:
-        default_td_name = dsrc_default_td_value_handler.get_default_toll_domain_name()
+        default_td_name = tc_manage_toll_domains.get_current_toll_domain()
         td_list = [default_td_name, *extra_td_list]
         td_list_cycle = itertools.cycle(td_list)
 
@@ -459,7 +459,7 @@ async def loop_transactions_with_default_td_and_extra_tds(beep_state=None, extra
             for current_td in td_list:
                 print(current_td)
                 # Change Toll Domain
-                dsrc_td_security_operations.set_toll_domain(current_td)
+                tc_manage_toll_domains.set_toll_domain(current_td)
 
                 # Execute default transaction for the current Toll Domain
                 try:

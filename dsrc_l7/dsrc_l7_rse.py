@@ -22,7 +22,7 @@ import typing
 from bac_l7 import ops1955_bac_l7, pertel_bac_l7, tgbv_bac_l7
 
 import custom_its_per_decoders
-from dsrc_security import dsrc_auth, dsrc_td_security_operations
+from dsrc_security import dsrc_auth, tc_manage_toll_domains
 
 bcm_logger = logging.getLogger(__name__)
 bcm_logger.setLevel(logging.WARNING)
@@ -395,7 +395,7 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     transaction_data = {}
     transaction_data['_id'] = current_transaction_id.hex
 
-    current_td = dsrc_td_security_operations.get_current_toll_domain()
+    current_td = tc_manage_toll_domains.get_current_toll_domain()
     transaction_data['RseTollDomain'] = current_td
     # Equipment OBU ID, PAN and timestamps at the top!
     transaction_data['equOBUId'] = ""
