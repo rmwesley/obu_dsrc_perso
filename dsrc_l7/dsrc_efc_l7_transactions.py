@@ -2,6 +2,7 @@ import time
 import logging
 import json
 import itertools
+import asyncio
 
 from dsrc_l7 import dsrc_l7_rse
 from dsrc_security import dsrc_contracts, tc_manage_toll_domains
@@ -18,12 +19,14 @@ class AbortedTransaction(Exception):
 with open('settings/toll_domain_config.json') as json_file:
     toll_domain_config = json.load(json_file)
 
+SLEEP_AFTER_ABORTING_TRANSACTION = 0.3
 async def get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value: dict):
     try:
         return dsrc_contracts.get_eid_in_vst_with_valid_contract_in_current_td(vst_value=vst_value)
     except dsrc_contracts.NoValidObeEfcmFoundInVst as exc:
         dsrc_l7_transactions_logger.info(f'Aborting transaction due to no valid EFC-CM in VST: {vst_value}')
         await dsrc_l7_rse.send_close_transaction_echo()
+        await asyncio.sleep(SLEEP_AFTER_ABORTING_TRANSACTION)
         raise AbortedTransaction('No valid EFC-CM!!')
 
 async def cardme_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
