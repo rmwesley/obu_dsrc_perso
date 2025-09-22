@@ -11,7 +11,7 @@
       },
       "VIA-T2": {
         "td_name": "VIA-T2",
-        "security_profile": "TIS_decimal_level_0",
+        "security_profile": "EN15509_level_0",
         "default_transaction_type": "PISTA",
         "mandApplications": [1]
       },
