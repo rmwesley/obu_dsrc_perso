@@ -180,7 +180,9 @@ class PertelBacL7(bac_l2_host2beacon.BacHost):
 
     async def _pertel_send_dsrc_l7_command_with_close_transaction_option(self, t_apdu_containing_request:bytes, close_transaction:bool) -> bytes:
         if close_transaction:
-            return await self._pertel_send_dsrc_l7_command_and_close_transaction(t_apdu_containing_request)
+            obu_response = await self._pertel_send_dsrc_l7_command_and_close_transaction(t_apdu_containing_request)
+            self.t_apdu_containing_vst = None
+            return obu_response
         else:
             return await self._pertel_send_dsrc_l7_command(t_apdu_containing_request)
 
