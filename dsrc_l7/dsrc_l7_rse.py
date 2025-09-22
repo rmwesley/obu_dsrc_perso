@@ -555,7 +555,9 @@ def verify_obe_authenticity(get_stamped_action_response_value=None):
     equipment_class_int = last_vst_value['obeConfiguration']['equipmentClass']
     equipment_class_hex = f'{equipment_class_int:04X}'
 
-    authenticator = dsrc_auth.compute_authenticator_with_device_info_and_auk_ref(pan_bytes, efc_cm, manufacturer_id_hex, equipment_class_hex, attribute_list_bytes, rnd_rse_int, 115)
+    td_name = tc_manage_toll_domains.get_current_toll_domain()
+    norm = tc_manage_toll_domains.get_current_security_norm()
+    authenticator = dsrc_auth.compute_authenticator_with_device_info_and_auk_ref(pan_bytes, efc_cm, manufacturer_id_hex, equipment_class_hex, attribute_list_bytes, rnd_rse_int, td_name, norm, 115)
 
     if provided_authenticator == authenticator:
         bcm_logger.info('[OBE AUTH] OK!!!')

@@ -398,7 +398,7 @@ def loop_transactions(beep_state=None):
             time.sleep(1)
 
 async def td_default_transaction(set_mmi=True):
-    current_td = tc_manage_toll_domains.current_toll_domain_name
+    current_td = tc_manage_toll_domains.get_current_toll_domain()
 
     transaction_type = toll_domain_config['td_conf_by_td_name'][current_td]['default_transaction_type']
     default_mand_applications = toll_domain_config['td_conf_by_td_name'][current_td]['mandApplications']
