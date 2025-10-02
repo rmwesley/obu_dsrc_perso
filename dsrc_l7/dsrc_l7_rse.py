@@ -523,8 +523,6 @@ def verify_obe_authenticity(get_stamped_action_response_value=None):
     # if 'get_stamped_response_value' not in locals():
     #     bcm_logger.error("No GET_STAMPED.response to verify!!")
     eid = get_stamped_action_response_value['eid']
-    decoded_vst_param = decode_vst_parameter_from_eid(eid)
-    efc_cm = decoded_vst_param['EFC-ContextMark']
 
     attributeList = get_stamped_rs['attributeList']
     bcm_logger.info(f'[OBE AUTH] attributeList value: {attributeList}')
@@ -545,16 +543,11 @@ def verify_obe_authenticity(get_stamped_action_response_value=None):
 
     pan_bytes = get_stamped_rs['attributeList'][0]['attributeValue'][1]['personalAccountNumber']
 
-    bcm_logger.debug(f'[OBE AUTH] EFC-CM: {efc_cm}')
     bcm_logger.debug(f'[OBE AUTH] AttributeList: {attribute_list_bytes}')
     bcm_logger.debug(f'[OBE AUTH] RndRSE int: {rnd_rse_int}')
 
-    manufacturer_id_int = last_vst_value['obeConfiguration']['manufacturerID']
-    manufacturer_id_hex = f'{manufacturer_id_int:04X}'
-
-    equipment_class_int = last_vst_value['obeConfiguration']['equipmentClass']
-    equipment_class_hex = f'{equipment_class_int:04X}'
-
+    obu_contract_ref = custom_its_per_decoders.get_obu_contract_ref_from_vst_value(eid, last_vst_value)
+    efc_cm = obu_contract_ref[0:12]
     td_name = tc_manage_toll_domains.get_current_toll_domain()
     norm = tc_manage_toll_domains.get_current_security_norm()
     authenticator = dsrc_auth.compute_authenticator_with_device_info_and_auk_ref(pan_bytes, efc_cm, manufacturer_id_hex, equipment_class_hex, attribute_list_bytes, rnd_rse_int, td_name, norm, 115)
@@ -674,7 +667,7 @@ def decode_t_apdu_response_uper(t_apdu_with_response_bytes):
         bcm_logger.info(f"No return code in T-APDU! (No errors)")
     return last_response_t_apdu_value
 
-def decode_vst_parameter_from_eid(eid):
+def decode_vst_parameter_with_eid_only(eid):
     bcm_logger.debug(f"Decoding VST parameter with EID {eid}...")
     parameter_bytes = get_parameter_for_eid(eid)
 
@@ -684,19 +677,16 @@ def decode_vst_parameter_from_eid(eid):
 def get_parameter_bytes_from_eid_on_vst_value(eid:int, vst_value=None) -> bytes:
     if vst_value is None:
         vst_value = last_vst_value
-    bcm_logger.debug(f"Getting bytes VST parameter for EID {eid} from VST value {vst_value}")
-    for application in vst_value['applications']:
-        bcm_logger.debug(f"Application details: {application}")
-        if application['eid'] == eid:
-            parameter_value = application['parameter'][1]
-            bcm_logger.info(f"Found EID {eid} in VST!!! Parameter value in hex: {parameter_value.hex().upper()}")
-            return parameter_value
-    bcm_logger.error(f"EID {eid} is not present!")
-    raise EIDNotFoundException(f'L7: EID {eid} not present!')
+    return custom_its_per_decoders.get_parameter_bytes_from_vst_value_on_eid(eid, vst_value)
+
+def get_obu_contract_ref_with_eid_only(eid:int, vst_value:dict=None):
+    if not vst_value:
+        vst_value = last_vst_value
+    return custom_its_per_decoders.get_obu_contract_ref_from_vst_value(eid, vst_value)
 
 def compute_access_credentials_for_eid(eid:int) -> bytes:
     bcm_logger.debug(f"Computing Access Credentials for EID {eid}...")
-    decoded_vst_param = decode_vst_parameter_from_eid(eid)
+    decoded_vst_param = decode_vst_parameter_with_eid_only(eid)
 
     if len(decoded_vst_param) == 1:
         # VST parameter contains EFC-CM only, no AC_CR-KeyRef or RndOBE present
