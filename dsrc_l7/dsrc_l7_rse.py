@@ -547,10 +547,9 @@ def verify_obe_authenticity(get_stamped_action_response_value=None):
     bcm_logger.debug(f'[OBE AUTH] RndRSE int: {rnd_rse_int}')
 
     obu_contract_ref = custom_its_per_decoders.get_obu_contract_ref_from_vst_value(eid, last_vst_value)
-    efc_cm = obu_contract_ref[0:12]
     td_name = tc_manage_toll_domains.get_current_toll_domain()
     norm = tc_manage_toll_domains.get_current_security_norm()
-    authenticator = dsrc_auth.compute_authenticator_with_device_info_and_auk_ref(pan_bytes, efc_cm, manufacturer_id_hex, equipment_class_hex, attribute_list_bytes, rnd_rse_int, td_name, norm, 115)
+    authenticator = dsrc_auth.compute_authenticator_with_device_contract_ref_and_auk_ref(pan_bytes, obu_contract_ref, attribute_list_bytes, rnd_rse_int, td_name, norm, 115)
 
     if provided_authenticator == authenticator:
         bcm_logger.info('[OBE AUTH] OK!!!')
