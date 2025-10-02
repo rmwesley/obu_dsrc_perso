@@ -691,11 +691,12 @@ def compute_access_credentials_for_eid(eid:int) -> bytes:
         # VST parameter contains EFC-CM only, no AC_CR-KeyRef or RndOBE present
         # As such, we do not need any access credentials!
         return bytes(4)
-    efc_cm = decoded_vst_param['EFC-ContextMark']
     ac_cr_key_ref = decoded_vst_param['AC_CR-KeyReference']
     rnd_obe = decoded_vst_param['RndOBE']
+    obu_contract_ref = get_obu_contract_ref_with_eid_only(eid)
 
-    access_credentials_int = dsrc_auth.compute_access_credentials(efc_cm, rnd_obe, ac_cr_key_ref)
+    td_name = tc_manage_toll_domains.get_current_toll_domain()
+    access_credentials_int = dsrc_auth.compute_access_credentials_for_obu_on_td(obu_contract_ref, rnd_obe, ac_cr_key_ref, td_name=td_name)
     access_credentials_bytes = access_credentials_int.to_bytes(4, 'big')
     return access_credentials_bytes
     # except dsrc_security.TollDomainException:
