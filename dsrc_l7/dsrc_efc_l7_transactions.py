@@ -16,8 +16,8 @@ dsrc_l7_transactions_logger = logging.getLogger(__name__)
 class AbortedTransaction(Exception):
     pass
 
-with open('settings/toll_domain_config.json') as json_file:
-    toll_domain_config = json.load(json_file)
+with open('settings/td_transaction_config.json') as json_file:
+    td_transaction_config = json.load(json_file)
 
 SLEEP_AFTER_ABORTING_TRANSACTION = 0.3
 async def get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value: dict):
@@ -401,8 +401,8 @@ def loop_transactions(beep_state=None):
 async def td_default_transaction(set_mmi=True):
     current_td = tc_manage_toll_domains.get_current_toll_domain()
 
-    transaction_type = toll_domain_config['td_conf_by_td_name'][current_td]['default_transaction_type']
-    default_mand_applications = toll_domain_config['td_conf_by_td_name'][current_td]['mandApplications']
+    transaction_type = td_transaction_config['td_conf_by_td_name'][current_td]['default_transaction_type']
+    default_mand_applications = td_transaction_config['td_conf_by_td_name'][current_td]['mandApplications']
     accessCredentialsPresent = tc_manage_toll_domains.td_is_en15509_level_1()
     if transaction_type == 'CARDME':
         await cardme_transaction(mand_applications=default_mand_applications, accessCredentialsPresent=accessCredentialsPresent, set_mmi=set_mmi)

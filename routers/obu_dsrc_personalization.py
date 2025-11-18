@@ -31,8 +31,9 @@ router = APIRouter(tags=['OBU DSRC Personalization routes'], lifespan=lifespan)
 
 perso_tasks_dirpath = pathlib.Path(f'local_file_storage/dsrc_perso_tasks')
 
-with pathlib.Path('settings/toll_domain_config.json').open('r') as json_file:
-    td_conf_by_td_name = json.load(json_file)['td_conf_by_td_name']
+with pathlib.Path('settings/td_transaction_config.json').open('r') as json_file:
+    td_transaction_config = json.load(json_file)
+    td_conf_by_td_name = td_transaction_config['td_conf_by_td_name']
 
 # class dsrc_attributes_dict(Dict[int, str]):
 #     pass

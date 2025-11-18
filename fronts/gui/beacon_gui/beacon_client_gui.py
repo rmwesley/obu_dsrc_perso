@@ -34,7 +34,7 @@ available_toll_domains = []
 def refresh_td_config():
     global available_toll_domains
 
-    with open('settings/toll_domain_config.json', 'r') as json_file:
+    with open('settings/td_transaction_config.json', 'r') as json_file:
         toll_domains_config = json.load(json_file)
     # Should be a list of str!!
     available_toll_domains = list(toll_domains_config["td_conf_by_td_name"].keys())
@@ -95,13 +95,13 @@ def __cb_update_toll_domain_from_dropdown_choice(combobox_dropdown:tkinter.ttk.C
     chosen_toll_domain_name = combobox_dropdown.get()
     _set_current_toll_domain(chosen_toll_domain_name)
 
-def create_new_toll_domain_config_window_at_cursor_position():
-    # toll_domain_config_window = tkinter.Toplevel()
-    toll_domain_config_window = create_window_at_cursor_position()
-    _cb_save_td = _create_td_choice_dropdown_combobox_and_return_its_update_td_callback_func(toll_domain_config_window)
+def create_new_td_transaction_config_window_at_cursor_position():
+    # td_transaction_config_window = tkinter.Toplevel()
+    td_transaction_config_window = create_window_at_cursor_position()
+    _cb_save_td = _create_td_choice_dropdown_combobox_and_return_its_update_td_callback_func(td_transaction_config_window)
 
     btn_save_current_td = tkinter.Button(
-        master=toll_domain_config_window,
+        master=td_transaction_config_window,
         text="Save current Toll Domain",
         width=25,
         height=5,
@@ -111,16 +111,16 @@ def create_new_toll_domain_config_window_at_cursor_position():
     )
     btn_save_current_td.pack()
 
-    return toll_domain_config_window
+    return td_transaction_config_window
 
 # DEPRECATED
-def create_new_toll_domain_config_window_relative_to_master(master_widget:tkinter.BaseWidget):
-    # toll_domain_config_window = tkinter.Toplevel()
-    toll_domain_config_window = create_relative_window(master_widget)
-    _cb_save_td = _create_td_choice_dropdown_combobox_and_return_its_update_td_callback_func(toll_domain_config_window)
+def create_new_td_transaction_config_window_relative_to_master(master_widget:tkinter.BaseWidget):
+    # td_transaction_config_window = tkinter.Toplevel()
+    td_transaction_config_window = create_relative_window(master_widget)
+    _cb_save_td = _create_td_choice_dropdown_combobox_and_return_its_update_td_callback_func(td_transaction_config_window)
 
     btn_save_current_td = tkinter.Button(
-        master=toll_domain_config_window,
+        master=td_transaction_config_window,
         text="Save current Toll Domain",
         width=25,
         height=5,
@@ -130,12 +130,12 @@ def create_new_toll_domain_config_window_relative_to_master(master_widget:tkinte
     )
     btn_save_current_td.pack()
 
-    return toll_domain_config_window
+    return td_transaction_config_window
 
 # Callback with Dependency Injection (global var)!
-def _cb_new_toll_domain_config_window():
+def _cb_new_td_transaction_config_window():
     global main_window
-    create_new_toll_domain_config_window_at_cursor_position()
+    create_new_td_transaction_config_window_at_cursor_position()
 
 def new_beacon_config_window():
     beacon_config_window = create_window_at_cursor_position()
@@ -213,15 +213,15 @@ def setup_beacon_client_app_main_window():
 
     main_window.geometry('+%d+%d' % initial_window_position_tuple)
 
-    btn_toll_domain_config_popup = tkinter.Button(
+    btn_td_transaction_config_popup = tkinter.Button(
         text="Toll Domain Configuration",
         width=25,
         height=5,
         bg="blue",
         fg="yellow",
-        command=_cb_new_toll_domain_config_window
+        command=_cb_new_td_transaction_config_window
     )
-    btn_toll_domain_config_popup.pack()
+    btn_td_transaction_config_popup.pack()
 
     btn_beacon_config_popup = tkinter.Button(
         text="Beacon Configuration",
