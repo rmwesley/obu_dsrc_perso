@@ -33,6 +33,11 @@
         "default_transaction_type": "CCC2015",
         "mandApplications": [20]
       },
+      "NL": {
+        "td_name": "NL",
+        "default_transaction_type": "CCC2024",
+        "mandApplications": [20]
+      },
       "IT_CEN": {
         "td_name": "IT_CEN",
         "default_transaction_type": "CARDME",
