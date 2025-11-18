@@ -263,6 +263,34 @@ async def ccc_2023_transaction(force_eid=None, mand_applications=[1, 20, 29], ac
     else:
         await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
 
+async def ccc_2024_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
+    _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
+    eid = await get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value=last_vst_value)
+    if force_eid is not None:
+        eid = force_eid
+
+    await dsrc_l7_rse.presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
+
+    # Get OBU ID
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[24])
+
+    # Getting CCC attributes...
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[50])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[52])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[53])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[63])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[99])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[100])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[101])
+
+    # Close the transaction
+    if set_mmi == True:
+        await dsrc_l7_rse.send_close_transaction_setmmi(eid=eid)
+    else:
+        await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
+
 async def kapsch_system_element_transaction(force_eid=0, mand_applications=[0], accessCredentialsPresent=True, set_mmi=True):
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
     if force_eid is not None:
@@ -416,6 +444,8 @@ async def td_default_transaction(set_mmi=True):
         await ccc_2023_transaction(mand_applications=default_mand_applications, accessCredentialsPresent=accessCredentialsPresent, set_mmi=set_mmi)
     elif transaction_type == 'CCC2023':
         await ccc_2023_transaction(mand_applications=default_mand_applications, accessCredentialsPresent=accessCredentialsPresent, set_mmi=set_mmi)
+    elif transaction_type == 'CCC2024':
+        await ccc_2024_transaction(mand_applications=default_mand_applications, accessCredentialsPresent=accessCredentialsPresent, set_mmi=set_mmi)
 
 async def loop_transactions_on_toll_domains(beep_state=None, td_list=['TIS', 'DE', 'CH', 'BE'], sleep_time=3.0):
     global loop_set_mmi_bool
