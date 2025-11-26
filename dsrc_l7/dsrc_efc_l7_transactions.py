@@ -434,6 +434,8 @@ async def td_default_transaction(set_mmi=True):
     accessCredentialsPresent = tc_manage_toll_domains.td_is_en15509_level_1()
     if transaction_type == 'CARDME':
         await cardme_transaction(mand_applications=default_mand_applications, accessCredentialsPresent=accessCredentialsPresent, set_mmi=set_mmi)
+    if transaction_type == 'TIS_CIP_CARDME':
+        await tis_vl_transaction(mand_applications=default_mand_applications, accessCredentialsPresent=accessCredentialsPresent, set_mmi=set_mmi)
     elif transaction_type == 'PISTA':
         await cardme_transaction(mand_applications=default_mand_applications, accessCredentialsPresent=accessCredentialsPresent, set_mmi=set_mmi)
     elif transaction_type == 'CCC2009':
