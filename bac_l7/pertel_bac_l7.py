@@ -1,3 +1,7 @@
+# Look into the TGB_VOIE_DS_Ind2A_070301.pdf document for details!
+# It specifies the TGB beacon's BAC L7 protocol.
+# It also recapitulates the PERTEL BAC L7 specs!
+
 import logging
 import serial
 import json
