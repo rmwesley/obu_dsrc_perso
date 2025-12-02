@@ -5,11 +5,16 @@
     "td_conf_by_td_name": {
       "TIS": {
         "td_name": "TIS",
-        "default_transaction_type": "TIS_CIP_CARDME",
+        "default_transaction_type": "CARDME",
+        "mandApplications": [1]
+      },
+      "TIS_VL": {
+        "td_name": "TIS_VL",
+        "default_transaction_type": "CARDME",
         "mandApplications": [1]
       },
       "TIS_INCONNU": {
-        "td_name": "TIS",
+        "td_name": "TIS_INCONNU",
         "default_transaction_type": "TIS_CIP_CARDME",
         "mandApplications": [1]
       },
