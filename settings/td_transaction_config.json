@@ -1,58 +1,55 @@
 {
-    "obu_keysets_conf_path": "..\\security_info\\toll_charging\\keyset_name_by_toll_domain_obu_model_and_efc_cm_v1.json",
-    "master_keysets_conf_path": "..\\security_info\\toll_charging\\master_keys_v4.json",
-    "environment": "TEST",
-    "td_conf_by_td_name": {
-      "TIS": {
-        "td_name": "TIS",
-        "default_transaction_type": "CARDME",
-        "mandApplications": [1]
-      },
-      "TIS_VL": {
-        "td_name": "TIS_VL",
-        "default_transaction_type": "CARDME",
-        "mandApplications": [1]
-      },
-      "TIS_INCONNU": {
-        "td_name": "TIS_INCONNU",
-        "default_transaction_type": "TIS_CIP_CARDME",
-        "mandApplications": [1]
-      },
-      "VIA-T2": {
-        "td_name": "VIA-T2",
-        "default_transaction_type": "PISTA",
-        "mandApplications": [1]
-      },
-      "EasyGo": {
-        "td_name": "EasyGo",
-        "default_transaction_type": "CARDME",
-        "mandApplications": [1]
-      },
-      "DE": {
-        "td_name": "DE",
-        "default_transaction_type": "CCC2023",
-        "mandApplications": [20]
-      },
-      "CH": {
-        "td_name": "CH",
-        "default_transaction_type": "CCC2023",
-        "mandApplications": [20]
-      },
-      "BE": {
-        "td_name": "BE",
-        "default_transaction_type": "CCC2015",
-        "mandApplications": [20]
-      },
-      "NL": {
-        "td_name": "NL",
-        "default_transaction_type": "CCC2024",
-        "mandApplications": [20]
-      },
-      "IT_CEN": {
-        "td_name": "IT_CEN",
-        "default_transaction_type": "CARDME",
-        "mandApplications": [1, 29]
-      }
+  "td_conf_by_td_name": {
+    "TIS": {
+      "td_name": "TIS",
+      "default_transaction_type": "CARDME",
+      "mandApplications": [1]
     },
-    "try_looking_up_master_keys_for_other_obes_with_same_efc_cm": false
-  }
+    "TIS_VL": {
+      "td_name": "TIS_VL",
+      "default_transaction_type": "CARDME",
+      "mandApplications": [1]
+    },
+    "TIS_INCONNU": {
+      "td_name": "TIS_INCONNU",
+      "default_transaction_type": "TIS_CIP_CARDME",
+      "mandApplications": [1]
+    },
+    "VIA-T2": {
+      "td_name": "VIA-T2",
+      "default_transaction_type": "PISTA",
+      "mandApplications": [1]
+    },
+    "EasyGo": {
+      "td_name": "EasyGo",
+      "default_transaction_type": "CARDME",
+      "mandApplications": [1]
+    },
+    "DE": {
+      "td_name": "DE",
+      "default_transaction_type": "CCC2023",
+      "mandApplications": [20]
+    },
+    "CH": {
+      "td_name": "CH",
+      "default_transaction_type": "CCC2023",
+      "mandApplications": [20]
+    },
+    "BE": {
+      "td_name": "BE",
+      "default_transaction_type": "CCC2015",
+      "mandApplications": [20]
+    },
+    "NL": {
+      "td_name": "NL",
+      "default_transaction_type": "CCC2024",
+      "mandApplications": [20]
+    },
+    "IT_CEN": {
+      "td_name": "IT_CEN",
+      "default_transaction_type": "CARDME",
+      "mandApplications": [1, 29]
+    }
+  },
+  "try_looking_up_master_keys_for_other_obes_with_same_efc_cm": false
+}
