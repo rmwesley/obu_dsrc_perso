@@ -17,10 +17,10 @@ package_root_dir = pathlib.Path(__file__).parent.parent
 # with tc_conf_json_path.open() as json_file:
 #     default_tc_conf_json = json.load(json_file)
 
-toll_domain_management_conf_path = package_root_dir / f'settings/toll_domain_security_config.json'
+toll_domain_management_conf_path = package_root_dir / f'settings/td_transaction_config.json'
 with toll_domain_management_conf_path.open() as json_file:
     toll_domain_security_config_json = json.load(json_file)
-    td_sec_conf_by_td_name = toll_domain_security_config_json['td_sec_conf_by_td_name']
+    td_sec_conf_by_td_name = toll_domain_security_config_json['td_conf_by_td_name']
 
 # WRAPPER ON TC TD SecOps with a TD name global variable set!
 # Helps with the managing the currently set Toll Domain...

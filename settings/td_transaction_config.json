@@ -3,6 +3,7 @@
     "TIS": {
       "td_name": "TIS",
       "default_transaction_type": "CARDME",
+      "security_profile": "TIS_decimal_level_0",
       "mandApplications": [1]
     },
     "TIS_VL": {
@@ -13,41 +14,49 @@
     "TIS_INCONNU": {
       "td_name": "TIS_INCONNU",
       "default_transaction_type": "TIS_CIP_CARDME",
+      "security_profile": "TIS_decimal_level_0",
       "mandApplications": [1]
     },
     "VIA-T2": {
       "td_name": "VIA-T2",
       "default_transaction_type": "PISTA",
+      "security_profile": "EN15509_level_0",
       "mandApplications": [1]
     },
     "EasyGo": {
       "td_name": "EasyGo",
       "default_transaction_type": "CARDME",
+      "security_profile": "EN15509_level_1",
       "mandApplications": [1]
     },
     "DE": {
       "td_name": "DE",
       "default_transaction_type": "CCC2023",
+      "security_profile": "EN15509_level_1",
       "mandApplications": [20]
     },
     "CH": {
       "td_name": "CH",
       "default_transaction_type": "CCC2023",
+      "security_profile": "EN15509_level_1",
       "mandApplications": [20]
     },
     "BE": {
       "td_name": "BE",
       "default_transaction_type": "CCC2015",
+      "security_profile": "EN15509_level_1",
       "mandApplications": [20]
     },
     "NL": {
       "td_name": "NL",
       "default_transaction_type": "CCC2024",
+      "security_profile": "EN15509_level_1",
       "mandApplications": [20]
     },
     "IT_CEN": {
       "td_name": "IT_CEN",
       "default_transaction_type": "CARDME",
+      "security_profile": "EN15509_level_0",
       "mandApplications": [1, 29]
     }
   },
