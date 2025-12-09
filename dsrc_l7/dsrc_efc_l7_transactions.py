@@ -5,7 +5,7 @@ import itertools
 import asyncio
 
 from dsrc_l7 import dsrc_l7_rse
-from toll_charging_security import dsrc_contracts, tc_manage_toll_domains
+from toll_charging_security import tc_dsrc_contracts, tc_manage_toll_domains
 
 from ASN.compiled_DSRC_instances import AXXESv1_2
 EFCv5 = AXXESv1_2
@@ -23,8 +23,8 @@ SLEEP_AFTER_ABORTING_TRANSACTION = 0.3
 async def get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value: dict):
     try:
         td_name = tc_manage_toll_domains.get_current_toll_domain()
-        return dsrc_contracts.get_eid_in_vst_with_valid_contract_in_td(vst_value=vst_value, td_name=td_name)
-    except dsrc_contracts.NoValidObeEfcmFoundInVst as exc:
+        return tc_dsrc_contracts.get_eid_in_vst_with_valid_contract_in_td(vst_value=vst_value, td_name=td_name)
+    except tc_dsrc_contracts.NoValidObeEfcmFoundInVst as exc:
         dsrc_l7_transactions_logger.info(f'Aborting transaction due to no valid EFC-CM in VST: {vst_value}')
         await dsrc_l7_rse.send_close_transaction_echo()
         await asyncio.sleep(SLEEP_AFTER_ABORTING_TRANSACTION)

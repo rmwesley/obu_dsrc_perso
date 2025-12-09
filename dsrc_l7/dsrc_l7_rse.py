@@ -22,7 +22,7 @@ import typing
 from bac_l7 import ops1955_bac_l7, pertel_bac_l7, tgbv_bac_l7
 
 import custom_its_per_decoders
-from toll_charging_security import dsrc_auth, tc_manage_toll_domains
+from toll_charging_security import tc_dsrc_auth, tc_manage_toll_domains
 
 bcm_logger = logging.getLogger(__name__)
 bcm_logger.setLevel(logging.WARNING)
@@ -549,7 +549,7 @@ def verify_obe_authenticity(get_stamped_action_response_value=None):
     obu_contract_ref = custom_its_per_decoders.get_obu_contract_ref_from_vst_value(eid, last_vst_value)
     td_name = tc_manage_toll_domains.get_current_toll_domain()
     norm = tc_manage_toll_domains.get_current_security_norm()
-    authenticator = dsrc_auth.compute_authenticator_with_device_contract_ref_and_auk_ref(pan_bytes, obu_contract_ref, attribute_list_bytes, rnd_rse_int, td_name, norm, 115)
+    authenticator = tc_dsrc_auth.compute_authenticator_with_device_contract_ref_and_auk_ref(pan_bytes, obu_contract_ref, attribute_list_bytes, rnd_rse_int, td_name, norm, 115)
 
     if provided_authenticator == authenticator:
         bcm_logger.info('[OBE AUTH] OK!!!')
@@ -696,7 +696,7 @@ def compute_access_credentials_for_eid(eid:int) -> bytes:
     obu_contract_ref = get_obu_contract_ref_with_eid_only(eid)
 
     td_name = tc_manage_toll_domains.get_current_toll_domain()
-    access_credentials_int = dsrc_auth.compute_access_credentials_for_obu_on_td(obu_contract_ref, rnd_obe, ac_cr_key_ref, td_name=td_name)
+    access_credentials_int = tc_dsrc_auth.compute_access_credentials_for_obu_on_td(obu_contract_ref, rnd_obe, ac_cr_key_ref, td_name=td_name)
     access_credentials_bytes = access_credentials_int.to_bytes(4, 'big')
     return access_credentials_bytes
     # except dsrc_security.TollDomainException:
