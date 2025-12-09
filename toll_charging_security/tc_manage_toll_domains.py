@@ -3,7 +3,7 @@ import pathlib
 import logging
 
 from dsrc_security import dsrc_mk_by_device_and_td_loader
-from manage_tds import tc_default_td_value_handler, tc_td_security_operations
+from toll_charging_security import tc_default_td_value_handler, tc_td_security_operations
 
 td_security_logger = logging.getLogger(__name__)
 td_security_logger.setLevel('INFO')
@@ -102,9 +102,6 @@ def reset_toll_domain():
 def get_current_toll_domain():
     global current_toll_domain_name
     return current_toll_domain_name
-
-def get_all_master_keysets():
-    return dsrc_mk_by_device_and_td_loader.master_keysets
 
 # Set default Toll Domain!!
 set_toll_domain(toll_domain_name=default_toll_domain_name)

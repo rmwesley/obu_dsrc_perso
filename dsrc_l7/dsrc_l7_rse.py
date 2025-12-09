@@ -22,7 +22,7 @@ import typing
 from bac_l7 import ops1955_bac_l7, pertel_bac_l7, tgbv_bac_l7
 
 import custom_its_per_decoders
-from dsrc_security import dsrc_auth, tc_manage_toll_domains
+from toll_charging_security import dsrc_auth, tc_manage_toll_domains
 
 bcm_logger = logging.getLogger(__name__)
 bcm_logger.setLevel(logging.WARNING)
