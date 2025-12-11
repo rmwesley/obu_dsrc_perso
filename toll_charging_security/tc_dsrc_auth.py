@@ -61,6 +61,34 @@ def compute_authenticator_with_auk_value(attribute_list_bytes, rnd_rse, auk_valu
     attr_authenticator = des_output[0:4]
     return attr_authenticator
 
+def compute_it_authenticator_with_auk_value(payment_means_bytes, rnd_rse, auk_value:bytes):
+    # Prepare the DES cipher with the MAuK
+    cipher = DES.new(auk_value, DES.MODE_ECB)
+    des_output = b''
+    right_padding_size = 8 - (len(payment_means_bytes) + 4)%8
+
+    print(right_padding_size)
+    des_input_bytes = payment_means_bytes + rnd_rse.to_bytes(4) + bytearray(right_padding_size)
+    print(des_input_bytes.hex())
+    print(len(des_input_bytes))
+
+    dsrc_auth_logger.debug(f"DES input: {des_input_bytes.hex().upper()}")
+    for index in range(0, len(des_input_bytes)//8):
+        # XOR the 8 output bytes of the last iteration with the next 8 input bytes
+        block_of_8_bytes = int.from_bytes(des_input_bytes[index*8 : index*8 + 8])
+
+        dsrc_auth_logger.debug(f"Index: {index}, Current 8-bytes DES block: {block_of_8_bytes:16X}")
+        print(f'Out:  ', des_output.hex())
+        print(f'Block: {block_of_8_bytes:08X}')
+        des_input = int.from_bytes(des_output, 'big') ^ block_of_8_bytes
+        print(f'XOR:   {des_input:08X}\n')
+        des_output = cipher.encrypt(des_input.to_bytes(8))
+
+    print(des_output.hex())
+    attr_authenticator = des_output[0:4]
+    print(attr_authenticator.hex())
+    return attr_authenticator
+
 def compute_authenticator_with_efc_cm_and_auk_ref(
         pan_bytes:bytes,
         efc_cm,
