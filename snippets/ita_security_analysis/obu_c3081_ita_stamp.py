@@ -20,10 +20,17 @@ print(f'AuK1 provided by GESCOM: {gescom_auk1_bytes.hex().upper()}')
 
 # Attribute authenticator (DSRC communication, OBE <> RSE)
 # attribute_list_bytes = b'\x01 @1VI\x00\x00\x05\x00\x15%\x8fZ\x7f\x00\x00'
-payment_means_hex = '31 56 49 60 00 61 30 04 26 4F 5A BF 00 00'
-rnd_rse_hex = 'D082836D' # 3498214253
+payment_means_hex = '''31 56 49 60 00 61 30 04 26 4F 5A BF 00 00'''
+# rnd_rse_hex = 'FD2BFFDB' # 4247519195
+# rnd_rse_hex = 'DBFF2BFD'
+rnd_rse_hex = '1A638FA2'
+# rnd_rse_hex = '45F1C658'
+# rnd_rse_hex = 'A28F631A'
 
-attribute_list_bytes = bytes.fromhex(payment_means_hex)
+# rnd_rse_hex = 'D082836D' # 3498214253
+# rnd_rse_hex = '6D8382D0'
+# rnd_rse_hex = '22D09F85'
+attribute_list_bytes = bytes.fromhex('012040' + payment_means_hex)
 rnd_rse = int(rnd_rse_hex, 16)
 
 manufacturer_id = '0007'
@@ -35,5 +42,6 @@ result = tc_dsrc_auth.compute_authenticator_with_device_contract_ref_and_auk_ref
 print(tc_td_key_derivation.force_compute_auk_with_efc_cm_and_auk_ref_only(pan_bytes, efc_cm, 111, td_name='IT_CEN', norm='EN15509').hex())
 print(f'Attr Auth from MasterKey: {result.hex().upper()}')
 
-result = tc_dsrc_auth.compute_authenticator_with_auk_value(attribute_list_bytes, rnd_rse, gescom_auk1_bytes)
+payment_means_bytes = attribute_list_bytes[3:17]
+result = tc_dsrc_auth.compute_it_authenticator_with_auk_value(payment_means_bytes, rnd_rse, gescom_auk1_bytes)
 print(f'Attr Auth with personalized key: {result.hex().upper()}')
