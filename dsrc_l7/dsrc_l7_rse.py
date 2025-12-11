@@ -26,6 +26,8 @@ from toll_charging_security import tc_dsrc_auth, tc_manage_toll_domains
 
 bcm_logger = logging.getLogger(__name__)
 bcm_logger.setLevel(logging.WARNING)
+t_apdu_uper_logger = logging.getLogger('T_APDU_logger')
+t_apdu_uper_logger.setLevel(logging.DEBUG)
 
 local_transactions_storage_path_str = 'local_file_storage/transactions'
 startup_date = datetime.now()
@@ -36,6 +38,10 @@ file_handler = logging.FileHandler(f'logs/beacon_logs/{logs_date_prefix}_rse_dsr
 file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
 file_handler.setFormatter(file_formatter)
 bcm_logger.addHandler(file_handler)
+
+t_apdu_file_handler = logging.FileHandler(f'logs/beacon_logs/{logs_date_prefix}_rse_t_apdu_uper.log')
+t_apdu_file_handler.setFormatter(file_formatter)
+t_apdu_uper_logger.addHandler(t_apdu_file_handler)
 
 # Setting globals
 ## Garbage unsafe temporary globals
@@ -218,7 +224,8 @@ async def start_bst_emission_and_await_vst(bst_value: dict):
 
     initialization_request_jval = TApdu_container._to_jval()
     last_sent_t_apdu_containing_bst = TApdu_container.to_uper()
-    bcm_logger.info(f"T_APDU containing BST (UPER hex): {TApdu_container.to_uper().hex().upper()}")
+    # bcm_logger.info(f"T_APDU containing BST (UPER hex): {TApdu_container.to_uper().hex().upper()}")
+    t_apdu_uper_logger.debug(f'[TX] BST: 0x{last_sent_t_apdu_containing_bst.hex().upper()}')
 
     fragmented_t_apdu_with_bst = frag_header + last_sent_t_apdu_containing_bst
     bcm_logger.info(f"RSE is now emitting BST and awaiting VST from OBE...")
@@ -289,11 +296,11 @@ async def initialize_transaction(
 
     bcm_logger.info("A VST was received!")
     fragmented_t_apdu_init_resp_datagram = beacon_bac_l7_wrapper.get_vst()
-    bcm_logger.debug(f"Fragmented T_APDU containing VST (UPER hex): {fragmented_t_apdu_init_resp_datagram.hex().upper()}")
+    # bcm_logger.debug(f"Fragmented T_APDU containing VST (UPER hex): {fragmented_t_apdu_init_resp_datagram.hex().upper()}")
 
     bcm_logger.debug("We now remove the fragmentation header and instantiate an T_APDU object from the response!")
     t_apdu_init_resp_datagram = bytes(fragmented_t_apdu_init_resp_datagram[1:])
-    bcm_logger.debug(f"T-APDU without fragmentation header (UPER hex): {t_apdu_init_resp_datagram.hex().upper()}")
+    t_apdu_uper_logger.debug(f"[RX] VST: 0x{t_apdu_init_resp_datagram.hex().upper()}")
 
     bcm_logger.debug("We now instantiate a T_APDU object from the UPER response!")
     TApdu_container.from_uper(t_apdu_init_resp_datagram)
@@ -341,7 +348,10 @@ async def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, clos
     # Needed to store transaction data as JSON!
     request_t_apdu_jval = TApdu_container._to_jval()
 
-    fragmented_t_apdu_request = frag_header + TApdu_container.to_uper()
+    request_t_apdu_uper = TApdu_container.to_uper()
+    t_apdu_uper_logger.debug(f'[TX] Rq T-APDU: 0x{request_t_apdu_uper.hex().upper()}')
+
+    fragmented_t_apdu_request = frag_header + request_t_apdu_uper
 
     # Sending command!!!
     bac_l2_response = (await beacon_bac_l7_wrapper
@@ -369,6 +379,7 @@ async def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, clos
 
     try:
         t_apdu_with_response_bytes = bytes(fragmented_t_apdu_with_response_bytes[1:])
+        t_apdu_uper_logger.debug(f'[RX] Rs T-APDU: 0x{t_apdu_with_response_bytes.hex().upper()}')
 
         t_apdu_response_value = decode_t_apdu_response_uper(t_apdu_with_response_bytes)
 
