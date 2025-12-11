@@ -26,8 +26,11 @@ from toll_charging_security import tc_dsrc_auth, tc_manage_toll_domains
 
 bcm_logger = logging.getLogger(__name__)
 bcm_logger.setLevel(logging.WARNING)
+
+# T-APDU logger only logs to file, no propagation!!
 t_apdu_uper_logger = logging.getLogger('T_APDU_logger')
 t_apdu_uper_logger.setLevel(logging.DEBUG)
+t_apdu_uper_logger.propagate = False
 
 local_transactions_storage_path_str = 'local_file_storage/transactions'
 startup_date = datetime.now()
