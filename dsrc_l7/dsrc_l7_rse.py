@@ -639,6 +639,16 @@ def get_parameter_for_eid(eid):
         return b''
     return get_parameter_bytes_from_eid_on_vst_value(eid=eid)
 
+def log_attrs_in_get_resp_in_hex_uper_format(decoded_t_apdu_val):
+    if 'attributelist' in decoded_t_apdu_val[1]:
+        for attribute_pair in decoded_t_apdu_val[1]['attributelist']:
+            attr_id = attribute_pair['attributeId']
+            attr_val = attribute_pair['attributeValue']
+            EFCv5.EfcDsrcGeneric.EfcContainer.set_val(attr_val)
+            attr_uper = EFCv5.EfcDsrcGeneric.EfcContainer.to_uper()
+
+            t_apdu_uper_logger.info(f'[RX] GET.Rs for attrId ({attr_id}): 0x{attr_uper.hex().upper()}')
+
 class TApduResponseDecodeError(Exception):
     pass
 def decode_t_apdu_response_uper(t_apdu_with_response_bytes):
@@ -655,6 +665,7 @@ def decode_t_apdu_response_uper(t_apdu_with_response_bytes):
 
     last_response_t_apdu_value = TApdu_container._val
     bcm_logger.debug(f"Response T-APDU value: {last_response_t_apdu_value}")
+    log_attrs_in_get_resp_in_hex_uper_format(last_response_t_apdu_value)
 
     bcm_logger.info(f"Response T-APDU in ASN:\n{TApdu_container.to_asn1()}")
     # bcm_logger.debug(f"Response T-APDU decoded with JER:\n{TApdu_container.to_jer()}")
