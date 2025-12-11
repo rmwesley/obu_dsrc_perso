@@ -642,15 +642,26 @@ def get_parameter_for_eid(eid):
         return b''
     return get_parameter_bytes_from_eid_on_vst_value(eid=eid)
 
-def log_attrs_in_get_resp_in_hex_uper_format(decoded_t_apdu_val):
-    if 'attributelist' in decoded_t_apdu_val[1]:
-        for attribute_pair in decoded_t_apdu_val[1]['attributelist']:
-            attr_id = attribute_pair['attributeId']
-            attr_val = attribute_pair['attributeValue']
-            EFCv5.EfcDsrcGeneric.EfcContainer.set_val(attr_val)
-            attr_uper = EFCv5.EfcDsrcGeneric.EfcContainer.to_uper()
+def log_attribute_list_val_in_hex_uper_format(attribute_list):
+    for attribute_pair in attribute_list:
+        attr_id = attribute_pair['attributeId']
+        attr_val = attribute_pair['attributeValue']
+        EFCv5.EfcDsrcGeneric.EfcContainer.set_val(attr_val)
+        attr_uper = EFCv5.EfcDsrcGeneric.EfcContainer.to_uper()
 
-            t_apdu_uper_logger.info(f'[RX] GET.Rs for attrId ({attr_id}): 0x{attr_uper.hex().upper()}')
+        # Decoded attribute value from T-APDU!
+        t_apdu_uper_logger.info(f'attributeId ({attr_id}) val: 0x{attr_uper.hex().upper()}')
+
+def log_attrs_in_get_resp_in_hex_uper_format(decoded_t_apdu_val):
+    if 'actionResponse' == decoded_t_apdu_val[0]:
+        if 'responseParameter' in decoded_t_apdu_val[1]:
+            if 'gstrs' == decoded_t_apdu_val[1]['responseParameter'][0]:
+                attribute_list = decoded_t_apdu_val[1]['responseParameter'][1]['attributeList']
+                log_attribute_list_val_in_hex_uper_format(attribute_list)
+
+    if 'attributelist' in decoded_t_apdu_val[1]:
+        attribute_list = decoded_t_apdu_val[1]['attributelist']
+        log_attribute_list_val_in_hex_uper_format(attribute_list)
 
 class TApduResponseDecodeError(Exception):
     pass
