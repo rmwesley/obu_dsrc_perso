@@ -54,7 +54,7 @@ def get_master_keys_with_obu_contract_ref_on_td(obu_contract_ref: str, td_name:s
 
 class MasterKeysNotFoundForEfcCm(Exception):
     pass
-def get_master_keys_with_efc_cm_only(efc_cm_hex_str: str, td_name:str='TIS'):
+def get_master_keys_with_efc_cm_only_on_td(efc_cm_hex_str: str, td_name:str='TIS'):
     """No device model provided, only an EFC-CM for the current Toll Domain!!"""
     master_keys_by_obu_contract_ref = get_master_keys_by_obu_contract_from_td_name(td_name)
 

@@ -13,7 +13,7 @@ def compute_kcvs_for_all_keysets():
     return keysets_kcvs_dict
 
 def compute_kcvs_for_efc_cm_keyset(efc_cm: str):
-    master_key_hex_dict = tc_td_security_operations.get_master_keys_with_efc_cm_only(efc_cm)
+    master_key_hex_dict = tc_td_security_operations.get_master_keys_with_efc_cm_only_on_td(efc_cm)
     return dsrc_key_derivation.compute_kcvs_for_hex_master_keyset(master_key_hex_dict)
 
 def get_master_key_with_key_ref_and_efc_cm_only(efc_cm:str, key_ref:str):
@@ -22,7 +22,7 @@ def get_master_key_with_key_ref_and_efc_cm_only(efc_cm:str, key_ref:str):
     efc_cm = efc_cm.upper()
     tc_key_derivation_logger.debug(f"Getting the Master Key with ref {key_ref} for EFC-CM {efc_cm}")
     try :
-        master_key_bytes = bytes.fromhex(tc_td_security_operations.get_master_keys_with_efc_cm_only(efc_cm)[key_ref])
+        master_key_bytes = bytes.fromhex(tc_td_security_operations.get_master_keys_with_efc_cm_only_on_td(efc_cm)[key_ref])
     except KeyError as e:
         tc_key_derivation_logger.error(e)
         tc_key_derivation_logger.error(f"We do not possess the masterkeys for EFC-CM {efc_cm}")
@@ -87,14 +87,14 @@ def compute_auk_with_obu_info_and_auk_ref_on_td(
 
     return dsrc_key_derivation.compute_auk_with_efc_cm_and_mauk_value(pan_8_msb, efc_cm_hex_str, mauk_bytes, norm)
 
-def force_compute_auk_with_efc_cm_and_auk_ref_only(pan_8_msb: bytes, efc_cm: str, auk_ref:int=115, norm:str='TIS_decimal') -> bytes:
+def force_compute_auk_with_efc_cm_and_auk_ref_only(pan_8_msb: bytes, efc_cm: str, auk_ref:int=115, td_name:str='TIS', norm:str='TIS_decimal') -> bytes:
     """
     Lookup a MasterKey through EFC-CM only!
     That is, ignore ManufacturerId and EquipmentClass in MasterKey search.
     """
     plaintext_bytes = dsrc_key_derivation.compute_auk_plaintext(pan_8_msb, efc_cm=efc_cm, norm=norm)
 
-    master_hex_keyset = tc_td_security_operations.get_master_keys_with_efc_cm_only(efc_cm)
+    master_hex_keyset = tc_td_security_operations.get_master_keys_with_efc_cm_only_on_td(efc_cm, td_name)
     mauk_hex = master_hex_keyset[str(auk_ref)]
     mauk_bytes = bytes.fromhex(mauk_hex)
     # key_derivation_logger.info(f'FOUND MAUK: 0x{mauk_hex}')
@@ -103,7 +103,7 @@ def force_compute_auk_with_efc_cm_and_auk_ref_only(pan_8_msb: bytes, efc_cm: str
 def decrypt_auk_with_efc_cm_and_auk_ref(auth_key:bytes, efc_cm, auk_ref=115):
     if auk_ref not in range(111, 119):
         raise dsrc_key_derivation.InvalidAuthKeyRef("Invalid master authentication key (MAuK) reference!")
-    master_hex_keyset = tc_td_security_operations.get_master_keys_with_efc_cm_only(efc_cm)
+    master_hex_keyset = tc_td_security_operations.get_master_keys_with_efc_cm_only_on_td(efc_cm)
     mauk_hex = master_hex_keyset[str(auk_ref)]
     mauk_bytes = bytes.fromhex(mauk_hex)
 
@@ -112,12 +112,12 @@ def decrypt_auk_with_efc_cm_and_auk_ref(auth_key:bytes, efc_cm, auk_ref=115):
 def compute_all_8_auth_keys_with_efc_cm_only(pan_8_msb: bytes, efc_cm: str, norm:str='TIS_decimal') -> dict[int, bytes]:
     plaintext_bytes = dsrc_key_derivation.compute_auk_plaintext(pan_8_msb, efc_cm, norm)
     
-    mauk_hex_dict = tc_td_security_operations.get_master_keys_with_efc_cm_only(efc_cm)
+    mauk_hex_dict = tc_td_security_operations.get_master_keys_with_efc_cm_only_on_td(efc_cm)
     return dsrc_key_derivation.compute_all_8_auth_keys(pan_8_msb, efc_cm, mauk_hex_dict, norm)
 
 
 def compute_all_derived_keys_for_efc_cm_and_return_hex_dict(pan_8_msb:bytes, efc_cm:str, ac_cr_key_ref:int, norm:str='TIS_decimal'):
-    master_keys = tc_td_security_operations.get_master_keys_with_efc_cm_only(efc_cm)
+    master_keys = tc_td_security_operations.get_master_keys_with_efc_cm_only_on_td(efc_cm)
     return dsrc_key_derivation.compute_all_derived_keys_and_return_hex_dict(pan_8_msb, efc_cm, ac_cr_key_ref, master_keys, norm)
 
 def compute_all_derived_keys_for_device_contract_ref_and_return_hex_dict(pan_8_msb:bytes, device_contract_ref:str, ac_cr_key_ref:int):
@@ -161,5 +161,5 @@ def compute_all_derived_keys_by_keyset_name(pan_8_msb:bytes, efc_cm:str, ac_cr_k
     return derived_keys_by_keyset_name
 
 def decipher_auth_key_with_efc_cm_and_auk_ref(auth_key: str, efc_cm: str, auk_ref: int) -> bytes:
-    mauk = tc_td_security_operations.get_master_keys_with_efc_cm_only(efc_cm)[str(auk_ref)]
+    mauk = tc_td_security_operations.get_master_keys_with_efc_cm_only_on_td(efc_cm)[str(auk_ref)]
     return dsrc_key_derivation.decipher_auth_key_with_mauk_value(auth_key, mauk)

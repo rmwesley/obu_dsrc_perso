@@ -37,7 +37,7 @@ def get_master_keys_for_obu_on_td(efc_cm, manufacturer_id, equipment_class, td_n
             except tc_td_security_operations.ObuMasterKeysNotFoundException:
                 # Trying to get masterkeys through EFC-CM only by looking up all kwnown OBU contracts!
                 # Be careful if there are repeated EFC-CMs for different device models!!
-                return tc_td_security_operations.get_master_keys_with_efc_cm_only(efc_cm)
+                return tc_td_security_operations.get_master_keys_with_efc_cm_only_on_td(efc_cm, td_name)
     return tc_td_security_operations.get_master_keys_for_obu_on_td(efc_cm, manufacturer_id, equipment_class, td_name)
 
 class TollDomainSecurityProfileInvalidException(Exception):
