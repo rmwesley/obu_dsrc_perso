@@ -1,17 +1,17 @@
-from dsrc_security import dsrc_key_derivation
+from efc_security import efc_key_derivation
 from toll_charging_security import tc_td_key_derivation, tc_dsrc_auth
 
 pan_bytes = bytes.fromhex('3156496000613004264F')
-compact_pan = dsrc_key_derivation.compute_compact_pan(pan_bytes)
+compact_pan = efc_key_derivation.compute_compact_pan(pan_bytes)
 
 print(f'Compact PAN: {compact_pan.hex().upper()}')
 
 # Derived Keys (Personalization)
 efc_cm = 'B28031000A75'
-plaintext_bytes = dsrc_key_derivation.compute_auk_plaintext(pan_bytes, efc_cm, norm='EN15509')
+plaintext_bytes = efc_key_derivation.compute_auk_plaintext(pan_bytes, efc_cm, norm='EN15509')
 mauk_111_hex_str = 'A6B5 7FC2 D327 F348 F6E2 5842 8E94 DCE0'
 mauk_111_bytes = bytes.fromhex(mauk_111_hex_str)
-auk_bytes = dsrc_key_derivation.compute_auk_with_mauk_value_and_plaintext(plaintext_bytes, mauk_111_bytes)
+auk_bytes = efc_key_derivation.compute_auk_with_mauk_value_and_plaintext(plaintext_bytes, mauk_111_bytes)
 
 print(f'Computed AuK from MK: {auk_bytes.hex().upper()}')
 
