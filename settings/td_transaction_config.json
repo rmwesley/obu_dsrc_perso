@@ -47,6 +47,18 @@
       "security_profile": "EN15509_level_1",
       "mandApplications": [20]
     },
+    "CEA": {
+      "td_name": "CEA",
+      "default_transaction_type": "CCC2023",
+      "security_profile": "EN15509_level_1",
+      "mandApplications": [20]
+    },
+    "RGE": {
+      "td_name": "RGE",
+      "default_transaction_type": "CCC2023",
+      "security_profile": "EN15509_level_1",
+      "mandApplications": [20]
+    },
     "NL": {
       "td_name": "NL",
       "default_transaction_type": "CCC2024",
