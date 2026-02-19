@@ -30,6 +30,39 @@ async def get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value: d
         await asyncio.sleep(SLEEP_AFTER_ABORTING_TRANSACTION)
         raise AbortedTransaction('No valid EFC-CM!!')
 
+async def forced_cardme_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
+    _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
+    if not force_eid:
+        raise ValueError('Forced EID must be set!')
+    eid = force_eid
+
+    # Getting payment info!! (Core part)
+    await dsrc_l7_rse.presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
+
+    # Getting Receipt data...
+    # dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[33, 34])
+
+    # Getting contract information...
+    # dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[4])
+
+    # Getting Vehicle attributes...
+    ## Getting LPN only first case errors occurs in the 'big' GET.request
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[17, 18, 19, 20, 22])
+
+    # Getting OBE info...
+    # dsrc_l7_rse.send_get_request(eid, False, attrIdList=[24, 25, 26])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[24]) # Get equOBUId
+
+    # Getting driver info...
+    # dsrc_l7_rse.send_get_request(eid, False, attrIdList=[27, 47])
+
+    # Close the transaction
+    if set_mmi == True:
+        await dsrc_l7_rse.send_close_transaction_setmmi(eid=eid)
+    else:
+        await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
+
 async def cardme_transaction(mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
     eid = await get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value=last_vst_value)

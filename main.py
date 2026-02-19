@@ -40,6 +40,12 @@ console_formatter = ColoredFormatterWrapper(logging.Formatter(f"%(levelname)-8s 
 console_handler.setFormatter(console_formatter)
 root_logger.addHandler(console_handler)
 
+async def forced_cardme_transaction(force_eid=1):
+    await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
+    dsrc_l7_rse.SKIP_CONTRACT_DSRC_AUTH = True
+
+    await dsrc_efc_l7_transactions.forced_cardme_transaction(force_eid)
+
 async def simple_bcm_transactions():
     await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
 
@@ -58,7 +64,14 @@ async def default_toll_domain_transaction_loop(extra_td_list:list[str] = ['TIS']
 # Main execution
 if __name__ == "__main__":
     # asyncio.run(default_toll_domain_transaction_loop(extra_td_list=['NL', 'BE', 'DE']))
-    # asyncio.run(toll_domains_transaction_loop(['IT_CEN', 'VIA-T2', 'TIS', 'TIS_INCONNU']))
+    # asyncio.run(default_toll_domain_transaction_loop(extra_td_list=['EasyGo', 'VIA-T2']))
+    # CCC
+    # asyncio.run(toll_domains_transaction_loop(['CH', 'CEA', 'NL', 'BE', 'DE']))
+
+    # EFC
+    asyncio.run(forced_cardme_transaction(1))
+    # asyncio.run(toll_domains_transaction_loop(['VIA-T2', 'TIS', 'IT_CEN', 'TIS_INCONNU']))
+
     # asyncio.run(toll_domains_transaction_loop(['NL', 'TIS', 'DE', 'CH', 'BE', 'VIA-T2', 'IT_CEN']))
     # asyncio.run(toll_domains_transaction_loop(['IT_CEN', 'TIS', 'NL', 'BE', 'DE']))
-    asyncio.run(toll_domains_transaction_loop(['TIS', 'IT_CEN', 'NL', 'BE', 'DE']))
+    # asyncio.run(toll_domains_transaction_loop(['TIS', 'IT_CEN', 'NL', 'BE', 'DE']))

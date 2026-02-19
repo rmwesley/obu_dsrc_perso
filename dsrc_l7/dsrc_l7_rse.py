@@ -53,6 +53,9 @@ keep_looping = False
 ## Beacon L7 necessary values
 beacon_bac_l7_wrapper = None
 
+## SKIP DSRC AUTH
+SKIP_CONTRACT_DSRC_AUTH = False
+
 def set_fragmentation_header():
     global frag_header
     # PDU cannot be 0 or 1
@@ -560,18 +563,19 @@ def verify_obe_authenticity(get_stamped_action_response_value=None):
     bcm_logger.debug(f'[OBE AUTH] AttributeList: {attribute_list_bytes}')
     bcm_logger.debug(f'[OBE AUTH] RndRSE int: {rnd_rse_int}')
 
-    obu_contract_ref = custom_its_per_decoders.get_obu_contract_ref_from_vst_value(eid, last_vst_value)
-    td_name = tc_manage_toll_domains.get_current_toll_domain()
-    norm = tc_manage_toll_domains.get_current_security_norm()
-    authenticator = tc_dsrc_auth.compute_authenticator_with_device_contract_ref_and_auk_ref(pan_bytes, obu_contract_ref, attribute_list_bytes, rnd_rse_int, td_name, norm, 115)
+    if not SKIP_CONTRACT_DSRC_AUTH:
+        obu_contract_ref = custom_its_per_decoders.get_obu_contract_ref_from_vst_value(eid, last_vst_value)
+        td_name = tc_manage_toll_domains.get_current_toll_domain()
+        norm = tc_manage_toll_domains.get_current_security_norm()
+        authenticator = tc_dsrc_auth.compute_authenticator_with_device_contract_ref_and_auk_ref(pan_bytes, obu_contract_ref, attribute_list_bytes, rnd_rse_int, td_name, norm, 115)
 
-    if provided_authenticator == authenticator:
-        bcm_logger.info('[OBE AUTH] OK!!!')
-        return True
-        # raise Exception('[OBE AUTH] Invalid OBE Auth!!')
-    else:
-        bcm_logger.critical('[OBE AUTH] ERROR!!!')
-        return False
+        if provided_authenticator == authenticator:
+            bcm_logger.info('[OBE AUTH] OK!!!')
+            return True
+            # raise Exception('[OBE AUTH] Invalid OBE Auth!!')
+        else:
+            bcm_logger.critical('[OBE AUTH] ERROR!!!')
+            return False
 
 def enrich_transaction_data(transaction_data_json, request_t_apdu_jval, response_t_apdu_jval):
     equOBUId_hex = search_for_obu_id_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
