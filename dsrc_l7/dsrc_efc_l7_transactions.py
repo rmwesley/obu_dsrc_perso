@@ -30,11 +30,10 @@ async def get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value: d
         await asyncio.sleep(SLEEP_AFTER_ABORTING_TRANSACTION)
         raise AbortedTransaction('No valid EFC-CM!!')
 
-async def cardme_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
+async def cardme_transaction(mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
     eid = await get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value=last_vst_value)
-    if force_eid is not None:
-        eid = force_eid
+
     # Getting payment info!! (Core part)
     await dsrc_l7_rse.presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
@@ -62,7 +61,7 @@ async def cardme_transaction(force_eid=None, mand_applications=[1, 20, 29], acce
     else:
         await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
 
-async def tis_vl_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
+async def tis_vl_transaction(mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
     """
     Used in the context of TIS VL CIP CARDME/Liber-t transactions.
     TIS: Télépéage Inter Sociétés
@@ -71,8 +70,7 @@ async def tis_vl_transaction(force_eid=None, mand_applications=[1, 20, 29], acce
     """
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
     eid = await get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value=last_vst_value)
-    if force_eid is not None:
-        eid = force_eid
+
     await dsrc_l7_rse.presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
     await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16])
@@ -98,15 +96,14 @@ async def tis_vl_transaction(force_eid=None, mand_applications=[1, 20, 29], acce
     else:
         await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
 
-async def test_ccc_2009_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
+async def test_ccc_2009_transaction(mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
     global efc_asn_compilation
     # Compiled CCC 2015 specs
     efc_asn_compilation = CCCv1
 
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
     eid = await get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value=last_vst_value)
-    if force_eid is not None:
-        eid = force_eid
+
     await dsrc_l7_rse.presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
     await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
@@ -133,15 +130,14 @@ async def test_ccc_2009_transaction(force_eid=None, mand_applications=[1, 20, 29
         await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
     efc_asn_compilation = AXXESv1_2
 
-async def test_ccc_2009_transaction_old(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
+async def test_ccc_2009_transaction_old(mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
     global efc_asn_compilation
     # Compiled CCC 2015 specs
     efc_asn_compilation = CCCv1
 
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
     eid = await get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value=last_vst_value)
-    if force_eid is not None:
-        eid = force_eid
+
     await dsrc_l7_rse.presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
     await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
@@ -168,15 +164,14 @@ async def test_ccc_2009_transaction_old(force_eid=None, mand_applications=[1, 20
         await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
     efc_asn_compilation = AXXESv1_2
 
-async def ccc_2015_status_history_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
+async def ccc_2015_status_history_transaction(mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
     global efc_asn_compilation
     # Compiled CCC 2015 specs
     efc_asn_compilation = EFCv5
 
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
     eid = await get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value=last_vst_value)
-    if force_eid is not None:
-        eid = force_eid
+
     await dsrc_l7_rse.presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
     # OBU ID
@@ -197,15 +192,14 @@ async def ccc_2015_status_history_transaction(force_eid=None, mand_applications=
         await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
     efc_asn_compilation = AXXESv1_2
 
-async def test_ccc_2015_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
+async def test_ccc_2015_transaction(mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
     global efc_asn_compilation
     # Compiled CCC 2015 specs
     efc_asn_compilation = EFCv5
 
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
     eid = await get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value=last_vst_value)
-    if force_eid is not None:
-        eid = force_eid
+
     await dsrc_l7_rse.presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
     await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[16, 17, 18, 19, 20, 22, 32])
@@ -239,11 +233,10 @@ async def test_ccc_2015_transaction(force_eid=None, mand_applications=[1, 20, 29
         await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
     efc_asn_compilation = AXXESv1_2
 
-async def ccc_2023_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
+async def ccc_2023_transaction(mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
+
     eid = await get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value=last_vst_value)
-    if force_eid is not None:
-        eid = force_eid
 
     await dsrc_l7_rse.presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
@@ -265,11 +258,10 @@ async def ccc_2023_transaction(force_eid=None, mand_applications=[1, 20, 29], ac
     else:
         await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
 
-async def ccc_2024_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
+async def ccc_2024_transaction(mand_applications=[1, 20, 29], accessCredentialsPresent=True, set_mmi=True):
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
+
     eid = await get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value=last_vst_value)
-    if force_eid is not None:
-        eid = force_eid
 
     await dsrc_l7_rse.presentation_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[32])
 
@@ -293,10 +285,9 @@ async def ccc_2024_transaction(force_eid=None, mand_applications=[1, 20, 29], ac
     else:
         await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
 
-async def kapsch_system_element_transaction(force_eid=0, mand_applications=[0], accessCredentialsPresent=True, set_mmi=True):
+async def kapsch_system_element_transaction(mand_applications=[0], accessCredentialsPresent=True, set_mmi=True):
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
-    if force_eid is not None:
-        eid = force_eid
+    eid=0
 
     await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[1, 2, 3])
     await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[6, 7])
@@ -316,7 +307,7 @@ async def kapsch_system_element_transaction(force_eid=0, mand_applications=[0], 
     else:
         await dsrc_l7_rse.send_close_transaction_echo(eid=eid)
 
-async def test_transaction(force_eid=None, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
+async def test_transaction(force_eid=1, mand_applications=[1, 20, 29], accessCredentialsPresent=False, set_mmi=True):
     _, last_vst_value = await dsrc_l7_rse.initialize_transaction(mand_applications=mand_applications)
     if force_eid is not None:
         eid = force_eid
