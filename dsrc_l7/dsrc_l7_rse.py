@@ -430,8 +430,8 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     # Merging initialisationResponse json into initialization_data json dict
     initialization_data |= initialization_response_jval
 
-    manufacturerID = initialization_data['initialisationResponse']['obeConfiguration']['manufacturerID']
-    equipmentClass = initialization_data['initialisationResponse']['obeConfiguration']['equipmentClass']
+    obeManufacturerID = initialization_data['initialisationResponse']['obeConfiguration']['manufacturerID']
+    obeEquipmentClass = initialization_data['initialisationResponse']['obeConfiguration']['equipmentClass']
     # equOBUId = 0
 
     # Actual data at the bottom!
@@ -443,7 +443,7 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     current_transaction_start_date = datetime.now()
     current_transaction_datetime_prefix = current_transaction_start_date.strftime("%Y%m%dT%H%M%S")
 
-    transaction_data_filename = f"{current_transaction_datetime_prefix}_{current_td}_{manufacturerID:04X}_{equipmentClass:04X}_00000000_{current_transaction_id}.json"
+    transaction_data_filename = f"{current_transaction_datetime_prefix}_{current_td}_{obeManufacturerID:04X}_{obeEquipmentClass:04X}_00000000_{current_transaction_id}.json"
     transaction_data_filepath = pathlib.Path(f"local_file_storage/transactions/{transaction_data_filename}")
 
     with transaction_data_filepath.open('w') as json_file:
