@@ -275,6 +275,13 @@ async def initialize_transaction(
 
     global initialization_data
 
+    # Override beaconId value from config, ignoring function arguments!
+    if 'beaconId' in beacon_manager_config[current_beacon_name]:
+        beacon_id = beacon_manager_config[current_beacon_name]['beaconId']
+
+        manufacturer_id = beacon_id['manufacturerid']
+        individual_id = beacon_id['individualid']
+
     await check_and_update_beacon_state()
 
     try:

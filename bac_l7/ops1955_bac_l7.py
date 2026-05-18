@@ -4,7 +4,7 @@ from bac_l7 import pertel_bac_l7
 with open('settings/beacon_manager_config.json', 'r') as beacon_manager_settings_file:
     beacon_manager_settings = json.load(beacon_manager_settings_file)
     chosen_beacon_name = beacon_manager_settings['default_beacon_name']
-    bac_l2_config = beacon_manager_settings[chosen_beacon_name]['bac_l2_config']
+    # bac_l2_config = beacon_manager_settings[chosen_beacon_name]['bac_l2_config']
 
 class Ops1955BacL7Exception(Exception):
     pass
@@ -12,6 +12,10 @@ class Ops1955BacL7Exception(Exception):
 class Ops1955BacL7(pertel_bac_l7.PertelBacL7):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # Ensure currently chosen beacon is OPS1955!!!
+        if chosen_beacon_name != 'OPS1955':
+            raise ValueError(f'Bad Config: Chosen beacon name is not OPS1955 ({chosen_beacon_name})')
 
     async def kapsch_set_config_from_settings(self):
         # STOP the beacon first!!
@@ -85,12 +89,21 @@ class Ops1955BacL7(pertel_bac_l7.PertelBacL7):
         # BST repetition time in ms, between 3ms and 255ms for OPS1955
         bst_repetition_time_ms = 0x03
 
+        bac_l2_config = beacon_manager_settings['OPS1955']['bac_l2_config']
+
         # 0x00: Managed by the device and incremented after no reply
         # 0x01: Managed by the host
         # 0x02: Managed by the device and incremented after each transaction
-        beacon_id_behavior = 0x02
+        beacon_id_behavior_choice_name = bac_l2_config['beacon_id_behavior_choice_name']
+        bid_behavior = bac_l2_config['beacon_id_behaviors_config'][beacon_id_behavior_choice_name]
 
-        bac_l2_config = beacon_manager_settings['OPS1955']['bac_l2_config']
+        beacon_id_behavior = bid_behavior['behavior']
+        if beacon_id_behavior not in [0, 1, 2]:
+            raise ValueError(f'Beacon ID behavior should be one of [0, 1, 2], not {beacon_id_behavior}!!!')
+        if beacon_id_behavior == 1:
+            beacon_id_behavior
+
+
         # ACn mode : Release with Private AC Command, OBE response expected
         # UI mode : Release with 3 Private UI Command emissions, without OBE response 
         if bac_l2_config['release_command_config'] == 'UI':

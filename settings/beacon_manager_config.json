@@ -2,6 +2,10 @@
   "default_beacon_name": "OPS1955",
   "TGBV": {
     "chosen_communication_mode": "serial-pertel",
+    "beaconId": {
+      "manufacturerid": 49,
+      "individualid": 5719379
+    },
     "bac_l2_config": {
       "beacon_host_serial_config": {
         "port": "COM1",
@@ -33,6 +37,10 @@
   },
   "OPS1955": {
     "chosen_communication_mode": "serial-pertel",
+    "beaconId": {
+      "manufacturerid": 49,
+      "individualid": 5719379
+    },
     "bac_l2_config": {
       "beacon_host_serial_config": {
         "port": "COM13",
@@ -41,6 +49,22 @@
         "stopbits": 2
       },
       "beacon_type": "OPS1955",
+      "beacon_id_behavior_choice_name": "increment_after_each_transaction",
+      "beacon_id_behaviors_config":{
+        "increment_after_no_reply": {
+          "behavior": 0
+        },
+        "provide_value_in_bst": {
+          "behavior": 1,
+          "beacon_id_value": {
+            "manufacturerid": 49,
+            "individualid": 1
+          }
+        },
+        "increment_after_each_transaction": {
+          "behavior": 2
+        }
+      },
       "IGNORE_OBU_TIMEOUTS_WHEN_CLOSING_TRANSACTION": true,
       "beacon_alarm_state_polling_ms": 2000,
       "SOURCE_MAX_RESPONSE_MAX_UNIT_INTERVALS": 20000,
