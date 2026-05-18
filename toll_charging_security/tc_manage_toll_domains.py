@@ -73,7 +73,7 @@ def set_toll_domain(toll_domain_name:str):
     global current_toll_domain_name
 
     if 'current_toll_domain_name' in globals() and current_toll_domain_name == toll_domain_name:
-        td_security_logger.error(f"Toll Domain is already set to ({toll_domain_name}).")
+        td_security_logger.info(f"Toll Domain is already set to ({toll_domain_name}).")
         return
 
     td_security_logger.info(f"Switching Toll Domain to ({toll_domain_name})...")
