@@ -441,7 +441,7 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     current_transaction_start_date = datetime.now()
     current_transaction_datetime_prefix = current_transaction_start_date.strftime("%Y%m%dT%H%M%S")
 
-    transaction_data_filename = f"{current_transaction_datetime_prefix}_{current_td}_{obeManufacturerID:04X}_{obeEquipmentClass:04X}_00000000_{current_transaction_id}.json"
+    transaction_data_filename = f"{current_transaction_datetime_prefix}_{current_td}_{obeManufacturerID:04X}_{obeEquipmentClass:04X}_{current_transaction_id}.json"
     transaction_data_filepath = pathlib.Path(f"local_file_storage/transactions/{transaction_data_filename}")
 
     metadata_handler = TransactionMetadataHandler()
@@ -454,18 +454,6 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
         json.dump(transaction_data, json_file, indent=2)
 
     return transaction_data
-
-def rename_transaction_data_file(equOBUId_hex:str='00000000'):
-    global transaction_data_filepath
-
-    # Rename output file to include equOBUId!!
-    original_obuidless_filename = transaction_data_filepath.name
-    filename_parts_list = original_obuidless_filename.split('_')
-    # Equipment OBU Id is in the third part of the string!
-    filename_parts_list[4] = equOBUId_hex
-    new_filename = '_'.join(filename_parts_list)
-    new_filepath = transaction_data_filepath.with_name(new_filename)
-    transaction_data_filepath = transaction_data_filepath.rename(new_filepath)
 
 def search_json_action_transaction_data_for_attribute_data(action_request_jval, action_response_jval, attribute_id:int):
     if 'actionParameter' in action_request_jval:
@@ -584,7 +572,6 @@ def verify_obe_authenticity(get_stamped_action_response_value=None):
 def enrich_transaction_data_headers(transaction_data_json, request_t_apdu_jval, response_t_apdu_jval):
     equOBUId_hex = search_for_obu_id_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
     if equOBUId_hex is not None:
-        rename_transaction_data_file(equOBUId_hex)
         transaction_data_json['equOBUId'] = equOBUId_hex
     pan_hex = search_for_pan_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
     if pan_hex:
