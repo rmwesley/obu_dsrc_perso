@@ -78,7 +78,7 @@ if __name__ == "__main__":
     # asyncio.run(toll_domains_transaction_loop(td_list=['TIS', 'EasyGo', 'CH', 'BE']))
     # asyncio.run(default_transaction())
 
-    asyncio.run(single_transaction('VIA-T2'))
+    asyncio.run(single_transaction('EasyGo'))
 
     # asyncio.run(toll_domains_transaction_loop(['VIA-T2', 'TIS', 'IT_CEN', 'TIS_INCONNU']))
 
