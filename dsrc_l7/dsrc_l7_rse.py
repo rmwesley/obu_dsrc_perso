@@ -542,10 +542,10 @@ def verify_obe_authenticity(get_stamped_action_response_value=None):
         get_stamped_action_response_value = last_response_t_apdu_value[1]
     if 'responseParameter' not in get_stamped_action_response_value:
         # Not a GET_STAMPED.response!!
-        return True
+        return False
     if get_stamped_action_response_value['responseParameter'][0] != 'gstrs':
         # Not a GET_STAMPED.response!!
-        return True
+        return False
 
     get_stamped_rs = get_stamped_action_response_value['responseParameter'][1]
 
