@@ -20,6 +20,7 @@ import asyncio
 import typing
 
 from bac_l7 import ops1955_bac_l7, pertel_bac_l7, tgbv_bac_l7
+from dsrc_transactions.metadata_persistence import TransactionMetadataHandler
 
 import custom_its_per_decoders
 from toll_charging_security import tc_dsrc_auth, tc_manage_toll_domains
@@ -418,18 +419,6 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
 
     transaction_data_headers = {}
     current_td = tc_manage_toll_domains.get_current_toll_domain()
-    transaction_data_headers['rseTdName'] = current_td
-    # Equipment OBU ID, PAN and timestamps at the top!
-    transaction_data_headers['rseManufacturerId'] = initialization_request_jval['initialisationRequest']['rsu']['manufacturerid']
-    transaction_data_headers['beaconIndividualId'] = initialization_request_jval['initialisationRequest']['rsu']['individualid']
-    transaction_data_headers['obeManufacturerId'] = initialization_response_jval['initialisationResponse']['obeConfiguration']['manufacturerID']
-    transaction_data_headers['equOBUId'] = ""
-    transaction_data_headers['personalAccountNumber'] = ""
-    transaction_data_headers['licencePlateNumber'] = ""
-    transaction_data_headers['authResult'] = False
-    transaction_data_headers['positionLatitude'] = ""
-    transaction_data_headers['positionLongitude'] = ""
-    transaction_data_headers['last_update_timestamp'] = ""
 
     # initialization_data dict is a merge of the init request and response JSON values
     # initialization_data = initialization_request_jval | initialization_response_jval
@@ -454,6 +443,9 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
 
     transaction_data_filename = f"{current_transaction_datetime_prefix}_{current_td}_{obeManufacturerID:04X}_{obeEquipmentClass:04X}_00000000_{current_transaction_id}.json"
     transaction_data_filepath = pathlib.Path(f"local_file_storage/transactions/{transaction_data_filename}")
+
+    metadata_handler = TransactionMetadataHandler()
+    metadata_handler.create_transaction_with_init_data(current_td, initialization_request_jval, initialization_response_jval, transaction_data_filepath.name)
 
     with transaction_data_filepath.open('w') as json_file:
         transaction_data_headers['creation_time'] = datetime.now().isoformat()
@@ -603,7 +595,8 @@ def enrich_transaction_data_headers(transaction_data_json, request_t_apdu_jval, 
         transaction_data_json['positionLongitude'] = gnss_status['lastGnssFixLon']
 
     valid_stamp = verify_obe_authenticity()
-    transaction_data_json['authResult'] |= valid_stamp
+
+    transaction_data_json['authResult'] = valid_stamp | transaction_data_json.get('authResult', False)
 
 def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jval):
     global transaction_data_filepath
