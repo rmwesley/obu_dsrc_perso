@@ -53,6 +53,12 @@
       "security_profile": "EN15509_level_1",
       "mandApplications": [20]
     },
+    "FR2": {
+      "td_name": "RGE",
+      "default_transaction_type": "CCC2023",
+      "security_profile": "EN15509_level_1",
+      "mandApplications": [20]
+    },
     "RGE": {
       "td_name": "RGE",
       "default_transaction_type": "CCC2023",
