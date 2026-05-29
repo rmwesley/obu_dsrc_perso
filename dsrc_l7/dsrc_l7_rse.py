@@ -509,6 +509,13 @@ def search_for_pan_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu
         personalAccountNumber = attribute_value['paymeans']['personalAccountNumber'].upper()
         return personalAccountNumber
 
+def search_for_lpn_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval):
+    attribute_value = search_json_t_apdu_exchange_data_for_attribute_value(request_t_apdu_jval, response_t_apdu_jval, attribute_id=16)
+
+    if 'vehlpn' in attribute_value:
+        lpn = attribute_value['vehlpn']['licencePlateNumber'].upper()
+        return lpn
+
 def search_for_gnss_status_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval):
     attribute_value = search_json_t_apdu_exchange_data_for_attribute_value(request_t_apdu_jval, response_t_apdu_jval, attribute_id=50)
 
@@ -570,21 +577,27 @@ def verify_obe_authenticity(get_stamped_action_response_value=None):
             bcm_logger.critical('[OBE AUTH] ERROR!!!')
             return False
 
-def enrich_transaction_data_headers(transaction_data_json, request_t_apdu_jval, response_t_apdu_jval):
-    equOBUId_hex = search_for_obu_id_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
-    if equOBUId_hex is not None:
-        transaction_data_json['equOBUId'] = equOBUId_hex
-    pan_hex = search_for_pan_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
-    if pan_hex:
-        transaction_data_json['personalAccountNumber'] = pan_hex
-    gnss_status = search_for_gnss_status_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
-    if gnss_status:
-        transaction_data_json['positionLatitude'] = gnss_status['lastGnssFixLat']
-        transaction_data_json['positionLongitude'] = gnss_status['lastGnssFixLon']
+def get_transaction_data_header_updates(request_t_apdu_jval, response_t_apdu_jval):
+    metadata_updates = []
+
+    equOBUId_hex = search_for_obu_id_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval) or None
+    metadata_updates.append(equOBUId_hex)
+
+    pan_hex = search_for_pan_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval) or None
+    metadata_updates.append(pan_hex)
+
+    lpn_hex = search_for_lpn_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval) or None
+    metadata_updates.append(lpn_hex)
+
+    gnss_status = search_for_gnss_status_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval) or {}
+
+    metadata_updates.append(gnss_status.get('lastGnssFixLat'))
+    metadata_updates.append(gnss_status.get('lastGnssFixLon', None))
 
     valid_stamp = verify_obe_authenticity()
+    metadata_updates.append(valid_stamp)
 
-    transaction_data_json['authResult'] = valid_stamp | transaction_data_json.get('authResult', False)
+    return metadata_updates
 
 def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jval):
     global transaction_data_filepath
@@ -600,7 +613,10 @@ def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jva
         transaction_data_json = json.load(json_file)
         transaction_data_json['data']['transaction_phase'].append(new_transaction_phase_data_json)
 
-    enrich_transaction_data_headers(transaction_data_json, request_t_apdu_jval, response_t_apdu_jval)
+    metadata_updates = get_transaction_data_header_updates(request_t_apdu_jval, response_t_apdu_jval)
+
+    metadata_handler = TransactionMetadataHandler()
+    metadata_handler.update_transaction_metadata(transaction_data_filepath.name, metadata_updates)
 
     # Rewriting transaction data file with new exchange data added
     # We also change the last_update_timestamp field

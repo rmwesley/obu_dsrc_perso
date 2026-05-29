@@ -49,6 +49,27 @@ class TransactionMetadataHandler:
             ''', (rseTdName, rseManufacturerId, beaconIndividualId, obeManufacturerId, transaction_log_filename, creation_ts, update_ts))
             conn.commit()
 
+    def update_transaction_metadata(self, transaction_data_filename, metadata_updates):
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            values = list(metadata_updates)
+            # Filename is used as URI (unique resource id) for the transaction
+            values.append(transaction_data_filename)
+            update_ts = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            values.insert(-1, update_ts)
+            cursor.execute(f'''
+                UPDATE transactions
+                SET equOBUId = COALESCE(?, equOBUId),
+                    personalAccountNumber = COALESCE(?, personalAccountNumber),
+                    licencePlateNumber = COALESCE(?, licencePlateNumber),
+                    positionLatitude = COALESCE(?, positionLatitude),
+                    positionLongitude = COALESCE(?, positionLongitude),
+                    authResult = ? OR authResult,
+                    update_ts = ?
+                WHERE transactionDataFileName = ?
+            ''', values)
+            conn.commit()
+
     def get_all_transactions(self):
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
