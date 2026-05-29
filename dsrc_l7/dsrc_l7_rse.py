@@ -416,18 +416,18 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     global transaction_data_filepath
     current_transaction_id = uuid.uuid1()
 
-    transaction_data = {}
-    transaction_data['_id'] = current_transaction_id.hex
+    transaction_data_headers = {}
+    transaction_data_headers['_id'] = current_transaction_id.hex
 
     current_td = tc_manage_toll_domains.get_current_toll_domain()
-    transaction_data['RseTollDomain'] = current_td
+    transaction_data_headers['RseTollDomain'] = current_td
     # Equipment OBU ID, PAN and timestamps at the top!
-    transaction_data['equOBUId'] = ""
-    transaction_data['personalAccountNumber'] = ""
-    transaction_data['obu_provided_invalid_attr_auth_stamp'] = False
-    transaction_data['position_info'] = {}
-    transaction_data['creation_time'] = ""
-    transaction_data['last_update_timestamp'] = ""
+    transaction_data_headers['equOBUId'] = ""
+    transaction_data_headers['personalAccountNumber'] = ""
+    transaction_data_headers['obu_provided_invalid_attr_auth_stamp'] = False
+    transaction_data_headers['position_info'] = {}
+    transaction_data_headers['creation_time'] = ""
+    transaction_data_headers['last_update_timestamp'] = ""
 
     # initialization_data dict is a merge of the init request and response JSON values
     # initialization_data = initialization_request_jval | initialization_response_jval
@@ -442,10 +442,10 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     # equOBUId = 0
 
     # Actual data at the bottom!
-    transaction_data['data'] = {}
-    transaction_data['data']['initialization_phase'] = initialization_data
+    transaction_data_body = {}
+    transaction_data_body['initialization_phase'] = initialization_data
     # Create an empty list for future data exchanges (ACTION/GET/SET requests...)
-    transaction_data['data']['transaction_phase'] = []
+    transaction_data_body['transaction_phase'] = []
 
     current_transaction_start_date = datetime.now()
     current_transaction_datetime_prefix = current_transaction_start_date.strftime("%Y%m%dT%H%M%S")
@@ -454,8 +454,11 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     transaction_data_filepath = pathlib.Path(f"local_file_storage/transactions/{transaction_data_filename}")
 
     with transaction_data_filepath.open('w') as json_file:
-        transaction_data['creation_time'] = datetime.now().isoformat()
+        transaction_data_headers['creation_time'] = datetime.now().isoformat()
+        transaction_data = transaction_data_headers
+        transaction_data['data'] = transaction_data_body
         json.dump(transaction_data, json_file, indent=2)
+
     return transaction_data
 
 def rename_transaction_data_file(equOBUId_hex:str='00000000'):
@@ -584,7 +587,7 @@ def verify_obe_authenticity(get_stamped_action_response_value=None):
             bcm_logger.critical('[OBE AUTH] ERROR!!!')
             return False
 
-def enrich_transaction_data(transaction_data_json, request_t_apdu_jval, response_t_apdu_jval):
+def enrich_transaction_data_headers(transaction_data_json, request_t_apdu_jval, response_t_apdu_jval):
     equOBUId_hex = search_for_obu_id_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
     if equOBUId_hex is not None:
         rename_transaction_data_file(equOBUId_hex)
@@ -613,7 +616,7 @@ def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jva
         transaction_data_json = json.load(json_file)
         transaction_data_json['data']['transaction_phase'].append(new_transaction_phase_data_json)
 
-    enrich_transaction_data(transaction_data_json, request_t_apdu_jval, response_t_apdu_jval)
+    enrich_transaction_data_headers(transaction_data_json, request_t_apdu_jval, response_t_apdu_jval)
 
     # Rewriting transaction data file with new exchange data added
     # We also change the last_update_timestamp field
