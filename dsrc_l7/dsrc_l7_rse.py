@@ -509,12 +509,13 @@ def search_for_pan_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu
         personalAccountNumber = attribute_value['paymeans']['personalAccountNumber'].upper()
         return personalAccountNumber
 
-def search_for_lpn_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval):
+def search_for_lpn_data_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval):
     attribute_value = search_json_t_apdu_exchange_data_for_attribute_value(request_t_apdu_jval, response_t_apdu_jval, attribute_id=16)
 
     if 'vehlpn' in attribute_value:
+        lpn_country_code = attribute_value['vehlpn']['countryCode']
         lpn = attribute_value['vehlpn']['licencePlateNumber'].upper()
-        return lpn
+        return lpn_country_code, lpn
 
 def search_for_gnss_status_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval):
     attribute_value = search_json_t_apdu_exchange_data_for_attribute_value(request_t_apdu_jval, response_t_apdu_jval, attribute_id=50)
@@ -586,7 +587,8 @@ def get_transaction_data_header_updates(request_t_apdu_jval, response_t_apdu_jva
     pan_hex = search_for_pan_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval) or None
     metadata_updates.append(pan_hex)
 
-    lpn_hex = search_for_lpn_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval) or None
+    lpn_country_code, lpn_hex = search_for_lpn_data_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval) or (None, None)
+    metadata_updates.append(lpn_country_code)
     metadata_updates.append(lpn_hex)
 
     gnss_status = search_for_gnss_status_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval) or {}

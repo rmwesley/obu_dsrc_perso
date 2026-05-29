@@ -22,6 +22,7 @@ class TransactionMetadataHandler:
                     equOBUId INTEGER,
                     personalAccountNumber BLOB,
                     licencePlateNumber BLOB,
+                    lpnCountryCode TEXT,
                     authResult BOOLEAN DEFAULT FALSE,
                     positionLatitude REAL,
                     positionLongitude REAL,
@@ -61,6 +62,7 @@ class TransactionMetadataHandler:
                 UPDATE transactions
                 SET equOBUId = COALESCE(?, equOBUId),
                     personalAccountNumber = COALESCE(?, personalAccountNumber),
+                    lpnCountryCode = COALESCE(?, lpnCountryCode),
                     licencePlateNumber = COALESCE(?, licencePlateNumber),
                     positionLatitude = COALESCE(?, positionLatitude),
                     positionLongitude = COALESCE(?, positionLongitude),
