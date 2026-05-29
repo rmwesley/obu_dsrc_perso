@@ -662,8 +662,8 @@ def log_attribute_list_val_in_hex_uper_format(attribute_list):
     for attribute_pair in attribute_list:
         attr_id = attribute_pair['attributeId']
         attr_val = attribute_pair['attributeValue']
-        EFCv5.EfcDsrcGeneric.EfcContainer.set_val(attr_val)
-        attr_uper = EFCv5.EfcDsrcGeneric.EfcContainer.to_uper()
+        AXXESv1_2.EfcCcc.CccContainer.set_val(attr_val)
+        attr_uper = AXXESv1_2.EfcCcc.CccContainer.to_uper()
 
         # Decoded attribute value from T-APDU!
         t_apdu_uper_logger.info(f'attributeId ({attr_id}) val: 0x{attr_uper.hex().upper()}')
