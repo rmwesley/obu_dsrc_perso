@@ -417,16 +417,18 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     current_transaction_id = uuid.uuid1()
 
     transaction_data_headers = {}
-    transaction_data_headers['_id'] = current_transaction_id.hex
-
     current_td = tc_manage_toll_domains.get_current_toll_domain()
-    transaction_data_headers['RseTollDomain'] = current_td
+    transaction_data_headers['rseTdName'] = current_td
     # Equipment OBU ID, PAN and timestamps at the top!
+    transaction_data_headers['rseManufacturerId'] = initialization_request_jval['initialisationRequest']['rsu']['manufacturerid']
+    transaction_data_headers['beaconIndividualId'] = initialization_request_jval['initialisationRequest']['rsu']['individualid']
+    transaction_data_headers['obeManufacturerId'] = initialization_response_jval['initialisationResponse']['obeConfiguration']['manufacturerID']
     transaction_data_headers['equOBUId'] = ""
     transaction_data_headers['personalAccountNumber'] = ""
-    transaction_data_headers['obu_provided_invalid_attr_auth_stamp'] = False
-    transaction_data_headers['position_info'] = {}
-    transaction_data_headers['creation_time'] = ""
+    transaction_data_headers['licencePlateNumber'] = ""
+    transaction_data_headers['authResult'] = False
+    transaction_data_headers['positionLatitude'] = ""
+    transaction_data_headers['positionLongitude'] = ""
     transaction_data_headers['last_update_timestamp'] = ""
 
     # initialization_data dict is a merge of the init request and response JSON values
@@ -597,10 +599,11 @@ def enrich_transaction_data_headers(transaction_data_json, request_t_apdu_jval, 
         transaction_data_json['personalAccountNumber'] = pan_hex
     gnss_status = search_for_gnss_status_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
     if gnss_status:
-        transaction_data_json['position_info'] = gnss_status
+        transaction_data_json['positionLatitude'] = gnss_status['lastGnssFixLat']
+        transaction_data_json['positionLongitude'] = gnss_status['lastGnssFixLon']
 
     valid_stamp = verify_obe_authenticity()
-    transaction_data_json['obu_provided_invalid_attr_auth_stamp'] |= not valid_stamp
+    transaction_data_json['authResult'] |= valid_stamp
 
 def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jval):
     global transaction_data_filepath
