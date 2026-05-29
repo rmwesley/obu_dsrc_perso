@@ -418,7 +418,6 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     global transaction_data_filepath
     current_transaction_id = uuid.uuid1()
 
-    transaction_data_headers = {}
     current_td = tc_manage_toll_domains.get_current_toll_domain()
 
     # initialization_data dict is a merge of the init request and response JSON values
@@ -449,8 +448,7 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     metadata_handler.create_transaction_with_init_data(current_td, initialization_request_jval, initialization_response_jval, transaction_data_filepath.name)
 
     with transaction_data_filepath.open('w') as json_file:
-        transaction_data_headers['creation_time'] = datetime.now().isoformat()
-        transaction_data = transaction_data_headers
+        transaction_data = {}
         transaction_data['data'] = transaction_data_body
         json.dump(transaction_data, json_file, indent=2)
 
@@ -621,9 +619,7 @@ def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jva
     metadata_handler.update_transaction_metadata(transaction_data_filepath.name, metadata_updates)
 
     # Rewriting transaction data file with new exchange data added
-    # We also change the last_update_timestamp field
     with transaction_data_filepath.open('w') as json_file:
-        transaction_data_json['last_update_timestamp'] = datetime.now().isoformat()
         json.dump(transaction_data_json, json_file, indent=2)
     return transaction_data_json
 
