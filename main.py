@@ -46,10 +46,15 @@ async def forced_cardme_transaction(force_eid=1):
 
     await dsrc_efc_l7_transactions.forced_cardme_transaction(force_eid)
 
-async def simple_bcm_transactions():
+async def default_transaction():
     await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
 
     await dsrc_efc_l7_transactions.td_default_transaction(set_mmi=True)
+
+async def single_transaction(td_name='TIS'):
+    await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
+
+    await dsrc_efc_l7_transactions.tc_single_transaction(set_mmi=True, td_name=td_name)
 
 async def toll_domains_transaction_loop(td_list:list[str] = ['TIS', 'EasyGo', 'DE', 'CH', 'BE']):
     await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
@@ -69,7 +74,12 @@ if __name__ == "__main__":
     # asyncio.run(toll_domains_transaction_loop(['CH', 'CEA', 'NL', 'BE', 'DE']))
 
     # EFC
-    asyncio.run(forced_cardme_transaction(1))
+    # # asyncio.run(forced_cardme_transaction(1))
+    # asyncio.run(toll_domains_transaction_loop(td_list=['TIS', 'EasyGo', 'CH', 'BE']))
+    asyncio.run(default_transaction())
+
+    # asyncio.run(toll_domains_transaction_loop(['VIA-T2']))
+
     # asyncio.run(toll_domains_transaction_loop(['VIA-T2', 'TIS', 'IT_CEN', 'TIS_INCONNU']))
 
     # asyncio.run(toll_domains_transaction_loop(['NL', 'TIS', 'DE', 'CH', 'BE', 'VIA-T2', 'IT_CEN']))

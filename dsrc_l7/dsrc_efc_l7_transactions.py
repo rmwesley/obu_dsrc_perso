@@ -452,11 +452,11 @@ def loop_transactions(beep_state=None):
             dsrc_l7_transactions_logger.error("Transaction error occurred during loop!", exc_info=True)
             time.sleep(1)
 
-async def td_default_transaction(set_mmi=True):
-    current_td = tc_manage_toll_domains.get_current_toll_domain()
+async def tc_single_transaction(set_mmi=True, td_name='TIS'):
+    tc_manage_toll_domains.set_toll_domain(td_name)
 
-    transaction_type = td_transaction_config['td_conf_by_td_name'][current_td]['default_transaction_type']
-    default_mand_applications = td_transaction_config['td_conf_by_td_name'][current_td]['mandApplications']
+    transaction_type = td_transaction_config['td_conf_by_td_name'][td_name]['default_transaction_type']
+    default_mand_applications = td_transaction_config['td_conf_by_td_name'][td_name]['mandApplications']
     accessCredentialsPresent = tc_manage_toll_domains.td_is_en15509_level_1()
     if transaction_type == 'CARDME':
         await cardme_transaction(mand_applications=default_mand_applications, accessCredentialsPresent=accessCredentialsPresent, set_mmi=set_mmi)
@@ -474,6 +474,11 @@ async def td_default_transaction(set_mmi=True):
         await ccc_2023_transaction(mand_applications=default_mand_applications, accessCredentialsPresent=accessCredentialsPresent, set_mmi=set_mmi)
     elif transaction_type == 'CCC2024':
         await ccc_2024_transaction(mand_applications=default_mand_applications, accessCredentialsPresent=accessCredentialsPresent, set_mmi=set_mmi)
+
+async def td_default_transaction(set_mmi=True):
+    current_td = tc_manage_toll_domains.get_current_toll_domain()
+
+    await tc_single_transaction(set_mmi=set_mmi, td_name=current_td)
 
 async def loop_transactions_on_toll_domains(beep_state=None, td_list=['TIS', 'DE', 'CH', 'BE'], sleep_time=3.0):
     global loop_set_mmi_bool
