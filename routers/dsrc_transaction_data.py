@@ -31,9 +31,9 @@ def compute_gnss_status_position_fixes_interpolation(gnss_fix_1, t1, gnss_fix_2,
     return gnss_fix_interpolation
 
 def add_gnss_fix_interpolation_to_transaction_info(transaction_with_fix_1, transaction_with_fix_2, transaction_data):
-    t1 = datetime.datetime.fromisoformat(transaction_with_fix_1['creation_time']).timestamp()
-    t2 = datetime.datetime.fromisoformat(transaction_with_fix_2['creation_time']).timestamp()
-    timestamp = datetime.datetime.fromisoformat(transaction_data['creation_time']).timestamp()
+    t1 = datetime.datetime.fromisoformat(transaction_with_fix_1['creation_ts']).timestamp()
+    t2 = datetime.datetime.fromisoformat(transaction_with_fix_2['creation_ts']).timestamp()
+    timestamp = datetime.datetime.fromisoformat(transaction_data['creation_ts']).timestamp()
 
     transaction_data['position_info'] = compute_gnss_status_position_fixes_interpolation(
         transaction_with_fix_1['position_info'], t1,

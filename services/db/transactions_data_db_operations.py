@@ -44,20 +44,20 @@ def get_transaction_data(transaction_id:str):
     dsrc_transactions_db_coll = db_connect_to_transactions_coll()
     return dsrc_transactions_db_coll.find_one({'_id': transaction_id})
 
-def get_transactions_info_aggregation_cursor_for_equ_obu_id(equ_obu_id:str, skip=0, limit=20, since_dt_str:str='', until_dt_str:str='9'):
+def get_transactions_info_aggregation_cursor_for_equ_obu_id_int(equ_obu_id_int:int, skip=0, limit=20, since_dt_str:str='', until_dt_str:str='9'):
     dsrc_transactions_db_coll = db_connect_to_transactions_coll()
 
     # print('Since:', since_dt_str)
     pymongo_cursor = dsrc_transactions_db_coll.aggregate([
         {'$match': {
-            "equOBUId": equ_obu_id,
-            "creation_time": {
+            "equOBUId": equ_obu_id_int,
+            "creation_ts": {
                 '$gte': since_dt_str,
                 '$lte': until_dt_str,
                 },
             }},
         {'$project': {'data': 0}},
-        {'$sort': {'creation_time': -1}},
+        {'$sort': {'creation_ts': -1}},
         {'$skip':  skip},
         {'$limit':  limit},
     ])
@@ -70,13 +70,13 @@ def get_transactions_info_aggregation_cursor_for_pan(pan:str, skip=0, limit=20, 
     pymongo_cursor = dsrc_transactions_db_coll.aggregate([
         {'$match': {
             "personalAccountNumber": pan,
-            "creation_time": {
+            "creation_ts": {
                 '$gte': since_dt_str,
                 '$lte': until_dt_str,
                 },
             }},
         {'$project': {'data': 0}},
-        {'$sort': {'creation_time': -1}},
+        {'$sort': {'creation_ts': -1}},
         {'$skip':  skip},
         {'$limit':  limit},
     ])
@@ -88,7 +88,8 @@ def get_transactions_info_for_equ_obu_id(equ_obu_id:str, skip=0, limit=20, since
 
     # since_dt_str = since_dt.strftime('%Y-%M-%dT%H:%M:%S.')
     # until_dt_str = until_dt.isoformat()
-    pymongo_cursor = get_transactions_info_aggregation_cursor_for_equ_obu_id(equ_obu_id, skip, limit, since_dt_str, until_dt_str)
+    equ_obu_id_int = int(equ_obu_id, 16)
+    pymongo_cursor = get_transactions_info_aggregation_cursor_for_equ_obu_id_int(equ_obu_id_int, skip, limit, since_dt_str, until_dt_str)
     for transaction_info in pymongo_cursor:
         # print(transaction_data)
         yield transaction_info
