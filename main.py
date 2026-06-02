@@ -49,22 +49,22 @@ async def forced_cardme_transaction(force_eid=1):
 async def default_transaction():
     await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
 
-    await dsrc_efc_l7_transactions.td_default_transaction(set_mmi=True)
+    await dsrc_efc_l7_transactions.td_default_transaction(set_mmi=False)
 
 async def single_transaction(td_name='TIS'):
     await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
 
-    await dsrc_efc_l7_transactions.tc_single_transaction(set_mmi=True, td_name=td_name)
+    await dsrc_efc_l7_transactions.tc_single_transaction(set_mmi=False, td_name=td_name)
 
 async def toll_domains_transaction_loop(td_list:list[str] = ['TIS', 'EasyGo', 'DE', 'CH', 'BE']):
     await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
 
-    await dsrc_efc_l7_transactions.loop_transactions_on_toll_domains(beep_state=True, td_list=td_list, sleep_time=5.0)
+    await dsrc_efc_l7_transactions.loop_transactions_on_toll_domains(beep_state=False, td_list=td_list, sleep_time=5.0)
 
 async def default_toll_domain_transaction_loop(extra_td_list:list[str] = ['TIS']):
     await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
 
-    await dsrc_efc_l7_transactions.loop_transactions_with_default_td_and_extra_tds(beep_state=True, extra_td_list=extra_td_list, sleep_time=5.0)
+    await dsrc_efc_l7_transactions.loop_transactions_with_default_td_and_extra_tds(beep_state=False, extra_td_list=extra_td_list, sleep_time=5.0)
 
 # Main execution
 if __name__ == "__main__":
