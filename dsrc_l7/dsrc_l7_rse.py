@@ -514,6 +514,7 @@ def search_for_lpn_data_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_
         lpn_country_code = attribute_value['vehlpn']['countryCode']
         lpn = attribute_value['vehlpn']['licencePlateNumber'].upper()
         return lpn_country_code, lpn
+    return None, None
 
 def search_for_gnss_status_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval):
     attribute_value = search_json_t_apdu_exchange_data_for_attribute_value(request_t_apdu_jval, response_t_apdu_jval, attribute_id=50)
@@ -583,15 +584,13 @@ def get_transaction_data_header_updates(request_t_apdu_jval, response_t_apdu_jva
     equOBUId_int = int(equOBUId_hex, 16) if equOBUId_hex else None
     metadata_updates.append(equOBUId_int)
 
-    pan_hex = search_for_pan_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
-    pan_int = int(pan_hex, 16) if pan_hex else None
-    metadata_updates.append(pan_int)
+    pan_hex = search_for_pan_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval) or None
+    metadata_updates.append(pan_hex)
 
     lpn_country_code_hex, lpn_hex = search_for_lpn_data_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
-    try:
+    if lpn_country_code_hex is not None:
         lpn_country_code_alpha2 = custom_its_per_decoders.decode_baudot_country_code(lpn_country_code_hex)
-    except Exception as e:
-        bcm_logger.error(f"Error decoding LPN country code: {e}")
+    else:
         lpn_country_code_alpha2 = None
     metadata_updates.append(lpn_country_code_alpha2)
     metadata_updates.append(lpn_hex)
