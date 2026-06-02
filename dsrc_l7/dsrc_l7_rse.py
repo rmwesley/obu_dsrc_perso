@@ -243,7 +243,7 @@ async def start_bst_emission_and_await_vst(bst_value: dict):
         bcm_logger.info('Closing unclosed leftover transaction...')
         await send_close_transaction_echo()
         await asyncio.sleep(0.1)
-        raise SystemExit("Unclosed transaction! Exiting...")
+        # raise SystemExit("Unclosed transaction! Exiting...")
 
         response = await try_to_start_bst_emission_and_await_vst(fragmented_t_apdu_with_bst)
 
