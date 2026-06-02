@@ -13,7 +13,7 @@ efc_asn_compilation = AXXESv1_2
 from datetime import datetime
 import json
 import logging
-import uuid
+import uuid_extensions
 import pathlib
 import asyncio
 
@@ -414,9 +414,9 @@ async def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, clos
     return response_t_apdu_jval
 
 def create_transaction_data_file_from_init_phase_data(initialization_request_jval, initialization_response_jval):
-    global current_transaction_id
+    global current_transaction_uuid
     global transaction_data_filepath
-    current_transaction_id = uuid.uuid1()
+    current_transaction_uuid = uuid_extensions.uuid7(as_type='str')
 
     current_td = tc_manage_toll_domains.get_current_toll_domain()
 
@@ -441,7 +441,7 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     current_transaction_start_date = datetime.now()
     current_transaction_datetime_prefix = current_transaction_start_date.strftime("%Y%m%dT%H%M%S")
 
-    transaction_data_filename = f"{current_transaction_datetime_prefix}_{current_td}_{obeManufacturerID:04X}_{obeEquipmentClass:04X}_{current_transaction_id}.json"
+    transaction_data_filename = f"{current_transaction_datetime_prefix}_{current_td}_{obeManufacturerID:04X}_{obeEquipmentClass:04X}_{current_transaction_uuid}.json"
     transaction_data_filepath = pathlib.Path(f"local_file_storage/transactions/{transaction_data_filename}")
 
     metadata_handler = TransactionMetadataHandler()
@@ -601,7 +601,7 @@ def get_transaction_data_header_updates(request_t_apdu_jval, response_t_apdu_jva
 
 def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jval):
     global transaction_data_filepath
-    if 'current_transaction_id' not in globals():
+    if 'current_transaction_uuid' not in globals():
         bcm_logger.error(f'Cannot add DSRC transaction data to file without transaction init data')
         return
 
