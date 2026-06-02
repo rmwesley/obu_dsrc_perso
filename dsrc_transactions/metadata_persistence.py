@@ -15,6 +15,7 @@ class TransactionMetadataHandler:
                 CREATE TABLE IF NOT EXISTS transactions (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     transactionDataFileName TEXT,
+                    transactionUuid TEXT,
                     rseTdName TEXT NOT NULL,
                     rseManufacturerId INTEGER,
                     beaconIndividualId INTEGER,
@@ -32,7 +33,7 @@ class TransactionMetadataHandler:
             ''')
             conn.commit()
 
-    def create_transaction_with_init_data(self, td_name, initialization_request_jval, initialization_response_jval, transaction_log_filename):
+    def create_transaction_with_init_data(self, td_name, initialization_request_jval, initialization_response_jval, transaction_log_filename, transaction_uuid):
         with sqlite3.connect(self.db_path) as conn:
             rseTdName = td_name
 
@@ -45,9 +46,9 @@ class TransactionMetadataHandler:
 
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO transactions (rseTdName, rseManufacturerId, beaconIndividualId, obeManufacturerId, transactionDataFileName, creation_ts, update_ts)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (rseTdName, rseManufacturerId, beaconIndividualId, obeManufacturerId, transaction_log_filename, creation_ts, update_ts))
+                INSERT INTO transactions (rseTdName, rseManufacturerId, beaconIndividualId, obeManufacturerId, transactionDataFileName, transactionUuid, creation_ts, update_ts)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (rseTdName, rseManufacturerId, beaconIndividualId, obeManufacturerId, transaction_log_filename, transaction_uuid, creation_ts, update_ts))
             conn.commit()
 
     def update_transaction_metadata(self, transaction_data_filename, metadata_updates):

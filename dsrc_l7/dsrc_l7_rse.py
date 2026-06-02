@@ -445,7 +445,7 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     transaction_data_filepath = pathlib.Path(f"local_file_storage/transactions/{transaction_data_filename}")
 
     metadata_handler = TransactionMetadataHandler()
-    metadata_handler.create_transaction_with_init_data(current_td, initialization_request_jval, initialization_response_jval, transaction_data_filepath.name)
+    metadata_handler.create_transaction_with_init_data(current_td, initialization_request_jval, initialization_response_jval, transaction_data_filepath.name, current_transaction_uuid)
 
     with transaction_data_filepath.open('w') as json_file:
         transaction_data = {}
