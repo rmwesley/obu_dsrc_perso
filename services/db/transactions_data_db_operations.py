@@ -159,8 +159,29 @@ def upload_local_db_transaction_metadata_since_date(start_date:datetime.datetime
 
     transaction_metadata_handler = TransactionMetadataHandler()
     metadata_cursor = transaction_metadata_handler.get_transactions_metadata_since_date_dict_iter(since_date=start_date)
-    for transaction_metadata in metadata_cursor:
-        dsrc_transaction_sync_logger.debug(f'Working on {transaction_metadata}...')
+    for local_data in metadata_cursor:
+        dsrc_transaction_sync_logger.debug(f'Working on {local_data["transactionUuid"]}...')
+
+        transaction_metadata = dict(local_data)
+
+        # Do not keep GnssStatus as a flat JSON!!
+        # Convert GnssStatus from SQL table format to MongoDB BSON doc
+        if 'lastGnssFixLat' in transaction_metadata and 'lastGnssFixLon' in transaction_metadata:
+            transaction_metadata['position_info'] = {
+                'lastGnssFixLat': transaction_metadata.get('lastGnssFixLat', None),
+                'lastGnssFixLon': transaction_metadata.get('lastGnssFixLon', None),
+                'lastGnssFixTime': transaction_metadata.get('lastGnssFixTime', None),
+                'currentHdop': {
+                    'hDop': transaction_metadata.get('hDop', None),
+                    'numberOfUsedSatellites': transaction_metadata.get('numberOfUsedSatellites', None),
+                },
+            }
+            del transaction_metadata['lastGnssFixLat']
+            del transaction_metadata['lastGnssFixLon']
+            del transaction_metadata['lastGnssFixTime']
+            del transaction_metadata['hDop']
+            del transaction_metadata['numberOfUsedSatellites']
+
         result = upload_transaction_metadata(db_transactions_coll, transaction_metadata)
         if result:
             insertion_count += 1
