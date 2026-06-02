@@ -245,7 +245,7 @@ class PertelBacL7(bac_l2_host2beacon.BacHost):
         if response_content[1] != 0x00:
             bac_serial_wrapper_logger.error('BAC L2 error code present!!')
         if response_content[1] != 0x09:
-            bac_serial_wrapper_logger.error('BAC L2 OBU Timeout!!')
+            bac_serial_wrapper_logger.warning('BAC L2 OBU Timeout (OK if on LLC: ACK CL-mode)')
         else:
             # Command 0x06 had a successful OBE response or an OBE timeout!
             # Transaction is over!! Setting VST to None!
