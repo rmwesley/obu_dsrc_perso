@@ -597,7 +597,7 @@ def get_transaction_data_header_updates(request_t_apdu_jval, response_t_apdu_jva
 
     gnss_status = search_for_gnss_status_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval) or {}
 
-    metadata_updates.append(gnss_status.get('lastGnssFixLat'))
+    metadata_updates.append(gnss_status.get('lastGnssFixLat', None))
     metadata_updates.append(gnss_status.get('lastGnssFixLon', None))
 
     valid_stamp = verify_obe_authenticity()

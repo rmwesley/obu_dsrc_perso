@@ -27,8 +27,8 @@ class TransactionMetadataHandler:
                     licencePlateNumber BLOB,
                     lpnCountryCode TEXT,
                     authResult BOOLEAN DEFAULT FALSE,
-                    positionLatitude REAL,
-                    positionLongitude REAL,
+                    lastGnssFixLat REAL,
+                    lastGnssFixLon REAL,
                     creation_ts TEXT NOT NULL,
                     update_ts TEXT NOT NULL
                 )
@@ -69,8 +69,8 @@ class TransactionMetadataHandler:
                     personalAccountNumber = COALESCE(?, personalAccountNumber),
                     lpnCountryCode = COALESCE(?, lpnCountryCode),
                     licencePlateNumber = COALESCE(?, licencePlateNumber),
-                    positionLatitude = COALESCE(?, positionLatitude),
-                    positionLongitude = COALESCE(?, positionLongitude),
+                    lastGnssFixLat = COALESCE(?, lastGnssFixLat),
+                    lastGnssFixLon = COALESCE(?, lastGnssFixLon),
                     authResult = ? OR authResult,
                     update_ts = ?
                 WHERE transactionDataFileName = ?
