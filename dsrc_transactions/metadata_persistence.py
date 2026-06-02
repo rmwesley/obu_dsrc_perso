@@ -79,6 +79,12 @@ class TransactionMetadataHandler:
             cursor.execute('SELECT * FROM transactions')
             return cursor.fetchall()
 
+    def get_transactions_metadata_since_date_iter(self, since_date):
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM transactions WHERE creation_ts >= ?', (since_date,))
+            return cursor
+
     def get_transactions_metadata_with_limit(self, limit=100):
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
