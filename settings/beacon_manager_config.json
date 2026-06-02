@@ -1,5 +1,5 @@
 {
-  "default_beacon_name": "OPS1955",
+  "default_beacon_name": "TGBV",
   "TGBV": {
     "chosen_communication_mode": "serial-pertel",
     "beaconId": {
