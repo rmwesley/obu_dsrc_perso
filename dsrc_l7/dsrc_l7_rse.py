@@ -579,14 +579,21 @@ def verify_obe_authenticity(get_stamped_action_response_value=None):
 def get_transaction_data_header_updates(request_t_apdu_jval, response_t_apdu_jval):
     metadata_updates = []
 
-    equOBUId_hex = search_for_obu_id_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval) or None
-    metadata_updates.append(equOBUId_hex)
+    equOBUId_hex = search_for_obu_id_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
+    equOBUId_int = int(equOBUId_hex, 16) if equOBUId_hex else None
+    metadata_updates.append(equOBUId_int)
 
-    pan_hex = search_for_pan_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval) or None
-    metadata_updates.append(pan_hex)
+    pan_hex = search_for_pan_value_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
+    pan_int = int(pan_hex, 16) if pan_hex else None
+    metadata_updates.append(pan_int)
 
-    lpn_country_code, lpn_hex = search_for_lpn_data_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval) or (None, None)
-    metadata_updates.append(lpn_country_code)
+    lpn_country_code_hex, lpn_hex = search_for_lpn_data_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval)
+    try:
+        lpn_country_code_alpha2 = custom_its_per_decoders.decode_baudot_country_code(lpn_country_code_hex)
+    except Exception as e:
+        bcm_logger.error(f"Error decoding LPN country code: {e}")
+        lpn_country_code_alpha2 = None
+    metadata_updates.append(lpn_country_code_alpha2)
     metadata_updates.append(lpn_hex)
 
     gnss_status = search_for_gnss_status_in_t_apdu_exchange(request_t_apdu_jval, response_t_apdu_jval) or {}

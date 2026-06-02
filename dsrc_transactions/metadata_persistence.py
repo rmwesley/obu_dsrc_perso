@@ -19,7 +19,9 @@ class TransactionMetadataHandler:
                     rseTdName TEXT NOT NULL,
                     rseManufacturerId INTEGER,
                     beaconIndividualId INTEGER,
+                    obeEquipmentClass INTEGER,
                     obeManufacturerId INTEGER,
+                    obeStatus INTEGER,
                     equOBUId INTEGER,
                     personalAccountNumber BLOB,
                     licencePlateNumber BLOB,
@@ -42,13 +44,15 @@ class TransactionMetadataHandler:
 
             rseManufacturerId = initialization_request_jval['initialisationRequest']['rsu']['manufacturerid']
             beaconIndividualId = initialization_request_jval['initialisationRequest']['rsu']['individualid']
+            obeEquipmentClass = initialization_response_jval['initialisationResponse']['obeConfiguration']['equipmentClass']
             obeManufacturerId = initialization_response_jval['initialisationResponse']['obeConfiguration']['manufacturerID']
+            obeStatus = initialization_response_jval['initialisationResponse']['obeConfiguration']['obeStatus']
 
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO transactions (rseTdName, rseManufacturerId, beaconIndividualId, obeManufacturerId, transactionDataFileName, transactionUuid, creation_ts, update_ts)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (rseTdName, rseManufacturerId, beaconIndividualId, obeManufacturerId, transaction_log_filename, transaction_uuid, creation_ts, update_ts))
+                INSERT INTO transactions (rseTdName, rseManufacturerId, beaconIndividualId, obeEquipmentClass, obeManufacturerId, obeStatus, transactionDataFileName, transactionUuid, creation_ts, update_ts)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (rseTdName, rseManufacturerId, beaconIndividualId, obeEquipmentClass, obeManufacturerId, obeStatus, transaction_log_filename, transaction_uuid, creation_ts, update_ts))
             conn.commit()
 
     def update_transaction_metadata(self, transaction_data_filename, metadata_updates):
