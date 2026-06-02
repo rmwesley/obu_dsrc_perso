@@ -599,6 +599,9 @@ def get_transaction_data_header_updates(request_t_apdu_jval, response_t_apdu_jva
 
     metadata_updates.append(gnss_status.get('lastGnssFixLat', None))
     metadata_updates.append(gnss_status.get('lastGnssFixLon', None))
+    metadata_updates.append(gnss_status.get('lastGnssFixTime', None))
+    metadata_updates.append(gnss_status.get('currentHdop', {}).get('hDop', None))
+    metadata_updates.append(gnss_status.get('currentHdop', {}).get('numberOfUsedSatellites', None))
 
     valid_stamp = verify_obe_authenticity()
     metadata_updates.append(valid_stamp)

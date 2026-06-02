@@ -29,6 +29,9 @@ class TransactionMetadataHandler:
                     authResult BOOLEAN DEFAULT FALSE,
                     lastGnssFixLat REAL,
                     lastGnssFixLon REAL,
+                    lastGnssFixTime INTEGER,
+                    hDop INTEGER,
+                    numberOfUsedSatellites INTEGER,
                     creation_ts TEXT NOT NULL,
                     update_ts TEXT NOT NULL
                 )
@@ -71,6 +74,9 @@ class TransactionMetadataHandler:
                     licencePlateNumber = COALESCE(?, licencePlateNumber),
                     lastGnssFixLat = COALESCE(?, lastGnssFixLat),
                     lastGnssFixLon = COALESCE(?, lastGnssFixLon),
+                    lastGnssFixTime = COALESCE(?, lastGnssFixTime),
+                    hDop = COALESCE(?, hDop),
+                    numberOfUsedSatellites = COALESCE(?, numberOfUsedSatellites),
                     authResult = ? OR authResult,
                     update_ts = ?
                 WHERE transactionDataFileName = ?
