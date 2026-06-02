@@ -73,13 +73,13 @@ class TransactionMetadataHandler:
             ''', values)
             conn.commit()
 
-    def get_all_transactions(self):
+    def get_all_transactions_metadata(self):
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('SELECT * FROM transactions')
             return cursor.fetchall()
 
-    def get_transactions_with_limit(self, limit=100):
+    def get_transactions_metadata_with_limit(self, limit=100):
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('SELECT * FROM transactions LIMIT ?', (limit,))
