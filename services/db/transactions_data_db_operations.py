@@ -1,8 +1,8 @@
 import pymongo
 import json
 import datetime
-import pathlib
 
+from dsrc_transactions.metadata_persistence import TransactionMetadataHandler
 import pymongo.collection
 import pymongo.errors
 
@@ -23,9 +23,6 @@ dsrc_transaction_sync_logger.addHandler(file_handler)
 with open('settings/beacon_proxy_config.json', 'r') as json_file:
     beacon_proxy_config = json.load(json_file)
     mongodb_config = beacon_proxy_config["mongodb_config"]
-
-local_transactions_storage_path_str = 'local_file_storage/transactions'
-local_transactions_storage_path = pathlib.Path(local_transactions_storage_path_str)
 
 def db_connect_to_transactions_coll() -> pymongo.collection.Collection:
     global dsrc_transactions_db_coll
@@ -128,58 +125,29 @@ def get_transactions_info_for_pan(pan:str, skip=0, limit=20, since_dt:datetime.d
 #             transaction_data['position_info'] = last_position
 #         yield transaction_data
 
-def upload_local_data(size=0):
-    db_transactions_collection = db_connect_to_transactions_coll()
-    
-    file_paths = local_transactions_storage_path.glob('*.json')
-    # print(file_paths)
-    for json_filename in file_paths:
-        if not json_filename.endswith('.json'):
-            continue
-        with open(json_filename, 'r') as json_file:
-            # print(json_filename)
-            try:
-                transaction_data = json.load(json_file)
-            except json.decoder.JSONDecodeError:
-                # print('Improperly encoded data!!!')
-                continue
-            try:
-                transaction_data['_id']
-            except KeyError:
-                dsrc_transaction_sync_logger.debug('Transactions without _id field are obsolete!')
-                # print('Transactions without _id field are obsolete!')
-            mongodb_document = transaction_data
-            try:
-                current_transaction_id = db_transactions_collection.insert_one(document = mongodb_document)
-            except pymongo.errors.DuplicateKeyError:
-                dsrc_transaction_sync_logger.debug('Duplicate entry (_id field already exists)!! Please clean these files...')
-                # print('Duplicate!! (Already exists)')
-
-def upload_single_json_file(db_transactions_coll:pymongo.collection.Collection, json_filename:pathlib.Path):
-    if json_filename.suffix != '.json':
+def upload_transaction_metadata(db_transactions_coll:pymongo.collection.Collection, transaction_metadata) -> bool:
+    try:
+        transaction_metadata['transactionUuid']
+    except KeyError:
+        dsrc_transaction_sync_logger.error('Rows without a (transactionUuid) field are obsolete! Please clean these rows...')
         return False
-    with json_filename.open('r') as json_file:
-        try:
-            transaction_data = json.load(json_file)
-        except json.decoder.JSONDecodeError:
-            dsrc_transaction_sync_logger.error('Improperly encoded JSON data!!!')
-            return False
-        try:
-            transaction_data['_id']
-        except KeyError:
-            dsrc_transaction_sync_logger.error('Transactions without _id field are obsolete! Please clean these files...')
-            return False
-        mongodb_document = transaction_data
-        try:
-            current_transaction_id = db_transactions_coll.insert_one(document = mongodb_document)
-        except pymongo.errors.DuplicateKeyError:
-            dsrc_transaction_sync_logger.debug(f'Duplicate entry (_id field {transaction_data['_id']} already exists)!! Please clean these files...')
-            return False
-        dsrc_transaction_sync_logger.info(f'Data of file {json_filename} was successfully synchronized!!')
+    mongodb_document = dict(transaction_metadata)
+
+    # Rename (transactionUuid) as (_id) for MongoDB
+    mongodb_document['_id'] = transaction_metadata['transactionUuid']
+    del mongodb_document['id'] # Remove SQLite's (id) field
+    del mongodb_document['transactionUuid']
+
+    try:
+        db_transactions_coll.insert_one(document = mongodb_document)
+    except pymongo.errors.DuplicateKeyError:
+        dsrc_transaction_sync_logger.error(f'Duplicate entry (_id) for ({mongodb_document["_id"]})!! Please clean these rows...')
+        return False
+    dsrc_transaction_sync_logger.info(f'Metadata for transaction {mongodb_document["_id"]} was successfully synchronized!!')
     return True
 
-def upload_local_data_since_date(start_date:datetime.datetime) -> int:
-    '''Synchronize transaction data from a start_date and then return synchronized amount (insertion_count)'''
+def upload_local_db_transaction_metadata_since_date(start_date:datetime.datetime) -> int:
+    '''Synchronize local transaction metadata from a start_date and then return synchronized amount (insertion_count)'''
     insertion_count = 0
     skipped_count = 0
     if type(start_date) is not datetime.datetime:
@@ -188,18 +156,15 @@ def upload_local_data_since_date(start_date:datetime.datetime) -> int:
     db_transactions_coll = db_connect_to_transactions_coll()
     # start_datetime_str = start_date.strftime('%Y%m%dT%H%M%S')
 
-    file_paths = local_transactions_storage_path.glob(f'*.json')
-    for json_filename in file_paths:
-        modification_time_float = json_filename.stat().st_mtime
-        modification_datetime = datetime.datetime.fromtimestamp(modification_time_float)
-
-        if modification_datetime >= start_date:
-            dsrc_transaction_sync_logger.debug(f'Working on {json_filename.name}...')
-            result = upload_single_json_file(db_transactions_coll, json_filename)
-            if result:
-                insertion_count += 1
-            else:
-                skipped_count += 1
+    transaction_metadata_handler = TransactionMetadataHandler()
+    metadata_cursor = transaction_metadata_handler.get_transactions_metadata_since_date_dict_iter(since_date=start_date)
+    for transaction_metadata in metadata_cursor:
+        dsrc_transaction_sync_logger.debug(f'Working on {transaction_metadata}...')
+        result = upload_transaction_metadata(db_transactions_coll, transaction_metadata)
+        if result:
+            insertion_count += 1
+        else:
+            skipped_count += 1
 
     return {
         'insertion_count': insertion_count,

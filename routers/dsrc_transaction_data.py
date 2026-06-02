@@ -133,5 +133,5 @@ async def get_transaction_data(transaction_id:str):
 
 @router.post('/sync/sync-local-files-to-remote-db')
 async def sync_local_data_to_remote_db(request: SyncTransactionDataReq):
-    upload_result = transactions_data_db_operations.upload_local_data_since_date(request.start_date)
+    upload_result = transactions_data_db_operations.upload_local_db_transaction_metadata_since_date(request.start_date)
     return upload_result
