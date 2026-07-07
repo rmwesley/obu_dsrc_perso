@@ -39,7 +39,7 @@ class DsrcKeyDerivationException(ValueError):
     pass
 def compute_ack_for_obu_on_td(device_contract_ref:str, ac_cr_key_ref:int, td_name:str):
     master_keys = tc_td_security_operations.get_master_keys_with_obu_contract_ref_on_td(device_contract_ref, td_name)
-    mack_hex = master_keys['120']
+    mack_hex = master_keys['120']['mk_hex_value']
     mack_bytes = bytes.fromhex(mack_hex)
     try:
         access_key = en15509_3des.compute_ack_with_mack_bytes(ac_cr_key_ref, mack_bytes)
@@ -69,7 +69,7 @@ def decrypt_ack_with_efc_cm_only(efc_cm:str, access_key:bytes):
 def compute_auk_with_device_contract_ref_auk_ref_on_td(pan_8_msb: bytes, device_contract_ref: str, td_name:str, norm:str, auk_ref:int=115) -> bytes:
     """Get MasterKeys on TD with td_name and compute AuK following the chosen norm!"""
     master_hex_keyset = tc_td_security_operations.get_master_keys_with_obu_contract_ref_on_td(device_contract_ref, td_name)
-    mauk_hex = master_hex_keyset[str(auk_ref)]
+    mauk_hex = master_hex_keyset[str(auk_ref)]['mk_hex_value']
     mauk_bytes = bytes.fromhex(mauk_hex)
 
     # key_derivation_logger.info(f'FOUND MAuK: 0x{mauk_hex}')
