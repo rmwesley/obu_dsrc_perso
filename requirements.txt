@@ -1,3 +1,4 @@
+baudot==0.1.1.post2
 fastapi[standard]>=0.139.2
 pycrate==0.8.1
 pycryptodome==3.23.0
