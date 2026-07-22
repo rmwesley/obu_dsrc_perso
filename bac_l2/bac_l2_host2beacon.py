@@ -4,9 +4,11 @@ import logging
 import asyncio
 from datetime import datetime
 
+# File logger, so prevent propagation!!
 bac_serial_wrapper_logger = logging.getLogger(__name__)
+bac_serial_wrapper_logger.setLevel(logging.DEBUG)
+bac_serial_wrapper_logger.propagate = False
 
-# SETTING UP LOGGER FILE HANDLER
 date_prefix = datetime.now().strftime('%y%m%d')
 file_handler = logging.FileHandler(f'logs/beacon_logs/{date_prefix}_bac_l2.log')
 file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")

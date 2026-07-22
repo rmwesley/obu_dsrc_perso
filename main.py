@@ -7,7 +7,6 @@ from dsrc_l7 import dsrc_efc_l7_transactions, dsrc_l7_rse
 import logging
 
 root_logger = logging.getLogger()
-root_logger.setLevel(logging.WARNING)
 
 # SETTING UP COLORED CONSOLE LOGGING
 console_handler = logging.StreamHandler()
@@ -39,6 +38,7 @@ class ColoredFormatterWrapper(logging.Formatter):
 console_formatter = ColoredFormatterWrapper(logging.Formatter(f"%(levelname)-8s %(filename)22s:%(lineno)-4s - %(threadName)s: %(message)s"))
 console_handler.setFormatter(console_formatter)
 root_logger.addHandler(console_handler)
+root_logger.setLevel(logging.WARNING)
 
 async def forced_cardme_transaction(force_eid=1):
     await dsrc_l7_rse.init_bcm_and_set_transparent_mode()

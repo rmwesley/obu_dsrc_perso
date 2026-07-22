@@ -25,12 +25,14 @@ from dsrc_transactions.metadata_persistence import TransactionMetadataHandler
 import custom_its_per_decoders
 from toll_charging_security import tc_dsrc_auth, tc_manage_toll_domains
 
+# File logger, so prevent propagation!!
 bcm_logger = logging.getLogger(__name__)
-bcm_logger.setLevel(logging.WARNING)
+bcm_logger.setLevel(logging.DEBUG)
+bcm_logger.propagate = False
 
-# T-APDU logger only logs to file, no propagation!!
+# File loggers, so prevent propagation!!
 t_apdu_uper_logger = logging.getLogger('T_APDU_logger')
-t_apdu_uper_logger.setLevel(logging.DEBUG)
+t_apdu_uper_logger.setLevel(logging.INFO)
 t_apdu_uper_logger.propagate = False
 
 local_transactions_storage_path_str = 'local_file_storage/transactions'

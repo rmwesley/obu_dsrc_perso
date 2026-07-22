@@ -19,7 +19,6 @@ async def lifespan(app: FastAPI):
 
 import logging
 root_logger = logging.getLogger()
-root_logger.setLevel(logging.INFO)
 
 for name in root_logger.manager.loggerDict.keys():
     if "watchfiles.main" in name:
@@ -35,6 +34,7 @@ file_handler = logging.FileHandler(f'logs/api_logs/{log_file_date_prefix}_api_lo
 file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
 # file_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)-8s - %(threadName)s - %(message)s")
 file_handler.setFormatter(file_formatter)
+file_handler.setLevel(logging.INFO)
 root_logger.addHandler(file_handler)
 
 
