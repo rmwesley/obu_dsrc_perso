@@ -26,9 +26,9 @@ import custom_its_per_decoders
 from toll_charging_security import tc_dsrc_auth, tc_manage_toll_domains
 
 # File logger, so prevent propagation!!
-bcm_logger = logging.getLogger(__name__)
-bcm_logger.setLevel(logging.DEBUG)
-bcm_logger.propagate = False
+rse_dsrc_l7_logger = logging.getLogger(__name__)
+rse_dsrc_l7_logger.setLevel(logging.DEBUG)
+rse_dsrc_l7_logger.propagate = False
 
 # File loggers, so prevent propagation!!
 t_apdu_uper_logger = logging.getLogger('T_APDU_logger')
@@ -43,7 +43,7 @@ logs_date_prefix = startup_date.strftime('%y%m%d')
 file_handler = logging.FileHandler(f'logs/beacon_logs/{logs_date_prefix}_rse_dsrc_l7.log')
 file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
 file_handler.setFormatter(file_formatter)
-bcm_logger.addHandler(file_handler)
+rse_dsrc_l7_logger.addHandler(file_handler)
 
 t_apdu_file_handler = logging.FileHandler(f'logs/beacon_logs/{logs_date_prefix}_rse_t_apdu_uper.log')
 t_apdu_file_handler.setFormatter(file_formatter)
@@ -84,15 +84,15 @@ async def initialize_bcm(aid=20):
 
     default_beacon_name = beacon_manager_config["default_beacon_name"]
     await safe_set_beacon(chosen_beacon_name = default_beacon_name)
-    bcm_logger.info("Initialized RSE DSRC L7!!")
+    rse_dsrc_l7_logger.info("Initialized RSE DSRC L7!!")
 
-    bcm_logger.debug("We now update/get the BeaconID (according to the beacon HW itself) before sending the BST")
+    rse_dsrc_l7_logger.debug("We now update/get the BeaconID (according to the beacon HW itself) before sending the BST")
     await check_and_update_beacon_state()
 
 def reset_beacon():
     global beacon_bac_l7_wrapper
 
-    bcm_logger.info('L7: Resetting beacon!!')
+    rse_dsrc_l7_logger.info('L7: Resetting beacon!!')
     beacon_bac_l7_wrapper.reset_beacon()
 
 BeaconModes = typing.Literal['Stopped', 'Transparent', 'Maintenance']
@@ -102,9 +102,9 @@ async def change_trx_mode(mode_name:BeaconModes = 'Stopped'):
     global beacon_bac_l7_wrapper
 
     if beacon_bac_l7_wrapper is None:
-        bcm_logger.error("L7: Beacon not initialized/configured!!")
+        rse_dsrc_l7_logger.error("L7: Beacon not initialized/configured!!")
         return
-    bcm_logger.info(f"Changing beacon mode to '{mode_name}'")
+    rse_dsrc_l7_logger.info(f"Changing beacon mode to '{mode_name}'")
 
     tgbv_gea_bcm_operating_modes_enum_values = {
         'Stopped': 0x00,
@@ -118,7 +118,7 @@ async def change_trx_mode(mode_name:BeaconModes = 'Stopped'):
 async def init_bcm_and_set_transparent_mode():
     global beacon_bac_l7_wrapper
 
-    bcm_logger.debug("Instantiating/Initializing BeaconManager class...")
+    rse_dsrc_l7_logger.debug("Instantiating/Initializing BeaconManager class...")
     await initialize_bcm()
     # SETTING BEACON TO TRANSPARENT MODE!!
     await change_trx_mode(mode_name='Transparent')
@@ -126,14 +126,14 @@ async def init_bcm_and_set_transparent_mode():
 def shutdown_beacon():
     global beacon_bac_l7_wrapper
     if beacon_bac_l7_wrapper is None:
-        bcm_logger.error("L7: Beacon not initialized/configured!!")
+        rse_dsrc_l7_logger.error("L7: Beacon not initialized/configured!!")
         return
     beacon_bac_l7_wrapper.shutdown()
 
 def get_last_beacon_state():
     global beacon_bac_l7_wrapper
     if beacon_bac_l7_wrapper is None:
-        bcm_logger.error("L7: Beacon not initialized/configured!!")
+        rse_dsrc_l7_logger.error("L7: Beacon not initialized/configured!!")
         return
 
     return beacon_bac_l7_wrapper.get_last_beacon_state_description()
@@ -141,7 +141,7 @@ def get_last_beacon_state():
 def update_rnd_rse():
     global rnd_rse_bytes_value
 
-    bcm_logger.debug(f"Updating DateAndTime/SessionTime value (to be used as RndRSE value)...")
+    rse_dsrc_l7_logger.debug(f"Updating DateAndTime/SessionTime value (to be used as RndRSE value)...")
 
     efc_asn_compilation.EfcDataDictionary.DateAndTime.set_val({
         'timeDate':{
@@ -156,11 +156,11 @@ def update_rnd_rse():
         }
     })
 
-    bcm_logger.debug(f"RndRSE or SessionTime value (of type DateAndTime) in ASN:\n{efc_asn_compilation.EfcDataDictionary.DateAndTime.to_asn1()}")
+    rse_dsrc_l7_logger.debug(f"RndRSE or SessionTime value (of type DateAndTime) in ASN:\n{efc_asn_compilation.EfcDataDictionary.DateAndTime.to_asn1()}")
     rnd_rse_bytes_value = efc_asn_compilation.EfcDataDictionary.DateAndTime.to_uper()
     setattr(sys.modules[__name__], "rnd_rse_bytes_value", rnd_rse_bytes_value)
 
-    bcm_logger.debug(f"RndRSE value (UPER hex): {rnd_rse_bytes_value.hex().upper()}")
+    rse_dsrc_l7_logger.debug(f"RndRSE value (UPER hex): {rnd_rse_bytes_value.hex().upper()}")
     return rnd_rse_bytes_value
 
 async def safe_set_beacon(chosen_beacon_name):
@@ -168,7 +168,7 @@ async def safe_set_beacon(chosen_beacon_name):
     global current_beacon_name
     global beacon_bac_l7_wrapper
 
-    bcm_logger.info(f'Setting beacon to ({chosen_beacon_name})')
+    rse_dsrc_l7_logger.info(f'Setting beacon to ({chosen_beacon_name})')
     if beacon_bac_l7_wrapper is not None:
         beacon_bac_l7_wrapper.close()
 
@@ -204,7 +204,7 @@ async def try_to_start_bst_emission_and_await_vst(fragmented_t_apdu_with_bst: by
             vst_awaitable = beacon_bac_l7_wrapper._pertel_start_bst_emission_and_await_vst(fragmented_t_apdu_with_bst)
             response = await asyncio.wait_for(vst_awaitable, timeout=bst_timeout_delay)
         except TimeoutError as exc:
-            bcm_logger.error('BST response timeout!')
+            rse_dsrc_l7_logger.error('BST response timeout!')
             await beacon_bac_l7_wrapper._pertel_stop_bst_emission()
             # raise exc
             raise AbortedInitPhase('BST response timeout!')
@@ -212,7 +212,7 @@ async def try_to_start_bst_emission_and_await_vst(fragmented_t_apdu_with_bst: by
         response = await beacon_bac_l7_wrapper._pertel_start_bst_emission_and_await_vst(fragmented_t_apdu_with_bst)
 
     if response[1] == 2:
-        bcm_logger.critical("A Transaction is unclosed!!")
+        rse_dsrc_l7_logger.critical("A Transaction is unclosed!!")
         raise UnclosedTransactionException("A Transaction is unclosed!!")
 
     return response
@@ -222,9 +222,9 @@ async def start_bst_emission_and_await_vst(bst_value: dict):
     global current_beacon_name
 
     efc_asn_compilation.EfcDsrcGeneric.BST.set_val(bst_value)
-    bcm_logger.debug(f"BST in ASN:\n{efc_asn_compilation.EfcDsrcGeneric.BST.to_asn1()}")
+    rse_dsrc_l7_logger.debug(f"BST in ASN:\n{efc_asn_compilation.EfcDsrcGeneric.BST.to_asn1()}")
     last_sent_bst = efc_asn_compilation.EfcDsrcGeneric.BST.to_uper()
-    bcm_logger.debug(f"BST value (UPER hex): {last_sent_bst.hex().upper()}")
+    rse_dsrc_l7_logger.debug(f"BST value (UPER hex): {last_sent_bst.hex().upper()}")
 
     initialization_request_value = ('initialisationRequest', bst_value)
 
@@ -237,19 +237,19 @@ async def start_bst_emission_and_await_vst(bst_value: dict):
     t_apdu_uper_logger.debug(f'[TX] BST: 0x{last_sent_t_apdu_containing_bst.hex().upper()}')
 
     fragmented_t_apdu_with_bst = frag_header + last_sent_t_apdu_containing_bst
-    bcm_logger.info(f"RSE is now emitting BST and awaiting VST from OBE...")
+    rse_dsrc_l7_logger.info(f"RSE is now emitting BST and awaiting VST from OBE...")
 
     try:
         response = await try_to_start_bst_emission_and_await_vst(fragmented_t_apdu_with_bst)
     except UnclosedTransactionException:
-        bcm_logger.info('Closing unclosed leftover transaction...')
+        rse_dsrc_l7_logger.info('Closing unclosed leftover transaction...')
         await send_close_transaction_echo()
         await asyncio.sleep(0.1)
         # raise SystemExit("Unclosed transaction! Exiting...")
 
         response = await try_to_start_bst_emission_and_await_vst(fragmented_t_apdu_with_bst)
 
-    bcm_logger.debug("We now get the lastest BeaconID just after starting the BST")
+    rse_dsrc_l7_logger.debug("We now get the lastest BeaconID just after starting the BST")
 
     await check_and_update_beacon_state()
 
@@ -290,7 +290,7 @@ async def initialize_transaction(
 
     try:
         if beacon_bac_l7_wrapper._is_transaction_in_progress():
-            bcm_logger.error("Do not try to initilize a transaction! One is already in progress!")
+            rse_dsrc_l7_logger.error("Do not try to initilize a transaction! One is already in progress!")
             # bcm_logger.debug("We lock the thread until the opened transaction is closed!")
             raise BeaconManagerException("Transaction already in progress!!")
     except:
@@ -311,18 +311,18 @@ async def initialize_transaction(
     # Finally start BST emission!!
     initialization_request_jval = await start_bst_emission_and_await_vst(bst_value=bst_value)
 
-    bcm_logger.info("A VST was received!")
+    rse_dsrc_l7_logger.info("A VST was received!")
     fragmented_t_apdu_init_resp_datagram = beacon_bac_l7_wrapper.get_vst()
     # bcm_logger.debug(f"Fragmented T_APDU containing VST (UPER hex): {fragmented_t_apdu_init_resp_datagram.hex().upper()}")
 
-    bcm_logger.debug("We now remove the fragmentation header and instantiate an T_APDU object from the response!")
+    rse_dsrc_l7_logger.debug("We now remove the fragmentation header and instantiate an T_APDU object from the response!")
     t_apdu_init_resp_datagram = bytes(fragmented_t_apdu_init_resp_datagram[1:])
     t_apdu_uper_logger.debug(f"[RX] VST: 0x{t_apdu_init_resp_datagram.hex().upper()}")
 
-    bcm_logger.debug("We now instantiate a T_APDU object from the UPER response!")
+    rse_dsrc_l7_logger.debug("We now instantiate a T_APDU object from the UPER response!")
     TApdu_container.from_uper(t_apdu_init_resp_datagram)
-    bcm_logger.debug(f"T_APDU containing VST value: {TApdu_container._val}")
-    bcm_logger.info(f"T_APDU containing VST in ASN:\n{TApdu_container.to_asn1()}")
+    rse_dsrc_l7_logger.debug(f"T_APDU containing VST value: {TApdu_container._val}")
+    rse_dsrc_l7_logger.info(f"T_APDU containing VST in ASN:\n{TApdu_container.to_asn1()}")
 
     # bcm_logger.debug(f"T_APDU containing VST in JER:\n{TApdu_container.to_jer()}")
     last_response_t_apdu_json = TApdu_container._to_jval()
@@ -342,11 +342,11 @@ async def init_and_close_transaction(
     bst_value, vst_value = await initialize_transaction(mand_applications=mand_applications)
     try:
         result = await callback(bst_value, vst_value)
-        bcm_logger.info('Transaction successful! Closing ...')
+        rse_dsrc_l7_logger.info('Transaction successful! Closing ...')
         await send_close_transaction_echo()
         return result
     except RuntimeError:
-        bcm_logger.error('Error during transaction! Closing...')
+        rse_dsrc_l7_logger.error('Error during transaction! Closing...')
         await send_close_transaction_echo()
 
 class ObuResponseTimeout(Exception):
@@ -356,11 +356,11 @@ class CommandRefused(Exception):
 async def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, close_transaction=False) -> dict:
     global TApdu_container
     if close_transaction:
-        bcm_logger.info(f"Closing Transaction!! Info: BAC L2 command for closing a transaction is 0x06.")
+        rse_dsrc_l7_logger.info(f"Closing Transaction!! Info: BAC L2 command for closing a transaction is 0x06.")
 
-    bcm_logger.debug(f"Preparing request T-APDU to be sent...")
+    rse_dsrc_l7_logger.debug(f"Preparing request T-APDU to be sent...")
     TApdu_container.set_val(asn1_request_t_apdu_value)
-    bcm_logger.info(f"Request T-APDU value: {TApdu_container._val}")
+    rse_dsrc_l7_logger.info(f"Request T-APDU value: {TApdu_container._val}")
 
     # Needed to store transaction data as JSON!
     request_t_apdu_jval = TApdu_container._to_jval()
@@ -388,11 +388,11 @@ async def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, clos
             raise Exception(f'[BAC L2] Command Refused due to beacon error (0x03)!!')
 
         else:
-            bcm_logger.error(f'[BAC L2] Error code (0x{bac_l2_error_code:02X}) present in BAC L2 response!!')
+            rse_dsrc_l7_logger.error(f'[BAC L2] Error code (0x{bac_l2_error_code:02X}) present in BAC L2 response!!')
             raise Exception(f'[BAC L2] Error code (0x{bac_l2_error_code:02X}) present in BAC L2 response!!')
     beacon_bac_l7_wrapper.last_t_apdu_response_datagram
     fragmented_t_apdu_with_response_bytes = beacon_bac_l7_wrapper.last_t_apdu_response_datagram
-    bcm_logger.info(f"Fragmented T-APDU response obtained from beacon in hex (UPER hex): {fragmented_t_apdu_with_response_bytes.hex().upper()}")
+    rse_dsrc_l7_logger.info(f"Fragmented T-APDU response obtained from beacon in hex (UPER hex): {fragmented_t_apdu_with_response_bytes.hex().upper()}")
 
     try:
         t_apdu_with_response_bytes = bytes(fragmented_t_apdu_with_response_bytes[1:])
@@ -403,8 +403,8 @@ async def send_req_t_apdu_and_obtain_resp_t_apdu(asn1_request_t_apdu_value, clos
         TApdu_container.set_val(t_apdu_response_value)
         response_t_apdu_jval = TApdu_container._to_jval()
     except UnclosedTransactionException:
-        bcm_logger.error("Error when decoding T-APDU response!!")
-        bcm_logger.info("Unclosed Transaction Exception: We simply send an ECHO.request to close the transaction...")
+        rse_dsrc_l7_logger.error("Error when decoding T-APDU response!!")
+        rse_dsrc_l7_logger.info("Unclosed Transaction Exception: We simply send an ECHO.request to close the transaction...")
 
         eid = asn1_request_t_apdu_value[1]['eid']
         await send_close_transaction_echo(eid=eid)
@@ -465,7 +465,7 @@ def search_json_action_transaction_data_for_attribute_data(action_request_jval, 
                         if attribute_data['attributeId'] == attribute_id:
                             return attribute_data['attributeValue']
                 except KeyError:
-                    bcm_logger.error(f'ACTION response does not contain data for Attribute Id ({attribute_id})!!')
+                    rse_dsrc_l7_logger.error(f'ACTION response does not contain data for Attribute Id ({attribute_id})!!')
                     return {}
     return {}
 
@@ -476,7 +476,7 @@ def search_json_get_transaction_data_for_attribute_data(get_request_jval, get_re
                 if attribute_data['attributeId'] == attribute_id:
                     return attribute_data['attributeValue']
         except KeyError:
-            bcm_logger.error(f'GET response does not contain data for Attribute Id ({attribute_id})!!')
+            rse_dsrc_l7_logger.error(f'GET response does not contain data for Attribute Id ({attribute_id})!!')
             return {}
     return {}
 
@@ -544,26 +544,26 @@ def verify_obe_authenticity(get_stamped_action_response_value=None):
     eid = get_stamped_action_response_value['eid']
 
     attributeList = get_stamped_rs['attributeList']
-    bcm_logger.info(f'[OBE AUTH] attributeList value: {attributeList}')
+    rse_dsrc_l7_logger.info(f'[OBE AUTH] attributeList value: {attributeList}')
 
     container_with_attribute_list = ('attrList', get_stamped_rs['attributeList'])
 
-    bcm_logger.info(f"[OBE AUTH] EFC Container of Type/CHOICE 'attrList' value: {container_with_attribute_list}")
+    rse_dsrc_l7_logger.info(f"[OBE AUTH] EFC Container of Type/CHOICE 'attrList' value: {container_with_attribute_list}")
     efc_asn_compilation.EfcDsrcGeneric.EfcContainer.set_val(container_with_attribute_list)
-    bcm_logger.info(f"[OBE AUTH] EFC Container of Type/CHOICE 'attrList' in ASN: {efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_asn1()}")
+    rse_dsrc_l7_logger.info(f"[OBE AUTH] EFC Container of Type/CHOICE 'attrList' in ASN: {efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_asn1()}")
 
     attribute_list_bytes = efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_uper()[1:]
 
     provided_authenticator = get_stamped_rs['authenticator']
-    bcm_logger.info(f"[OBE AUTH] Authenticator provided by OBE (UPER hex): {provided_authenticator.hex().upper()}")
+    rse_dsrc_l7_logger.info(f"[OBE AUTH] Authenticator provided by OBE (UPER hex): {provided_authenticator.hex().upper()}")
 
     rnd_rse_bytes = rnd_rse_bytes_value
     rnd_rse_int = int.from_bytes(rnd_rse_bytes, 'big')
 
     pan_bytes = get_stamped_rs['attributeList'][0]['attributeValue'][1]['personalAccountNumber']
 
-    bcm_logger.debug(f'[OBE AUTH] AttributeList: {attribute_list_bytes}')
-    bcm_logger.debug(f'[OBE AUTH] RndRSE int: {rnd_rse_int}')
+    rse_dsrc_l7_logger.debug(f'[OBE AUTH] AttributeList: {attribute_list_bytes}')
+    rse_dsrc_l7_logger.debug(f'[OBE AUTH] RndRSE int: {rnd_rse_int}')
 
     if not SKIP_CONTRACT_DSRC_AUTH:
         obu_contract_ref = custom_its_per_decoders.get_obu_contract_ref_from_vst_value(eid, last_vst_value)
@@ -572,11 +572,11 @@ def verify_obe_authenticity(get_stamped_action_response_value=None):
         authenticator = tc_dsrc_auth.compute_authenticator_with_device_contract_ref_and_auk_ref(pan_bytes, obu_contract_ref, attribute_list_bytes, rnd_rse_int, td_name, norm, 115)
 
         if provided_authenticator == authenticator:
-            bcm_logger.info('[OBE AUTH] OK!!!')
+            rse_dsrc_l7_logger.info('[OBE AUTH] OK!!!')
             return True
             # raise Exception('[OBE AUTH] Invalid OBE Auth!!')
         else:
-            bcm_logger.critical('[OBE AUTH] ERROR!!!')
+            rse_dsrc_l7_logger.critical('[OBE AUTH] ERROR!!!')
             return False
 
 def get_transaction_data_header_updates(request_t_apdu_jval, response_t_apdu_jval):
@@ -613,7 +613,7 @@ def get_transaction_data_header_updates(request_t_apdu_jval, response_t_apdu_jva
 def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jval):
     global transaction_data_filepath
     if 'current_transaction_uuid' not in globals():
-        bcm_logger.error(f'Cannot add DSRC transaction data to file without transaction init data')
+        rse_dsrc_l7_logger.error(f'Cannot add DSRC transaction data to file without transaction init data')
         return
 
     # new_transaction_phase_data_json dict is a merge of the T-APDU request and response JSON values
@@ -637,7 +637,7 @@ def add_t_apdu_data_to_transaction_data(request_t_apdu_jval, response_t_apdu_jva
 async def check_and_update_beacon_state():
     global current_beacon_name
     if 'current_beacon_name' not in globals():
-        bcm_logger.critical('No beacon is set!! Please fix the RSE config for a beacon to be initialized properly via BAC L7.')
+        rse_dsrc_l7_logger.critical('No beacon is set!! Please fix the RSE config for a beacon to be initialized properly via BAC L7.')
         raise NoBeaconInitialized('No beacon is set!! Please fix the RSE config for a beacon to be initialized properly via BAC L7.')
 
     await beacon_bac_l7_wrapper._pertel_get_communication_count()
@@ -646,7 +646,7 @@ async def check_and_update_beacon_state():
         beacon_state = await beacon_bac_l7_wrapper.update_state()
         if beacon_state[1] == pertel_bac_l7.BCM_MODE_Enum.PERTEL_MODE_Stopped:
             raise BeaconManagerException("Beacon is in Stopped mode, not Transparent!!")
-        bcm_logger.debug(f"Last BeaconID: {beacon_bac_l7_wrapper.get_beacon_id().hex().upper()}")
+        rse_dsrc_l7_logger.debug(f"Last BeaconID: {beacon_bac_l7_wrapper.get_beacon_id().hex().upper()}")
         return beacon_state
     elif current_beacon_name == 'OPS1955':
         pass
@@ -661,7 +661,7 @@ def get_init_data():
 def get_parameter_for_eid(eid):
     # Kapsch System Element: EID 0, no VST parameter
     if eid == 0:
-        bcm_logger.info(f'Kapsch System Element has no Parameter in VST!!!')
+        rse_dsrc_l7_logger.info(f'Kapsch System Element has no Parameter in VST!!!')
         return b''
     return get_parameter_bytes_from_eid_on_vst_value(eid=eid)
 
@@ -693,40 +693,40 @@ def decode_t_apdu_response_uper(t_apdu_with_response_bytes):
     global last_response_t_apdu_value
     global last_response_t_apdu_json
 
-    bcm_logger.debug(f"Decoding received response T-APDU...")
+    rse_dsrc_l7_logger.debug(f"Decoding received response T-APDU...")
     try:
         TApdu_container.from_uper(t_apdu_with_response_bytes)
     except pycrate_core.charpy.CharpyErr:
-        bcm_logger.critical(f'[Pycrate UPER decoder] T-APDU response UPER decoding error!! T-APDU UPER hex value: {t_apdu_with_response_bytes.hex().upper()}')
+        rse_dsrc_l7_logger.critical(f'[Pycrate UPER decoder] T-APDU response UPER decoding error!! T-APDU UPER hex value: {t_apdu_with_response_bytes.hex().upper()}')
         raise TApduResponseDecodeError('T-APDU response UPER decoding error!!')
 
     last_response_t_apdu_value = TApdu_container._val
-    bcm_logger.debug(f"Response T-APDU value: {last_response_t_apdu_value}")
+    rse_dsrc_l7_logger.debug(f"Response T-APDU value: {last_response_t_apdu_value}")
     log_attrs_in_get_resp_in_hex_uper_format(last_response_t_apdu_value)
 
-    bcm_logger.info(f"Response T-APDU in ASN:\n{TApdu_container.to_asn1()}")
+    rse_dsrc_l7_logger.info(f"Response T-APDU in ASN:\n{TApdu_container.to_asn1()}")
     # bcm_logger.debug(f"Response T-APDU decoded with JER:\n{TApdu_container.to_jer()}")
     last_response_t_apdu_json = TApdu_container._to_jval()
     # bcm_logger.debug(f"Response T-APDU in JSON: {last_response_t_apdu_json}")
 
-    bcm_logger.debug(f"Checking if T-APDU contains a return (ret) value (error code)...")
+    rse_dsrc_l7_logger.debug(f"Checking if T-APDU contains a return (ret) value (error code)...")
     try:
         return_code = last_response_t_apdu_value[1]["ret"]
         if return_code == 0:
-            bcm_logger.info(f"Return code is present and is 0! (No errors)")
-            bcm_logger.debug(f"ReturnStatus ASN1 decoding:\n{efc_asn_compilation.EfcDsrcGeneric.ReturnStatus.to_asn1()}")
+            rse_dsrc_l7_logger.info(f"Return code is present and is 0! (No errors)")
+            rse_dsrc_l7_logger.debug(f"ReturnStatus ASN1 decoding:\n{efc_asn_compilation.EfcDsrcGeneric.ReturnStatus.to_asn1()}")
         else:
-            bcm_logger.error(f"Error code present! Return Code: {return_code}")
+            rse_dsrc_l7_logger.error(f"Error code present! Return Code: {return_code}")
             efc_asn_compilation.EfcDsrcGeneric.ReturnStatus.set_val(return_code)
-            bcm_logger.error(f"ReturnStatus ASN1 decoding:\n{efc_asn_compilation.EfcDsrcGeneric.ReturnStatus.to_asn1()}")
+            rse_dsrc_l7_logger.error(f"ReturnStatus ASN1 decoding:\n{efc_asn_compilation.EfcDsrcGeneric.ReturnStatus.to_asn1()}")
             # if return_code == 1:
             #     raise TApduResponseException(f"Return Status: {efc_asn_compilation.EfcDsrcGeneric.ReturnStatus.to_asn1()}")
     except KeyError:
-        bcm_logger.info(f"No return code in T-APDU! (No errors)")
+        rse_dsrc_l7_logger.info(f"No return code in T-APDU! (No errors)")
     return last_response_t_apdu_value
 
 def decode_vst_parameter_with_eid_only(eid):
-    bcm_logger.debug(f"Decoding VST parameter with EID {eid}...")
+    rse_dsrc_l7_logger.debug(f"Decoding VST parameter with EID {eid}...")
     parameter_bytes = get_parameter_for_eid(eid)
 
     decoded_parameter = custom_its_per_decoders.decode_vst_parameter_oct_str_bytes(parameter_bytes)
@@ -743,7 +743,7 @@ def get_obu_contract_ref_with_eid_only(eid:int, vst_value:dict=None):
     return custom_its_per_decoders.get_obu_contract_ref_from_vst_value(eid, vst_value)
 
 def compute_access_credentials_for_eid(eid:int) -> bytes:
-    bcm_logger.debug(f"Computing Access Credentials for EID {eid}...")
+    rse_dsrc_l7_logger.debug(f"Computing Access Credentials for EID {eid}...")
     decoded_vst_param = decode_vst_parameter_with_eid_only(eid)
 
     if len(decoded_vst_param) == 1:
@@ -779,13 +779,13 @@ async def send_get_request(eid, accessCredentialsPresent:bool = False, attrIdLis
     get_req_value = {key: value for key, value in get_req_value.items() if value is not None}
 
     efc_asn_compilation.EfcDsrcGeneric.Get_Request.set_val(get_req_value)
-    bcm_logger.debug(f"Get.Request value: {efc_asn_compilation.EfcDsrcGeneric.Get_Request._val}")
+    rse_dsrc_l7_logger.debug(f"Get.Request value: {efc_asn_compilation.EfcDsrcGeneric.Get_Request._val}")
 
     t_apdu_with_get_request_value = ('getRequest', get_req_value)
     response_t_apdu_value = await send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_get_request_value, close_transaction=close_transaction)
 
-    bcm_logger.debug("We now obtain the GET.response object from the T_APDU response!")
-    bcm_logger.debug("GET.response is a parameterized type, so we cannot encode/decode it, only the T_APDU!")
+    rse_dsrc_l7_logger.debug("We now obtain the GET.response object from the T_APDU response!")
+    rse_dsrc_l7_logger.debug("GET.response is a parameterized type, so we cannot encode/decode it, only the T_APDU!")
 
     return response_t_apdu_value
 
@@ -802,7 +802,7 @@ async def send_set_request(eid, access_credentials:int, attrList, close_transact
         'attrList': attrList
     }
 
-    bcm_logger.debug(f"SET.Request value: {set_req_value}")
+    rse_dsrc_l7_logger.debug(f"SET.Request value: {set_req_value}")
 
     t_apdu_with_set_request_value = ('set-request', set_req_value)
 
@@ -811,7 +811,7 @@ async def send_set_request(eid, access_credentials:int, attrList, close_transact
     response_t_apdu_value = await send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_set_request_value, close_transaction=close_transaction)
     TApdu_container = prev
 
-    bcm_logger.debug(f"SET.Response value: {efc_asn_compilation.EfcDsrcGeneric.T_APDUs._val[1]}")
+    rse_dsrc_l7_logger.debug(f"SET.Response value: {efc_asn_compilation.EfcDsrcGeneric.T_APDUs._val[1]}")
 
     return response_t_apdu_value
 
@@ -826,12 +826,12 @@ async def send_set_request_with_eack_ac_cr(eid, attrList, close_transaction=Fals
     }
 
     efc_asn_compilation.EfcDsrcGeneric.Set_Request.set_val(set_req_value)
-    bcm_logger.debug(f"SET.Request value: {efc_asn_compilation.EfcDsrcGeneric.Set_Request._val}")
+    rse_dsrc_l7_logger.debug(f"SET.Request value: {efc_asn_compilation.EfcDsrcGeneric.Set_Request._val}")
 
     t_apdu_with_get_request_value = ('setRequest', set_req_value)
     response_t_apdu_value = await send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_get_request_value, close_transaction=close_transaction)
 
-    bcm_logger.debug(f"SET.Response value: {efc_asn_compilation.EfcDsrcGeneric.T_APDUs._val[1]}")
+    rse_dsrc_l7_logger.debug(f"SET.Response value: {efc_asn_compilation.EfcDsrcGeneric.T_APDUs._val[1]}")
 
     return response_t_apdu_value
 
@@ -851,14 +851,14 @@ async def send_action_request(
         accessCredentials = None
     if not actionParameter:
         actionParameter = ('setmmirq', 0)
-    bcm_logger.info(f"Preparing an ACTION.request with ActionType ({actionParameter[0]})")
+    rse_dsrc_l7_logger.info(f"Preparing an ACTION.request with ActionType ({actionParameter[0]})")
 
     # ACTION.request has a parameter, which needs to be inside a container
     efc_asn_compilation.EfcDsrcGeneric.EfcContainer.set_val(actionParameter)
     parameter_tag = efc_asn_compilation.EfcDsrcGeneric.EfcContainer._tag
 
-    bcm_logger.debug(f"ActionParameter is an EfcContainer of Type ({actionParameter[0]}) (tag {parameter_tag}) value decoded with JER:\n{efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_jer()}")
-    bcm_logger.debug(f"Same value but APER-encoded in hex: {efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_aper().hex().upper()}")
+    rse_dsrc_l7_logger.debug(f"ActionParameter is an EfcContainer of Type ({actionParameter[0]}) (tag {parameter_tag}) value decoded with JER:\n{efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_jer()}")
+    rse_dsrc_l7_logger.debug(f"Same value but APER-encoded in hex: {efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_aper().hex().upper()}")
 
     action_request_value = {
         'mode': mode,
@@ -868,7 +868,7 @@ async def send_action_request(
         'actionParameter': actionParameter,
         'iid': iid
         }
-    bcm_logger.debug(f"ACTION.request value: {action_request_value}")
+    rse_dsrc_l7_logger.debug(f"ACTION.request value: {action_request_value}")
 
     # Ignore keys in dict that map to None!!
     # That is, remove OPTIONAL elements that map to None
@@ -876,11 +876,11 @@ async def send_action_request(
     action_request_value = {key: value for key, value in action_request_value.items() if value is not None}
 
     t_apdu_with_action_req_value = ('actionRequest', action_request_value)
-    bcm_logger.debug(f"T-APDU with ACTION.request value: {t_apdu_with_action_req_value}")
+    rse_dsrc_l7_logger.debug(f"T-APDU with ACTION.request value: {t_apdu_with_action_req_value}")
 
     TApdu_container.set_val(t_apdu_with_action_req_value)
-    bcm_logger.info(f"T-APDU with ACTION.request in ASN:\n{TApdu_container.to_asn1()}")
-    bcm_logger.debug(f"ACTION.request with ActionType {actionType} and actionParameter of type {actionParameter[0]} being now sent...")
+    rse_dsrc_l7_logger.info(f"T-APDU with ACTION.request in ASN:\n{TApdu_container.to_asn1()}")
+    rse_dsrc_l7_logger.debug(f"ACTION.request with ActionType {actionType} and actionParameter of type {actionParameter[0]} being now sent...")
 
     response_t_apdu_value = await send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_action_req_value, close_transaction)
     return response_t_apdu_value
@@ -901,12 +901,12 @@ async def send_get_stamped_request(
         close_transaction=False):
     global last_response_t_apdu_value
 
-    bcm_logger.debug("Preparing an ActionParameter for an Action-Request of type GET_STAMPED.request (Presentation request)...")
+    rse_dsrc_l7_logger.debug("Preparing an ActionParameter for an Action-Request of type GET_STAMPED.request (Presentation request)...")
     get_stamped_rq_value = get_stamped_request_action_parameter_preparation(eid, attrIdList, operator_auk_ref)
 
-    bcm_logger.debug("Putting the GetStampedRq inside a 'gstrq' EFC Container...")
+    rse_dsrc_l7_logger.debug("Putting the GetStampedRq inside a 'gstrq' EFC Container...")
     container_with_get_stamped_rq_value = ('gstrq', get_stamped_rq_value)
-    bcm_logger.debug(f"Container with GetStampedRq value: {container_with_get_stamped_rq_value}")
+    rse_dsrc_l7_logger.debug(f"Container with GetStampedRq value: {container_with_get_stamped_rq_value}")
 
     # ActionType is 0 for GET_STAMPED.request and Mode is True (Always expects a response)
     response_t_apdu_value = await send_action_request(True, eid, 0, accessCredentialsPresent, container_with_get_stamped_rq_value, close_transaction=close_transaction)
@@ -924,7 +924,7 @@ def get_stamped_request_action_parameter_preparation(eid:int, attrIdList:list = 
     if not attrIdList:
         attrIdList = []
 
-    bcm_logger.debug(f"Preparing a GET_STAMPED.request to get attributes with ids {attrIdList}")
+    rse_dsrc_l7_logger.debug(f"Preparing a GET_STAMPED.request to get attributes with ids {attrIdList}")
     update_rnd_rse()
 
     get_stamped_rq_value = {
@@ -932,22 +932,22 @@ def get_stamped_request_action_parameter_preparation(eid:int, attrIdList:list = 
         'nonce': rnd_rse_bytes_value,
         'keyRef': operator_auk_ref
         }
-    bcm_logger.debug(f"GetStampedRq value to be stored in definition: {get_stamped_rq_value}")
+    rse_dsrc_l7_logger.debug(f"GetStampedRq value to be stored in definition: {get_stamped_rq_value}")
     efc_asn_compilation.EfcDsrcApplication.GetStampedRq.set_val(get_stamped_rq_value)
 
-    bcm_logger.debug(f"GetStampedRq in ASN: {efc_asn_compilation.EfcDsrcApplication.GetStampedRq.to_asn1()}")
+    rse_dsrc_l7_logger.debug(f"GetStampedRq in ASN: {efc_asn_compilation.EfcDsrcApplication.GetStampedRq.to_asn1()}")
     # bcm_logger.info(f"GetStampedRs in JER:\n{efc_asn_compilation.EfcDsrcApplication.GetStampedRq.to_jer()}")
     return get_stamped_rq_value
 
 async def send_echo_action_request(eid=0, text='Hello, World!', close_transaction=False):
     """EID should always be 0 for ECHO.request!!!"""
-    bcm_logger.debug(f"Preparing an ECHO.request")
+    rse_dsrc_l7_logger.debug(f"Preparing an ECHO.request")
 
     echo_rq_value = ('octetstring', text.encode('utf-8'))
 
     efc_asn_compilation.EfcDsrcGeneric.EfcContainer.set_val(echo_rq_value)
-    bcm_logger.debug(f"EfcContainer of Type 02 (OCTET STRING) value decoded with JER:\n{efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_jer()}")
-    bcm_logger.debug(f"EfcContainer of Type 69 (OCTET STRING) value decoded with PER: {efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_uper()}")
+    rse_dsrc_l7_logger.debug(f"EfcContainer of Type 02 (OCTET STRING) value decoded with JER:\n{efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_jer()}")
+    rse_dsrc_l7_logger.debug(f"EfcContainer of Type 69 (OCTET STRING) value decoded with PER: {efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_uper()}")
 
     # ActionType is 15 or 0xF for ECHO.request
     echo_action_request_val = {
@@ -957,22 +957,22 @@ async def send_echo_action_request(eid=0, text='Hello, World!', close_transactio
         'actionParameter': echo_rq_value
         }
     t_apdu_with_echo_action_req_value = ('actionRequest', echo_action_request_val)
-    bcm_logger.info(f"ACTION.request of Type 15 (ECHO) being now sent...")
+    rse_dsrc_l7_logger.info(f"ACTION.request of Type 15 (ECHO) being now sent...")
 
     response_t_apdu_json = await send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_echo_action_req_value, close_transaction=close_transaction)
     # response_t_apdu_json = send_action_request(mode=True, eid=eid, actionType=15, accessCredentialsPresent=False, actionParameter=echo_rq_value, close_transaction=close_transaction)
     return response_t_apdu_json
 
 async def set_mmi(eid=0, close_transaction=False):
-    bcm_logger.debug(f"Preparing a SET_MMI.request")
-    bcm_logger.debug(f"The function to send ACTION.requests is defined to send a SET_MMI by default if no arguments are provided!")
+    rse_dsrc_l7_logger.debug(f"Preparing a SET_MMI.request")
+    rse_dsrc_l7_logger.debug(f"The function to send ACTION.requests is defined to send a SET_MMI by default if no arguments are provided!")
 
     set_mmi_request_value = 0
     # SetMMI is a parameterized type, so it needs to be inside a container
     set_mmi_efc_container_value = ('setmmirq', set_mmi_request_value)
     efc_asn_compilation.EfcDsrcGeneric.EfcContainer.set_val(set_mmi_efc_container_value)
-    bcm_logger.debug(f"EfcContainer of Type 69 (SET_MMI) value decoded with JER:\n{efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_jer()}")
-    bcm_logger.debug(f"EfcContainer of Type 69 (SET_MMI) value decoded with PER: {efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_uper()}")
+    rse_dsrc_l7_logger.debug(f"EfcContainer of Type 69 (SET_MMI) value decoded with JER:\n{efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_jer()}")
+    rse_dsrc_l7_logger.debug(f"EfcContainer of Type 69 (SET_MMI) value decoded with PER: {efc_asn_compilation.EfcDsrcGeneric.EfcContainer.to_uper()}")
 
     # SetMMI ActionType is 0xA, or 10 in decimal
     set_mmi_action_request_val = {
@@ -983,7 +983,7 @@ async def set_mmi(eid=0, close_transaction=False):
         }
 
     t_apdu_with_set_mmi_action_req_value = ('actionRequest', set_mmi_action_request_val)
-    bcm_logger.info(f"ACTION.request of Type 10 (SET_MMI) being now sent...")
+    rse_dsrc_l7_logger.info(f"ACTION.request of Type 10 (SET_MMI) being now sent...")
 
     t_apdu_with_action_response = await send_req_t_apdu_and_obtain_resp_t_apdu(t_apdu_with_set_mmi_action_req_value, close_transaction)
     return t_apdu_with_action_response
@@ -992,7 +992,7 @@ async def send_close_transaction_echo(eid=0, text="Hello, World!"):
     try:
         return await send_echo_action_request(eid=eid, text=text, close_transaction=True)
     except ObuResponseTimeout as exc:
-        bcm_logger.error('OBU response timeout during SET_MMI request!')
+        rse_dsrc_l7_logger.error('OBU response timeout during SET_MMI request!')
         # We optionally ignore OBU response timeouts during SET_MMI requests!
         if not beacon_manager_config[current_beacon_name]['bac_l2_config']['IGNORE_OBU_TIMEOUTS_WHEN_CLOSING_TRANSACTION']:
             raise exc
@@ -1001,7 +1001,7 @@ async def send_close_transaction_setmmi(eid=0):
     try:
         return await set_mmi(eid, close_transaction=True)
     except ObuResponseTimeout as exc:
-        bcm_logger.error('OBU response timeout during SET_MMI request!')
+        rse_dsrc_l7_logger.error('OBU response timeout during SET_MMI request!')
         # We optionally ignore OBU response timeouts during SET_MMI requests!
         if not beacon_manager_config[current_beacon_name]['bac_l2_config']['IGNORE_OBU_TIMEOUTS_WHEN_CLOSING_TRANSACTION']:
             raise exc
