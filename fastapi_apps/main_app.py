@@ -9,6 +9,8 @@ from fastapi_apps.rse_gps_sync_app import rse_gps_td_app
 
 from contextlib import asynccontextmanager, AsyncExitStack
 from fastapi_apps.personalization_app import personalization_app
+from fastapi_apps.dsrc_interop_app import dsrc_interop_app
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with AsyncExitStack() as stack:
@@ -53,3 +55,5 @@ app.mount("/dsrc-transactions/", transaction_data_app)
 app.mount("/td_zones", td_zones_app)
 app.mount("/rse_gps", rse_gps_td_app)
 app.mount("/perso_app", personalization_app)
+app.mount("/dsrc-interop", dsrc_interop_app)
+app.mount("/asn-compiler", StaticFiles(directory="fronts/web/asn_compiler_web_front", html=True), name="asn_compiler_web_front_files")
