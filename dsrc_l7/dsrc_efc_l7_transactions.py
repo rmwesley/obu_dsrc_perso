@@ -31,8 +31,7 @@ def resolve_transaction_profile(toll_domain: str, script_name: str = 'default', 
 
     preferred_script = (script_name or 'default').strip().lower()
     script_aliases = {
-        'single': 'default',
-        'default': 'default',
+        'default': 'cardme_transaction',
         'cardme': 'cardme_transaction',
         'tis_vl': 'tis_vl_transaction',
         'ccc2009': 'test_ccc_2009_transaction',
