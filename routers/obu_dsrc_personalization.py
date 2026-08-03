@@ -18,11 +18,12 @@ obu_dsrc_perso_router_logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(arg_router: APIRouter):
-    print('Initializing DSRC L7 for Perso App!!')
+    print('Initializing DSRC L7 for Perso App...')
     try:
         await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
+        print('Initialized DSRC beacon!')
     except Exception as e:
-        print(e)
+        print(repr(e))
         print('Please set the beacon configuration properly to initialize it via BAC L7!')
     yield
     await dsrc_l7_rse.change_trx_mode('Stopped')
