@@ -505,6 +505,59 @@ def loop_transactions(beep_state=None):
             dsrc_l7_transactions_logger.error("Transaction error occurred during loop!", exc_info=True)
             time.sleep(1)
 
+TRANSACTION_HANDLERS = {
+    "cardme_transaction": cardme_transaction,
+    "tis_vl_transaction": tis_vl_transaction,
+    "test_ccc_2009_transaction": test_ccc_2009_transaction,
+    "test_ccc_2015_transaction": test_ccc_2015_transaction,
+    "ccc_2023_transaction": ccc_2023_transaction,
+    "ccc_2024_transaction": ccc_2024_transaction,
+    "test_transaction": test_transaction,
+}
+
+async def execute_resolved_transaction_profile(
+    toll_domain: str,
+    script_name: str = "default",
+    runtime_config: dict | None = None,
+    compiled_spec_name: str | None = None,
+):
+    runtime_config = runtime_config or {}
+
+    profile = resolve_transaction_profile(
+        toll_domain=toll_domain,
+        script_name=script_name,
+        runtime_config=runtime_config,
+        compiled_spec_name=compiled_spec_name,
+    )
+
+    handler_name = profile["handler_name"]
+
+    try:
+        handler = TRANSACTION_HANDLERS[handler_name]
+    except KeyError:
+        raise ValueError(
+            f"Unsupported transaction handler '{handler_name}'"
+        )
+
+    result = await handler(
+        mand_applications=profile["mand_applications"],
+        accessCredentialsPresent=profile["accessCredentialsPresent"],
+        set_mmi=profile["set_mmi"],
+    )
+
+    return {
+        "completed": True,
+        "handler": handler_name,
+        "transaction_type": profile["transaction_type"],
+        "toll_domain": profile["resolved_toll_domain"],
+        "compiled_spec_name": compiled_spec_name,
+        "result": result,
+    }
+
+def activate_compiled_spec(compiled_module):
+    global efc_asn_compilation
+    efc_asn_compilation = compiled_module
+
 async def tc_single_transaction(set_mmi=True, td_name='TIS'):
     tc_manage_toll_domains.set_toll_domain(td_name)
 
