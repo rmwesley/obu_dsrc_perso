@@ -280,6 +280,7 @@ async def ccc_2023_transaction(mand_applications=[1, 20, 29], accessCredentialsP
 
     # Getting CCC attributes...
     await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[50])
+    await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[52])
     await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[53])
     await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[99])
     await dsrc_l7_rse.send_get_request(eid, accessCredentialsPresent=accessCredentialsPresent, attrIdList=[100])
