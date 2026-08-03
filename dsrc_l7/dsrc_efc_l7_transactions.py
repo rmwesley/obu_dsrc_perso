@@ -20,6 +20,58 @@ with open('settings/td_transaction_config.json') as json_file:
     td_transaction_config = json.load(json_file)
 
 SLEEP_AFTER_ABORTING_TRANSACTION = 0.3
+
+
+def resolve_transaction_profile(toll_domain: str, script_name: str = 'default', runtime_config: dict | None = None, compiled_spec_name: str | None = None) -> dict:
+    runtime_config = runtime_config or {}
+    td_conf = td_transaction_config['td_conf_by_td_name'].get(toll_domain, {})
+    transaction_type = td_conf.get('default_transaction_type', 'CARDME')
+    security_profile = td_conf.get('security_profile', '')
+    mand_applications = td_conf.get('mandApplications', [1])
+
+    preferred_script = (script_name or 'default').strip().lower()
+    script_aliases = {
+        'single': 'default',
+        'default': 'default',
+        'cardme': 'cardme_transaction',
+        'tis_vl': 'tis_vl_transaction',
+        'ccc2009': 'test_ccc_2009_transaction',
+        'ccc2015': 'test_ccc_2015_transaction',
+        'ccc2023': 'ccc_2023_transaction',
+        'ccc2024': 'ccc_2024_transaction',
+        'test': 'test_transaction',
+    }
+
+    transaction_type_to_handler = {
+        'CARDME': 'cardme_transaction',
+        'TIS_CIP_CARDME': 'tis_vl_transaction',
+        'PISTA': 'cardme_transaction',
+        'CCC2009': 'test_ccc_2009_transaction',
+        'CCC2015': 'test_ccc_2015_transaction',
+        'CCC2019': 'ccc_2023_transaction',
+        'CCC2023': 'ccc_2023_transaction',
+        'CCC2024': 'ccc_2024_transaction',
+    }
+
+    handler_name = script_aliases.get(preferred_script)
+    if handler_name is None:
+        handler_name = transaction_type_to_handler.get(transaction_type, 'cardme_transaction')
+
+    access_credentials_present = runtime_config.get('accessCredentialsPresent')
+    if access_credentials_present is None:
+        access_credentials_present = 'EN15509_level_1' in security_profile
+
+    return {
+        'resolved_toll_domain': toll_domain,
+        'selected_script': script_name or 'default',
+        'transaction_type': transaction_type,
+        'handler_name': handler_name,
+        'mand_applications': mand_applications,
+        'accessCredentialsPresent': access_credentials_present,
+        'set_mmi': runtime_config.get('set_mmi', True),
+        'security_profile': security_profile,
+        'compiled_spec_name': compiled_spec_name,
+    }
 async def get_eid_in_vst_with_valid_contract_else_abort_transaction(vst_value: dict):
     try:
         td_name = tc_manage_toll_domains.get_current_toll_domain()
