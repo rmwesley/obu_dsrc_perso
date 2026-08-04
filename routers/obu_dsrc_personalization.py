@@ -9,27 +9,20 @@ import pathlib
 import logging
 from contextlib import asynccontextmanager
 
-from dsrc_l7 import dsrc_l7_rse
-from dsrc_l7 import dsrc_perso_l7
+from dsrc_l7 import dsrc_l7_rse, dsrc_l7_rse_service, dsrc_perso_l7
 from ASN.compiled_DSRC_instances import AXXESv1_2
 import dsrc_security.kapsch_http_uset_key_obtention
 
 obu_dsrc_perso_router_logger = logging.getLogger(__name__)
 
+# Initialize beacon DSRC L7 service!
 @asynccontextmanager
 async def lifespan(arg_router: APIRouter):
-    print('Initializing DSRC L7 for Perso App...')
-    try:
-        await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
-        print('Initialized DSRC beacon!')
-    except Exception as e:
-        print(repr(e))
-        print('Please set the beacon configuration properly to initialize it via BAC L7!')
-    yield
-    await dsrc_l7_rse.change_trx_mode('Stopped')
+    rse_init_service = dsrc_l7_rse_service.RseInitService()
+    yield await rse_init_service.start()
+    await rse_init_service.stop()
 
 router = APIRouter(tags=['OBU DSRC Personalization routes'], lifespan=lifespan)
-
 perso_tasks_dirpath = pathlib.Path(f'local_file_storage/dsrc_perso_tasks')
 
 with pathlib.Path('settings/td_transaction_config.json').open('r') as json_file:
