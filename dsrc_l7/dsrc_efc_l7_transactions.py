@@ -7,9 +7,9 @@ import asyncio
 from dsrc_l7 import dsrc_l7_rse
 from toll_charging_security import tc_dsrc_contracts, tc_manage_toll_domains
 
-from ASN.compiled_DSRC_instances import AXXESv1_2
+from axxes_asn_compiles.ASN.compiled_DSRC_instances import AXXESv1_2
 EFCv5 = AXXESv1_2
-from ASN.compiled_DSRC_instances import CCCv1
+from axxes_asn_compiles.ASN.compiled_DSRC_instances import CCCv1
 
 dsrc_l7_transactions_logger = logging.getLogger(__name__)
 

@@ -1,6 +1,6 @@
 import logging
 
-from dsrc_security import dsrc_mk_by_device_and_td_loader
+from obu_dsrc_security.dsrc_security import dsrc_mk_by_device_and_td_loader
 
 td_security_logger = logging.getLogger(__name__)
 

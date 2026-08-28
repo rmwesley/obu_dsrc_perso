@@ -1,4 +1,6 @@
-from dsrc_security.dsrc_key_derivation import decrypt_access_key, decrypt_auth_key
+from obu_dsrc_security.efc_security.efc_key_derivation import decrypt_ack_with_mack_bytes as decrypt_access_key
+from obu_dsrc_security.efc_security.efc_key_derivation import decipher_auth_key_with_mauk_value as decrypt_auth_key
+
 import logging
 logging.basicConfig(level=logging.DEBUG)
 

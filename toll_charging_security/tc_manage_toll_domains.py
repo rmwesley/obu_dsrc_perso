@@ -2,8 +2,9 @@ import json
 import pathlib
 import logging
 
-from dsrc_security import dsrc_mk_by_device_and_td_loader
 from toll_charging_security import tc_default_td_value_handler, tc_td_security_operations
+
+from obu_dsrc_security.dsrc_security import dsrc_mk_by_device_and_td_loader
 
 td_security_logger = logging.getLogger(__name__)
 td_security_logger.setLevel('INFO')

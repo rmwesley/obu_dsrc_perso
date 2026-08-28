@@ -2,7 +2,7 @@ import sys
 
 import pycrate_core.charpy
 
-from ASN.compiled_DSRC_instances import AXXESv1_2
+from axxes_asn_compiles.ASN.compiled_DSRC_instances import AXXESv1_2
 # from ASN.compiled_DSRC_instances import EFCv5
 EFCv5 = AXXESv1_2
 # from ASN.compiled_DSRC_instances import CCCv1
@@ -22,7 +22,7 @@ import typing
 from bac_l7 import ops1955_bac_l7, pertel_bac_l7, tgbv_bac_l7
 from dsrc_transactions.metadata_persistence import TransactionMetadataHandler
 
-import custom_its_per_decoders
+from custom_its_decoders import custom_its_per_decoders
 from toll_charging_security import tc_dsrc_auth, tc_manage_toll_domains
 
 # File logger, so prevent propagation!!
