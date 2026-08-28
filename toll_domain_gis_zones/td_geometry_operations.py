@@ -4,7 +4,9 @@ import pathlib
 import shapefile
 import shapely
 
-with pathlib.Path("settings/td_gis_config.json").open('r') as json_file:
+from ..globals import SETTINGS_DIR
+
+with ( SETTINGS_DIR / "td_gis_config.json" ).open('r') as json_file:
     td_gis_config = json.load(json_file)
     shapefiles_filename_stem = td_gis_config['shapefiles_filename_stem']
     td_zones_shp_path = pathlib.Path(shapefiles_filename_stem)

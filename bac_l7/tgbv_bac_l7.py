@@ -1,4 +1,4 @@
-from bac_l7 import pertel_bac_l7
+from . import pertel_bac_l7
 
 class TgbvBacL7(pertel_bac_l7.PertelBacL7):
     def __init__(self, *args, **kwargs):

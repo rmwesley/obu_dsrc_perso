@@ -1,4 +1,4 @@
-import dsrc_l7.dsrc_l7_rse
+from . import dsrc_l7_rse
 
 class RseInitService:
     def __init__(self):
@@ -11,7 +11,7 @@ class RseInitService:
 
         try:
             self.initialized = True
-            await dsrc_l7.dsrc_l7_rse.init_bcm_and_set_transparent_mode()
+            await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
             print('Initialized DSRC beacon!')
 
         except Exception as e:
@@ -23,5 +23,5 @@ class RseInitService:
         if not self.initialized:
             return
 
-        await dsrc_l7.dsrc_l7_rse.change_trx_mode("Stopped")
+        await dsrc_l7_rse.change_trx_mode("Stopped")
         self.initialized = False

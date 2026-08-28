@@ -1,6 +1,6 @@
 import logging
 
-from toll_charging_security import tc_td_security_operations, tc_manage_toll_domains
+from . import tc_td_security_operations, tc_manage_toll_domains
 
 class NoValidObeEfcmFoundInVst(Exception):
     pass

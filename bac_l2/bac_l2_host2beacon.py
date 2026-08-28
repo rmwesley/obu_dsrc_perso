@@ -2,6 +2,8 @@ import json
 import serial
 import logging
 import asyncio
+from ..globals import LOG_DIR, SETTINGS_DIR
+
 from datetime import datetime
 
 # File logger, so prevent propagation!!
@@ -10,7 +12,10 @@ bac_serial_wrapper_logger.setLevel(logging.DEBUG)
 bac_serial_wrapper_logger.propagate = False
 
 date_prefix = datetime.now().strftime('%y%m%d')
-file_handler = logging.FileHandler(f'logs/beacon_logs/{date_prefix}_bac_l2.log')
+
+log_dir = LOG_DIR / "beacon_logs"
+log_dir.mkdir(parents=True, exist_ok=True)
+file_handler = logging.FileHandler(log_dir / f'{date_prefix}_bac_l2.log')
 file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
 file_handler.setFormatter(file_formatter)
 bac_serial_wrapper_logger.addHandler(file_handler)
@@ -18,8 +23,8 @@ bac_serial_wrapper_logger.addHandler(file_handler)
 class BacL2Exception(Exception):
     pass
 
-with open('settings/beacon_manager_config.json', 'r') as beacon_manager_settings_file:
-    beacon_manager_settings = json.load(beacon_manager_settings_file)
+with ( SETTINGS_DIR / "beacon_manager_config.json" ).open('r') as bcm_cfg_file:
+    beacon_manager_settings = json.load(bcm_cfg_file)
     chosen_beacon_name = beacon_manager_settings['default_beacon_name']
     bac_l2_config = beacon_manager_settings[chosen_beacon_name]['bac_l2_config']
 
@@ -112,7 +117,7 @@ class MessageQueuesDict(dict):
 # Otherwise, use the values set above
 # T1_FOR_1_BAUD = 20000
 # T2_FOR_1_BAUD = 20000
-class BacHost(serial.Serial):
+class BacHost():
     def __init__(self, *args, **kwargs):
         """Initialize serial communication (inherited from SerialBase).
         We also initialized the message sender and receiver.
@@ -130,12 +135,12 @@ class BacHost(serial.Serial):
         bac_serial_wrapper_logger.info(f"Initializing serial communication (BAC L1) with beacon (from config data)...!!")
         serial_config = bac_l2_config['beacon_host_serial_config']
         bac_serial_wrapper_logger.info(f'Serial config: {serial_config}')
-        super().__init__(*args, **serial_config, **kwargs)
+        self.serial = serial.Serial(*args, **serial_config, **kwargs)
 
-        T1 = SOURCE_MAX_RESPONSE_MAX_UNIT_INTERVALS / self.baudrate
+        T1 = SOURCE_MAX_RESPONSE_MAX_UNIT_INTERVALS / self.serial.baudrate
         self.TRANSFER_REQUEST_TIMEOUT = T1
-        self.sender = BacMsgTransfer(serial_instance=self)
-        self.receiver = BacMsgReceiver(serial_instance=self)
+        self.sender = BacMsgTransfer(serial_instance=self.serial)
+        self.receiver = BacMsgReceiver(serial_instance=self.serial)
 
         bac_serial_wrapper_logger.info(f"Successfully initialized BAC L2 (serial protocol) handler!")
 
@@ -203,7 +208,7 @@ class BacHost(serial.Serial):
         self._send_request_to_transfer_msg_to_dest()
 
     def _host_resolve_enq_conflict(self):
-        self.write(ACK)
+        self.serial.write(ACK)
         self._receive_message()
 
     def _send_request_to_transfer_msg_to_dest(self) -> bool:
@@ -226,18 +231,18 @@ class BacHost(serial.Serial):
                 return False
             if transfer_request_counter > MAX_TRANSFER_REQ_RETRIES:
                 raise BacL2Exception('Maximum transfer request retries exceeded!!')
-            self.write(ENQ)
+            self.serial.write(ENQ)
             # Wait for ACK, with the timeout TRANSFER_REQUEST_TIMEOUT
-            received_char = self.read(1)
+            received_char = self.serial.read(1)
             bac_serial_wrapper_logger.debug(f'ENQ (0x05) response (should be an ACK, 0x06): 0x{received_char.hex().upper()}')
             transfer_request_counter += 1
         return True
 
     def read_with_timeout(self, size:int, timeout_delay:float|None):
-        previous_timeout_value = self.timeout
+        previous_timeout_value = self.serial.timeout
 
         self.timeout = timeout_delay
-        received_char = self.read(size)
+        received_char = self.serial.read(size)
         # if received_char == b'':
         #     raise TimeoutError(f'Received no char from COM serial port after {timeout_delay} seconds!')
 
@@ -264,8 +269,9 @@ class BacHost(serial.Serial):
         elif received_char != ENQ:
             raise BacL2Exception(f'Received 0x{received_char.hex().upper()}, a non-ENQ (0x05) character before reception started!!')
         # Got an ENQ from destination!
-        self.write(ACK)
+        self.serial.write(ACK)
         return True
+
     def close(self):
         super().close()
         self.async_message_loop.close()

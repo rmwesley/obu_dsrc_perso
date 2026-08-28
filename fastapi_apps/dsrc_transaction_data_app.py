@@ -2,7 +2,8 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 
-from routers import dsrc_transaction_data
+from ..routers import dsrc_transaction_data
+from ..globals import WEB_FRONTEND_DIR
 
 import logging
 root_logger = logging.getLogger()
@@ -18,6 +19,6 @@ async def redirect_index_to_hmi():
 # Serve the static HTML files for this app
 transaction_data_app.mount(
     "/hmi",
-    StaticFiles(directory="fronts/web/transaction_data_web_front/", html=True),
+    StaticFiles(directory=WEB_FRONTEND_DIR / "transaction_data_web_front/", html=True),
     name="transaction_data_web_front_files"
 )

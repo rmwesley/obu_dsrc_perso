@@ -1,6 +1,7 @@
 from fastapi import FastAPI, staticfiles
 
-from toll_domain_gis_zones import load_td_gis_zones
+from ..toll_domain_gis_zones import load_td_gis_zones
+from ..globals import BASE_DIR
 
 td_zones_app = FastAPI(title="Toll Domain Zones Interface")
 
@@ -10,4 +11,4 @@ async def regenerate_td_zones_geojson_file():
     load_td_gis_zones.regenerate_td_zones_geojson_file()
     return 'Toll Domain Zones geoJSON file updated!!'
 
-td_zones_app.mount("/files", staticfiles.StaticFiles(directory='local_file_storage/td_zones_files'))
+td_zones_app.mount("/td_zones_files", staticfiles.StaticFiles(directory=BASE_DIR / 'local_file_storage/td_zones_files'))

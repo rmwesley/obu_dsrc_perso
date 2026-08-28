@@ -2,11 +2,13 @@ import asyncio
 import logging
 import datetime
 
-from dsrc_l7 import dsrc_l7_rse
-from dsrc_security import perso_security_operations
-import custom_its_per_decoders
+from . import dsrc_l7_rse
 
-from ASN.compiled_DSRC_instances import AXXESv1_2
+from obu_dsrc_security.dsrc_security import perso_security_operations
+from custom_its_decoders import custom_its_per_decoders
+from axxes_asn_compiles.ASN.compiled_DSRC_instances import AXXESv1_2
+
+from ..globals import LOG_DIR
 
 dsrc_l7_perso_logger = logging.getLogger(__name__)
 dsrc_l7_perso_logger.setLevel(logging.DEBUG)
@@ -15,7 +17,7 @@ startup_date = datetime.datetime.now()
 logs_date_prefix = startup_date.strftime('%y%m%d')
 
 # SETTING UP LOGGER FILE HANDLER
-file_handler = logging.FileHandler(f'logs/beacon_logs/{logs_date_prefix}_perso_l7.log')
+file_handler = logging.FileHandler(LOG_DIR / f'beacon_logs/{logs_date_prefix}_perso_l7.log')
 file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
 file_handler.setFormatter(file_formatter)
 dsrc_l7_perso_logger.addHandler(file_handler)

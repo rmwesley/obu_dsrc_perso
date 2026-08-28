@@ -3,9 +3,10 @@ import logging
 import json
 import itertools
 import asyncio
+import pathlib
 
-from dsrc_l7 import dsrc_l7_rse
-from toll_charging_security import tc_dsrc_contracts, tc_manage_toll_domains
+from . import dsrc_l7_rse
+from ..toll_charging_security import tc_dsrc_contracts, tc_manage_toll_domains
 
 from axxes_asn_compiles.ASN.compiled_DSRC_instances import AXXESv1_2
 EFCv5 = AXXESv1_2
@@ -16,7 +17,8 @@ dsrc_l7_transactions_logger = logging.getLogger(__name__)
 class AbortedTransaction(Exception):
     pass
 
-with open('settings/td_transaction_config.json') as json_file:
+package_root_dir = pathlib.Path(__file__).resolve().parent.parent
+with (package_root_dir / 'settings/td_transaction_config.json' ).open() as json_file:
     td_transaction_config = json.load(json_file)
 
 SLEEP_AFTER_ABORTING_TRANSACTION = 0.3

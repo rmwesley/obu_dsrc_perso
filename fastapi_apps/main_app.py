@@ -2,14 +2,14 @@ from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from fastapi_apps.beacon_client_app import beacon_client_app
-from fastapi_apps.dsrc_transaction_data_app import transaction_data_app
-from fastapi_apps.toll_domain_zones_app import td_zones_app
-from fastapi_apps.rse_gps_sync_app import rse_gps_td_app
+from .beacon_client_app import beacon_client_app
+from .dsrc_transaction_data_app import transaction_data_app
+from .toll_domain_zones_app import td_zones_app
+from .rse_gps_sync_app import rse_gps_td_app
 
 from contextlib import asynccontextmanager, AsyncExitStack
-from fastapi_apps.personalization_app import personalization_app
-from fastapi_apps.dsrc_interop_app import dsrc_interop_app
+from .personalization_app import personalization_app
+from ..globals import LOG_DIR, WEB_FRONTEND_DIR
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -32,7 +32,7 @@ for name in root_logger.manager.loggerDict.keys():
 from datetime import datetime
 log_file_date_prefix = datetime.now().strftime('%Y%m%d')
 # SETTING UP LOGGER FILE HANDLER
-file_handler = logging.FileHandler(f'logs/api_logs/{log_file_date_prefix}_api_logs.log')
+file_handler = logging.FileHandler( LOG_DIR / f'api_logs/{log_file_date_prefix}_api_logs.log')
 file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
 # file_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)-8s - %(threadName)s - %(message)s")
 file_handler.setFormatter(file_formatter)
@@ -47,7 +47,7 @@ async def redirect_index_to_hmi():
     return RedirectResponse('/hmi')
 
 # Mount the webapp (frontend static files)
-app.mount("/hmi", StaticFiles(directory="fronts/web/tolling_testing_web_front", html=True), name="tolling_testing_web_front_files")
+app.mount("/hmi", StaticFiles(directory=WEB_FRONTEND_DIR / "tolling_testing_web_front", html=True), name="tolling_testing_web_front_files")
 
 # Mount the subapps
 app.mount("/beacon", beacon_client_app)

@@ -6,7 +6,7 @@ import logging
 import serial
 import json
 import time
-from bac_l2 import bac_l2_host2beacon
+from ..bac_l2 import bac_l2_host2beacon
 from enum import Enum
 
 bac_serial_wrapper_logger = logging.getLogger(__name__)

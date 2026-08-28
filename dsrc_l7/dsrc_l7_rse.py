@@ -1,29 +1,30 @@
 import sys
 
-import pycrate_core.charpy
-
-from axxes_asn_compiles.ASN.compiled_DSRC_instances import AXXESv1_2
-# from ASN.compiled_DSRC_instances import EFCv5
-EFCv5 = AXXESv1_2
-# from ASN.compiled_DSRC_instances import CCCv1
-# from ASN.compiled_DSRC_instances import LACv2_1 as efc_asn_compilation
-
-efc_asn_compilation = AXXESv1_2
-
 from datetime import datetime
 import json
 import logging
 import uuid_extensions
 import pathlib
 import asyncio
-
 import typing
 
-from bac_l7 import ops1955_bac_l7, pertel_bac_l7, tgbv_bac_l7
-from dsrc_transactions.metadata_persistence import TransactionMetadataHandler
+from ..bac_l7 import ops1955_bac_l7, pertel_bac_l7, tgbv_bac_l7
+from ..dsrc_transactions.metadata_persistence import TransactionMetadataHandler
+from ..toll_charging_security import tc_dsrc_auth, tc_manage_toll_domains
 
+import pycrate_core.charpy
+
+from axxes_asn_compiles.ASN.compiled_DSRC_instances import AXXESv1_2
 from custom_its_decoders import custom_its_per_decoders
-from toll_charging_security import tc_dsrc_auth, tc_manage_toll_domains
+
+from ..globals import BASE_DIR, LOG_DIR, SETTINGS_DIR
+
+# from ASN.compiled_DSRC_instances import EFCv5
+EFCv5 = AXXESv1_2
+# from ASN.compiled_DSRC_instances import CCCv1
+# from ASN.compiled_DSRC_instances import LACv2_1 as efc_asn_compilation
+
+efc_asn_compilation = AXXESv1_2
 
 # File logger, so prevent propagation!!
 rse_dsrc_l7_logger = logging.getLogger(__name__)
@@ -35,17 +36,20 @@ t_apdu_uper_logger = logging.getLogger('T_APDU_logger')
 t_apdu_uper_logger.setLevel(logging.INFO)
 t_apdu_uper_logger.propagate = False
 
-local_transactions_storage_path_str = 'local_file_storage/transactions'
+transactions_stg_path = BASE_DIR / 'local_file_storage/transactions'
 startup_date = datetime.now()
 logs_date_prefix = startup_date.strftime('%y%m%d')
 
 # SETTING UP LOGGER FILE HANDLER
-file_handler = logging.FileHandler(f'logs/beacon_logs/{logs_date_prefix}_rse_dsrc_l7.log')
+rse_l7_logs_path = LOG_DIR / f'beacon_logs/{logs_date_prefix}_rse_dsrc_l7.log'
+rse_l7_logs_path.parent.mkdir(parents=True, exist_ok=True)
+file_handler = logging.FileHandler(rse_l7_logs_path)
 file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
 file_handler.setFormatter(file_formatter)
 rse_dsrc_l7_logger.addHandler(file_handler)
 
-t_apdu_file_handler = logging.FileHandler(f'logs/beacon_logs/{logs_date_prefix}_rse_t_apdu_uper.log')
+rse_uper_logs_path = LOG_DIR / f'beacon_logs/{logs_date_prefix}_rse_t_apdu_uper.log'
+t_apdu_file_handler = logging.FileHandler(rse_uper_logs_path)
 t_apdu_file_handler.setFormatter(file_formatter)
 t_apdu_uper_logger.addHandler(t_apdu_file_handler)
 
@@ -79,8 +83,8 @@ async def initialize_bcm(aid=20):
         TApdu_container = TApdu_container
     else:
         TApdu_container = efc_asn_compilation.EfcCcc.CccTApdus
-    with open('settings/beacon_manager_config.json', 'r') as beacon_manager_config_file:
-        beacon_manager_config = json.load(beacon_manager_config_file)
+    with ( SETTINGS_DIR / "beacon_manager_config.json" ).open('r') as bcm_cfg_file:
+        beacon_manager_config = json.load(bcm_cfg_file)
 
     default_beacon_name = beacon_manager_config["default_beacon_name"]
     await safe_set_beacon(chosen_beacon_name = default_beacon_name)
@@ -444,7 +448,7 @@ def create_transaction_data_file_from_init_phase_data(initialization_request_jva
     current_transaction_datetime_prefix = current_transaction_start_date.strftime("%Y%m%dT%H%M%S")
 
     transaction_data_filename = f"{current_transaction_datetime_prefix}_{current_td}_{obeManufacturerID:04X}_{obeEquipmentClass:04X}_{current_transaction_uuid}.json"
-    transaction_data_filepath = pathlib.Path(f"local_file_storage/transactions/{transaction_data_filename}")
+    transaction_data_filepath = transactions_stg_path / transaction_data_filename
 
     metadata_handler = TransactionMetadataHandler()
     metadata_handler.create_transaction_with_init_data(current_td, initialization_request_jval, initialization_response_jval, transaction_data_filepath.name, current_transaction_uuid)

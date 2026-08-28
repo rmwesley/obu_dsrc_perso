@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from routers import beacon
+from ..routers import beacon
 
 import logging
 root_logger = logging.getLogger()

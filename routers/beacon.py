@@ -4,7 +4,9 @@ from typing import Literal, Optional
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException
 
-from dsrc_l7 import dsrc_l7_rse
+from obu_dsrc_perso.dsrc_l7 import dsrc_l7_rse
+
+from ..globals import SETTINGS_DIR
 
 router = APIRouter(
     prefix="/beacon",
@@ -12,7 +14,7 @@ router = APIRouter(
 
 @router.get('/beacon-config')
 async def get_beacon_config():
-    with open('settings/beacon_manager_config.json', 'r') as beacon_manager_config_file:
+    with ( SETTINGS_DIR / 'beacon_manager_config.json' ).open('r') as beacon_manager_config_file:
         beacon_manager_config = json.load(beacon_manager_config_file)
     return beacon_manager_config
 

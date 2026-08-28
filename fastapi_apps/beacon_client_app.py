@@ -2,7 +2,8 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 
-from routers import beacon
+from ..routers import beacon
+from ..globals import WEB_FRONTEND_DIR
 
 import logging
 root_logger = logging.getLogger()
@@ -17,4 +18,4 @@ async def redirect_index_to_hmi():
 beacon_client_app.include_router(beacon.router)
 
 # Serve the static HTML files for this app
-beacon_client_app.mount("/hmi", StaticFiles(directory="fronts/web/rse_web_front", html=True), name="rse_web_front_files")
+beacon_client_app.mount("/hmi", StaticFiles(directory=WEB_FRONTEND_DIR / "rse_web_front", html=True), name="rse_web_front_files")

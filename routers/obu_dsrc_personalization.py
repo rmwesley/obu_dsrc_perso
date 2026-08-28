@@ -9,9 +9,11 @@ import pathlib
 import logging
 from contextlib import asynccontextmanager
 
-from dsrc_l7 import dsrc_l7_rse, dsrc_l7_rse_service, dsrc_perso_l7
-from ASN.compiled_DSRC_instances import AXXESv1_2
-import dsrc_security.kapsch_http_uset_key_obtention
+from ..dsrc_l7 import dsrc_l7_rse, dsrc_l7_rse_service, dsrc_perso_l7
+from ..globals import SETTINGS_DIR
+
+from axxes_asn_compiles.ASN.compiled_DSRC_instances import AXXESv1_2
+from obu_dsrc_security.dsrc_security import kapsch_http_uset_key_obtention
 
 obu_dsrc_perso_router_logger = logging.getLogger(__name__)
 
@@ -25,7 +27,7 @@ async def lifespan(arg_router: APIRouter):
 router = APIRouter(tags=['OBU DSRC Personalization routes'], lifespan=lifespan)
 perso_tasks_dirpath = pathlib.Path(f'local_file_storage/dsrc_perso_tasks')
 
-with pathlib.Path('settings/td_transaction_config.json').open('r') as json_file:
+with ( SETTINGS_DIR / 'td_transaction_config.json' ).open('r') as json_file:
     td_transaction_config = json.load(json_file)
     td_conf_by_td_name = td_transaction_config['td_conf_by_td_name']
 
@@ -260,7 +262,7 @@ async def force_kapsch_obu_uset_keys(req_body: UsetSwitchPayload):
         except dsrc_l7_rse.UnclosedTransactionException as e:
             raise HTTPException(502, detail=str(e))
 
-    except dsrc_security.kapsch_http_uset_key_obtention.KapschHttpWsError as e:
+    except kapsch_http_uset_key_obtention.KapschHttpWsError as e:
         raise HTTPException(502, detail={
             "cause": "Kapsch HTTP USET computation service is unavailable!!",
             "error_message": str(e),
@@ -285,7 +287,7 @@ async def force_kapsch_obu_uset_keys_for_eid(eid: int, req_body: UsetSwitchPaylo
         except dsrc_l7_rse.UnclosedTransactionException as e:
             raise HTTPException(502, detail=str(e))
 
-    except dsrc_security.kapsch_http_uset_key_obtention.KapschHttpWsError as e:
+    except kapsch_http_uset_key_obtention.KapschHttpWsError as e:
         raise HTTPException(502, detail={
             "cause": "Kapsch HTTP USET computation service is unavailable!!",
             "error_message": str(e),

@@ -2,11 +2,13 @@ import pymongo
 import json
 import datetime
 
-from dsrc_transactions.metadata_persistence import TransactionMetadataHandler
 import pymongo.collection
 import pymongo.errors
 
 import logging
+
+from ...dsrc_transactions.metadata_persistence import TransactionMetadataHandler
+from ...globals import LOG_DIR, SETTINGS_DIR
 
 dsrc_transaction_sync_logger = logging.getLogger(__name__)
 dsrc_transaction_sync_logger.setLevel(logging.DEBUG)
@@ -15,12 +17,12 @@ startup_date = datetime.datetime.now()
 logs_date_prefix = startup_date.strftime('%y%m%d')
 
 # SETTING UP LOGGER FILE HANDLER
-file_handler = logging.FileHandler(f'logs/proxy_client_logs/{logs_date_prefix}_transactions_data_sync.log')
+file_handler = logging.FileHandler(LOG_DIR / f'proxy_client_logs/{logs_date_prefix}_transactions_data_sync.log')
 file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName)s - %(message)s")
 file_handler.setFormatter(file_formatter)
 dsrc_transaction_sync_logger.addHandler(file_handler)
 
-with open('settings/beacon_proxy_config.json', 'r') as json_file:
+with ( SETTINGS_DIR / 'beacon_proxy_config.json' ).open('r') as json_file:
     beacon_proxy_config = json.load(json_file)
     mongodb_config = beacon_proxy_config["mongodb_config"]
 

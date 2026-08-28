@@ -1,7 +1,7 @@
 from Crypto.Cipher import DES
 
 import logging
-from toll_charging_security import tc_td_key_derivation
+from . import tc_td_key_derivation
 
 dsrc_auth_logger = logging.getLogger(__name__)
 

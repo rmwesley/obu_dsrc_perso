@@ -2,7 +2,7 @@ import datetime
 from pydantic import BaseModel
 from fastapi import APIRouter
 
-from services.db import transactions_data_db_operations
+from ..services.db import transactions_data_db_operations
 
 router = APIRouter(
     prefix="/data",

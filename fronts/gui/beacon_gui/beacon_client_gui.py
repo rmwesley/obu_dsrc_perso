@@ -9,8 +9,11 @@ root_logger.setLevel(logging.INFO)
 
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
-from dsrc_l7 import dsrc_l7_rse
-from dsrc_security import dsrc_td_security_operations
+from ....dsrc_l7 import dsrc_l7_rse
+from ....globals import SETTINGS_DIR
+
+from obu_dsrc_security.dsrc_security import dsrc_td_security_operations
+
 
 class TollDomainConfigException(Exception):
     pass
@@ -34,7 +37,7 @@ available_toll_domains = []
 def refresh_td_config():
     global available_toll_domains
 
-    with open('settings/td_transaction_config.json', 'r') as json_file:
+    with ( SETTINGS_DIR / 'td_transaction_config.json' ).open('r') as json_file:
         toll_domains_config = json.load(json_file)
     # Should be a list of str!!
     available_toll_domains = list(toll_domains_config["td_conf_by_td_name"].keys())
