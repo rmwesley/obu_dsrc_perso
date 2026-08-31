@@ -17,7 +17,7 @@ class RseInitService:
         except Exception as e:
             print(repr(e))
             print('Please set the beacon configuration properly to initialize it via BAC L7!')
-            self.stop()
+            await self.stop()
 
     async def stop(self):
         if not self.initialized:
