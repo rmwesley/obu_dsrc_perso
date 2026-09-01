@@ -173,7 +173,7 @@ def new_rse_commands_window():
         height=5,
         bg="blue",
         fg="yellow",
-        command=lambda:rse_event_loop.run_until_complete(dsrc_l7_rse.initialize_bcm())
+        command=lambda:rse_event_loop.run_until_complete(dsrc_l7_rse.create_dsrc_l7_rse_instance())
     )
     btn_rse_set_config.pack()
 

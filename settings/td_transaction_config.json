@@ -2,78 +2,78 @@
   "td_conf_by_td_name": {
     "TIS": {
       "td_name": "TIS",
-      "default_transaction_type": "CARDME",
+      "default_transaction_type": "cardme_transaction",
       "security_profile": "TIS_decimal_level_0",
       "mandApplications": [1]
     },
     "TIS_VL": {
       "td_name": "TIS_VL",
-      "default_transaction_type": "CARDME",
+      "default_transaction_type": "cardme_transaction",
       "mandApplications": [1]
     },
     "TIS_INCONNU": {
       "td_name": "TIS_INCONNU",
-      "default_transaction_type": "TIS_CIP_CARDME",
+      "default_transaction_type": "tis_vl_transaction",
       "security_profile": "TIS_decimal_level_0",
       "mandApplications": [1]
     },
     "VIA-T2": {
       "td_name": "VIA-T2",
-      "default_transaction_type": "PISTA",
+      "default_transaction_type": "pista_transaction",
       "security_profile": "EN15509_level_0",
       "mandApplications": [1]
     },
     "EasyGo": {
       "td_name": "EasyGo",
-      "default_transaction_type": "CARDME",
+      "default_transaction_type": "cardme_transaction",
       "security_profile": "EN15509_level_1",
       "mandApplications": [1]
     },
     "DE": {
       "td_name": "DE",
-      "default_transaction_type": "CCC2023",
+      "default_transaction_type": "ccc_2023_transaction",
       "security_profile": "EN15509_level_1",
       "mandApplications": [20]
     },
     "CH": {
       "td_name": "CH",
-      "default_transaction_type": "CCC2023",
+      "default_transaction_type": "ccc_2023_transaction",
       "security_profile": "EN15509_level_1",
       "mandApplications": [20]
     },
     "BE": {
       "td_name": "BE",
-      "default_transaction_type": "CCC2015",
+      "default_transaction_type": "test_ccc_2015_transaction",
       "security_profile": "EN15509_level_1",
       "mandApplications": [20]
     },
     "CEA": {
       "td_name": "CEA",
-      "default_transaction_type": "CCC2023",
+      "default_transaction_type": "ccc_2023_transaction",
       "security_profile": "EN15509_level_1",
       "mandApplications": [20]
     },
     "FR2": {
       "td_name": "RGE",
-      "default_transaction_type": "CCC2023",
+      "default_transaction_type": "ccc_2023_transaction",
       "security_profile": "EN15509_level_1",
       "mandApplications": [20]
     },
     "RGE": {
       "td_name": "RGE",
-      "default_transaction_type": "CCC2023",
+      "default_transaction_type": "ccc_2023_transaction",
       "security_profile": "EN15509_level_1",
       "mandApplications": [20]
     },
     "NL": {
       "td_name": "NL",
-      "default_transaction_type": "CCC2024",
+      "default_transaction_type": "ccc_2024_transaction",
       "security_profile": "EN15509_level_1",
       "mandApplications": [20]
     },
     "IT_CEN": {
       "td_name": "IT_CEN",
-      "default_transaction_type": "CARDME",
+      "default_transaction_type": "cardme_transaction",
       "security_profile": "EN15509_level_0",
       "mandApplications": [1, 29]
     }

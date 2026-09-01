@@ -25,7 +25,7 @@ async def get_beacon_config():
 async def initialize_beacon_manager():
     ''' Initialize the BeaconManager
     '''
-    dsrc_l7_rse.initialize_bcm()
+    dsrc_l7_rse.create_dsrc_l7_rse_instance()
     return "Beacon Manager was intialized!"
 
 @router.post("/reset-beacon")

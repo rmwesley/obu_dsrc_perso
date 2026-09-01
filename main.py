@@ -2,7 +2,8 @@ import asyncio
 
 # Importing the definitions of the Python DLL loader, mainly consisting of enums and foreign functions
 # Function prototypes return foreign functions when called with a long pointer address, LPFN, as input
-from obu_dsrc_perso.dsrc_l7 import dsrc_efc_l7_transactions, dsrc_l7_rse
+from obu_dsrc_perso.dsrc_l7.efc_application import EfcApp, build_efc_app, EfcLoop, build_efc_loop_app
+from obu_dsrc_perso.dsrc_l7.dsrc_transactions import tc_single_transaction
 
 import logging
 
@@ -32,7 +33,10 @@ class ColoredFormatterWrapper(logging.Formatter):
         self.formatter = formatter
 
     def format(self, record):
-        color = ColoredFormatterWrapper.LEVEL_COLORS.get(record.levelno)
+        color = ColoredFormatterWrapper.LEVEL_COLORS[record.levelno]
+        if not self.formatter:
+            raise ValueError("Undefined formatter!")
+
         colored_formatting = color + self.formatter.format(record) + ColoredFormatterWrapper.RESET_COLOR
         return colored_formatting
 console_formatter = ColoredFormatterWrapper(logging.Formatter(f"%(levelname)-8s %(filename)22s:%(lineno)-4s - %(threadName)s: %(message)s"))
@@ -40,34 +44,28 @@ console_handler.setFormatter(console_formatter)
 root_logger.addHandler(console_handler)
 root_logger.setLevel(logging.WARNING)
 
-async def forced_cardme_transaction(force_eid=1):
-    await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
-    dsrc_l7_rse.SKIP_CONTRACT_DSRC_AUTH = True
+async def forced_cardme_transaction(efc_app:EfcApp, force_eid=1):
+    await efc_app.execute_transaction("forced_cardme_transaction", force_eid)
 
-    await dsrc_efc_l7_transactions.forced_cardme_transaction(force_eid)
+async def default_transaction(efc_app:EfcApp):
+    await efc_app.td_default_transaction(set_mmi=False)
 
-async def default_transaction():
-    await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
+async def single_transaction(efc_app:EfcApp, td_name='TIS'):
+    await tc_single_transaction(efc_app.rse_app, set_mmi=False, td_name=td_name)
 
-    await dsrc_efc_l7_transactions.td_default_transaction(set_mmi=False)
+async def toll_domains_transaction_loop(efc_loop:EfcLoop, td_list:list[str] = ['TIS', 'EasyGo', 'DE', 'CH', 'BE']):
+    await efc_loop.loop_transactions_on_toll_domains(beep_state=False, td_list=td_list, sleep_time=5.0)
 
-async def single_transaction(td_name='TIS'):
-    await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
-
-    await dsrc_efc_l7_transactions.tc_single_transaction(set_mmi=False, td_name=td_name)
-
-async def toll_domains_transaction_loop(td_list:list[str] = ['TIS', 'EasyGo', 'DE', 'CH', 'BE']):
-    await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
-
-    await dsrc_efc_l7_transactions.loop_transactions_on_toll_domains(beep_state=False, td_list=td_list, sleep_time=5.0)
-
-async def default_toll_domain_transaction_loop(extra_td_list:list[str] = ['TIS']):
-    await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
-
-    await dsrc_efc_l7_transactions.loop_transactions_with_default_td_and_extra_tds(beep_state=False, extra_td_list=extra_td_list, sleep_time=5.0)
+async def default_toll_domain_transaction_loop(efc_loop:EfcLoop, extra_td_list:list[str] = ['TIS']):
+    await efc_loop.loop_transactions_with_default_td_and_extra_tds(beep_state=False, extra_td_list=extra_td_list, sleep_time=5.0)
 
 # Main execution
 if __name__ == "__main__":
+    efc_app = build_efc_app("TGBV", aid=20)
+    # efc_app.rse_app.SKIP_CONTRACT_DSRC_AUTH = True
+
+    # efc_loop = build_efc_loop_app("TGBV", aid=20)
+
     # asyncio.run(default_toll_domain_transaction_loop(extra_td_list=['NL', 'BE', 'DE']))
     # asyncio.run(default_toll_domain_transaction_loop(extra_td_list=['EasyGo', 'VIA-T2']))
     # CCC
@@ -78,7 +76,7 @@ if __name__ == "__main__":
     # asyncio.run(toll_domains_transaction_loop(td_list=['TIS', 'EasyGo', 'CH', 'BE']))
     # asyncio.run(default_transaction())
 
-    asyncio.run(single_transaction('TIS'))
+    asyncio.run(single_transaction(efc_app, 'TIS'))
 
     # asyncio.run(toll_domains_transaction_loop(['VIA-T2', 'TIS', 'IT_CEN', 'TIS_INCONNU']))
 

@@ -1,10 +1,13 @@
 import json
+import typing
 import serial
 import logging
 import asyncio
-from ..globals import LOG_DIR, SETTINGS_DIR
-
 from datetime import datetime
+
+ByteString = typing.Union[bytes, bytearray]
+
+from ..globals import LOG_DIR, SETTINGS_DIR
 
 # File logger, so prevent propagation!!
 bac_serial_wrapper_logger = logging.getLogger(__name__)
@@ -20,18 +23,18 @@ file_formatter = logging.Formatter("%(asctime)s - %(levelname)-8s - %(threadName
 file_handler.setFormatter(file_formatter)
 bac_serial_wrapper_logger.addHandler(file_handler)
 
+def load_bac_l2_settings(beacon_name:str):
+    with ( SETTINGS_DIR / "rse_drivers" / f"{beacon_name}.json" ).open('r') as bcm_cfg_file:
+        bcm_conf = json.load(bcm_cfg_file)
+        bac_l2_config = bcm_conf['bac_l2_config']
+        del bcm_conf
+
+        return bac_l2_config
+
 class BacL2Exception(Exception):
     pass
 
-with ( SETTINGS_DIR / "beacon_manager_config.json" ).open('r') as bcm_cfg_file:
-    beacon_manager_settings = json.load(bcm_cfg_file)
-    chosen_beacon_name = beacon_manager_settings['default_beacon_name']
-    bac_l2_config = beacon_manager_settings[chosen_beacon_name]['bac_l2_config']
-
-    SOURCE_MAX_RESPONSE_MAX_UNIT_INTERVALS = bac_l2_config['SOURCE_MAX_RESPONSE_MAX_UNIT_INTERVALS']
-    DEST_MAX_REQUEST_MAX_UNIT_INTERVALS = bac_l2_config['DEST_MAX_REQUEST_MAX_UNIT_INTERVALS']
-
-def crc16_arc(data : bytearray) -> bytes:
+def crc16_arc(data: ByteString) -> bytes:
     crc = 0
     for byte_val in data:
         crc ^= byte_val
@@ -60,7 +63,7 @@ MAX_MSG_TRANSFER_RETRIES = 8
 # DEST_MAX_REQUEST_MAX_UNIT_INTERVALS = 2000
 # SOURCE_TRANSMISSION_MAX_INTERVALS = 4000
 
-def escape_dle_in_message_content(message_content:bytes) -> bytes:
+def escape_dle_in_message_content(message_content:bytes) -> bytearray:
     escaped_message_content = bytearray()
     for char_int in message_content:
         if char_int == DLE[0]:
@@ -85,7 +88,7 @@ def wrap_message(message_content:bytes) -> bytes:
 
     return message_frame + crc16_bytes
 
-def unescape_dle_in_message_content(message_content:bytes) -> bytes:
+def unescape_dle_in_message_content(message_content:ByteString) -> ByteString:
     unescaped_message_content = bytearray()
     escape_next = False
     for char_int in message_content:
@@ -118,7 +121,7 @@ class MessageQueuesDict(dict):
 # T1_FOR_1_BAUD = 20000
 # T2_FOR_1_BAUD = 20000
 class BacHost():
-    def __init__(self, *args, **kwargs):
+    def __init__(self, beacon_name:str, *args, **kwargs):
         """Initialize serial communication (inherited from SerialBase).
         We also initialized the message sender and receiver.
 
@@ -129,18 +132,20 @@ class BacHost():
         Also, we do not implement a BAC L2 beacon serial port listener!
         As such, we only expect reading BAC L2 Rx in response to our commands!
         """
+        self.bac_l2_config = load_bac_l2_settings(beacon_name)
+
         bac_serial_wrapper_logger.debug(f"Initializing BAC protocol L2 communication with beacon...!!")
 
         # Opening the serial port
         bac_serial_wrapper_logger.info(f"Initializing serial communication (BAC L1) with beacon (from config data)...!!")
-        serial_config = bac_l2_config['beacon_host_serial_config']
+        serial_config = self.bac_l2_config['beacon_host_serial_config']
         bac_serial_wrapper_logger.info(f'Serial config: {serial_config}')
         self.serial = serial.Serial(*args, **serial_config, **kwargs)
 
-        T1 = SOURCE_MAX_RESPONSE_MAX_UNIT_INTERVALS / self.serial.baudrate
+        T1:float = self.bac_l2_config["SOURCE_MAX_RESPONSE_MAX_UNIT_INTERVALS"] / self.serial.baudrate
         self.TRANSFER_REQUEST_TIMEOUT = T1
-        self.sender = BacMsgTransfer(serial_instance=self.serial)
-        self.receiver = BacMsgReceiver(serial_instance=self.serial)
+        self.sender = BacMsgTransfer(self.bac_l2_config, serial_instance=self.serial)
+        self.receiver = BacMsgReceiver(self.bac_l2_config, serial_instance=self.serial)
 
         bac_serial_wrapper_logger.info(f"Successfully initialized BAC L2 (serial protocol) handler!")
 
@@ -168,7 +173,7 @@ class BacHost():
         response_content = await command_response_queue.get()
         return response_content
 
-    def _send_request_message(self, message_content:bytes) -> asyncio.Queue:
+    def _send_request_message(self, message_content:bytes):
         """Send a message to beacon.
         That is, a request from Host to Beacon."""
         command_id = message_content[0]
@@ -194,7 +199,7 @@ class BacHost():
         return result
 
     # Host receives a message
-    def _receive_message(self) -> bytes:
+    def _receive_message(self) -> ByteString:
         unescaped_response_content = self.receiver.receive_message()
         # Responses NOT always come with an error code byte!!
         # error_code_int = unescaped_response_content[1]
@@ -251,8 +256,8 @@ class BacHost():
 
     async def _wait_for_transfer_req_from_dest(self, unblock_delay=None):
         """Wait function to read 1 byte from serial port."""
-        if unblock_delay is None and 'serial_rx_unblock_delay' in bac_l2_config:
-            unblock_delay = bac_l2_config['serial_rx_unblock_delay']
+        if unblock_delay is None and 'serial_rx_unblock_delay' in self.bac_l2_config:
+            unblock_delay = self.bac_l2_config['serial_rx_unblock_delay']
 
         received_char = b''
         while len(received_char) != 1:
@@ -273,12 +278,12 @@ class BacHost():
         return True
 
     def close(self):
-        super().close()
+        self.serial.close()
         self.async_message_loop.close()
 
 class BacMsgTransfer():
-    def __init__(self, serial_instance: serial.Serial):
-        T1 = SOURCE_MAX_RESPONSE_MAX_UNIT_INTERVALS / serial_instance.baudrate
+    def __init__(self, bac_l2_conf, serial_instance: serial.Serial):
+        T1:float = bac_l2_conf["SOURCE_MAX_RESPONSE_MAX_UNIT_INTERVALS"] / serial_instance.baudrate
         self.TRANSFER_REQUEST_TIMEOUT = T1
         self.serial_instance = serial_instance
 
@@ -328,9 +333,9 @@ class BacMsgTransfer():
     #     return self.read_message()
 
 class BacMsgReceiver():
-    def __init__(self, serial_instance: serial.Serial):
-        T1 = SOURCE_MAX_RESPONSE_MAX_UNIT_INTERVALS / serial_instance.baudrate
-        T2 = DEST_MAX_REQUEST_MAX_UNIT_INTERVALS / serial_instance.baudrate
+    def __init__(self, bac_l2_conf, serial_instance: serial.Serial):
+        T1 = bac_l2_conf["SOURCE_MAX_RESPONSE_MAX_UNIT_INTERVALS"] / serial_instance.baudrate
+        T2 = bac_l2_conf["DEST_MAX_REQUEST_MAX_UNIT_INTERVALS"] / serial_instance.baudrate
 
         self.TRANSFER_REQUEST_TIMEOUT = T1
         self.MESSAGE_CHARACTER_READ_TIMEOUT = T2
@@ -367,7 +372,7 @@ class BacMsgReceiver():
             raise BacL2Exception(f'Message did not start with DLE/STX = 0x1002 control sequence!!: 0x{first_char.hex().upper()}')
         second_char = self.serial_instance.read(1)
         if second_char != STX:
-            control_sequence = bytes.join(first_char, second_char)
+            control_sequence = bytes.join(first_char, [second_char])
             bac_serial_wrapper_logger.error(f'Message did not start with DLE/STX = 0x1002 control sequence!!: 0x{control_sequence.hex().upper()}')
             raise BacL2Exception(f'Message did not start with DLE/STX = 0x1002 control sequence!!: 0x{control_sequence.hex().upper()}')
         bac_serial_wrapper_logger.debug(f'[BAC L2] Message start control sequence DLE/STX = 0x1002 received!! (0x{(DLE + STX).hex().upper()})')
@@ -382,7 +387,7 @@ class BacMsgReceiver():
         bac_serial_wrapper_logger.debug(f'[BAC L2] Computed CRC-16: 0x{computed_crc16_bytes.hex().upper()}')
         return crc_bytes == computed_crc16_bytes
 
-    def _read_message_content_until_dle_etx(self) -> bytes:
+    def _read_message_content_until_dle_etx(self) -> ByteString:
         """Read message content (response from beacon)!
         We read bytes until we get to the control sequence DLE/ETX"""
         raw_received_msg_with_dle_etx = bytearray()
@@ -414,7 +419,7 @@ class BacMsgReceiver():
         bac_serial_wrapper_logger.debug(f"[BAC L2] Raw response from beacon with DLE/STX: 0x{raw_received_msg_with_dle_etx.hex().upper()}")
         return raw_received_msg_with_dle_etx
 
-    def _read_raw_message_content_check_crc_and_acknowledge_it(self) -> bytes:
+    def _read_raw_message_content_check_crc_and_acknowledge_it(self) -> ByteString:
         """Read message content and acknowledge it!
 
         We read bytes until we get to the control sequence DLE/ETX.

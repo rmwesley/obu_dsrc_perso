@@ -11,7 +11,7 @@ class RseInitService:
 
         try:
             self.initialized = True
-            await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
+            await dsrc_l7_rse.build_and_init_rse_app()
             print('Initialized DSRC beacon!')
 
         except Exception as e:

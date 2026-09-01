@@ -3,9 +3,6 @@
 # It also recapitulates the PERTEL BAC L7 specs!
 
 import logging
-import serial
-import json
-import time
 from ..bac_l2 import bac_l2_host2beacon
 from enum import Enum
 
@@ -29,14 +26,15 @@ class BCM_MODE_Enum(Enum):
     PERTEL_MODE_Maintenance = 0x03
 
 class PertelBacL7(bac_l2_host2beacon.BacHost):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, beacon_name, *args, **kwargs):
+        super().__init__(beacon_name, *args, **kwargs)
         self.t_apdu_containing_vst = None
         self.beacon_state = bytes(3)
-    def set_mode(self, mode_code=0) -> bytes:
-        return self._pertel_set_beacon_mode(mode_code)
 
-    def _decode_pertel_00_response(self, response_content:bytes) -> dict:
+    async def set_mode(self, mode_code=0) -> bytes:
+        return await self._pertel_set_beacon_mode(mode_code)
+
+    def _decode_pertel_00_response(self, response_content:bytes):
         command_id = response_content[0]
         error_code = response_content[1]
         decoded_response = {
@@ -48,7 +46,7 @@ class PertelBacL7(bac_l2_host2beacon.BacHost):
         return
 
     # def _pertel_set_beacon_mode(self, mode_code=0) -> tuple[bytes, dict]:
-    def _pertel_set_beacon_mode(self, mode_code=0) -> bytes:
+    async def _pertel_set_beacon_mode(self, mode_code=0) -> bytes:
         """
         Request:
             Command ID, 1 byte:
@@ -68,7 +66,7 @@ class PertelBacL7(bac_l2_host2beacon.BacHost):
                 0x1D: Configuration not applied
         """
         message_content = bytes([0, mode_code])
-        response_content = self.send_command(message_content)
+        response_content = await self.send_command(message_content)
         # try:
         #     decoded_response = _decode_pertel_00_response(response_content)
         # except:
@@ -100,6 +98,7 @@ class PertelBacL7(bac_l2_host2beacon.BacHost):
         """
         message_content = bytes([0x01])
         return await self.send_command(message_content)
+
     async def update_state(self) -> bytes:
         response_content = await self._pertel_monitor_beacon()
         self.beacon_state = bytes(response_content[1:])
@@ -176,7 +175,7 @@ class PertelBacL7(bac_l2_host2beacon.BacHost):
         self.t_apdu_containing_vst = response_content[2:]
         return response_content
 
-    async def _pertel_stop_bst_emission(self:bytes) -> bytes:
+    async def _pertel_stop_bst_emission(self) -> bytes:
         """
         Stop BST emission
         """

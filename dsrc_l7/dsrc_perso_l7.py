@@ -23,7 +23,7 @@ file_handler.setFormatter(file_formatter)
 dsrc_l7_perso_logger.addHandler(file_handler)
 
 async def init_perso_app():
-    await dsrc_l7_rse.init_bcm_and_set_transparent_mode()
+    await dsrc_l7_rse.build_and_init_rse_app()
 
 class AbortedPersonalization(Exception):
     pass

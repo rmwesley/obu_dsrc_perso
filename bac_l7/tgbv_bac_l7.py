@@ -2,12 +2,12 @@ from . import pertel_bac_l7
 
 class TgbvBacL7(pertel_bac_l7.PertelBacL7):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__("TGBV", *args, **kwargs)
         self.beacon_id = bytes(6)
 
     def _tgb_change_beacon_id(self) -> bytes:
         """Command ID 0x53"""
-        pass
+        return b''
 
     async def _tgb_read_beacon_id(self) -> bytes:
         """Command ID 0x54"""
@@ -24,8 +24,8 @@ class TgbvBacL7(pertel_bac_l7.PertelBacL7):
 
     def _tgb_change_communication_config(self) -> bytes:
         """Command ID 0x55"""
-        pass
+        return b''
 
     def _tgb_read_communication_config(self) -> bytes:
         """Command ID 0x56"""
-        pass
+        return b''

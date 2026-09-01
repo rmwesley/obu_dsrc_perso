@@ -7,7 +7,7 @@ import pymongo.errors
 
 import logging
 
-from ...dsrc_transactions.metadata_persistence import TransactionMetadataHandler
+from ...dsrc_transactions.db_metadata_persistence import TransactionMetadataHandler
 from ...globals import LOG_DIR, SETTINGS_DIR
 
 dsrc_transaction_sync_logger = logging.getLogger(__name__)
@@ -84,7 +84,7 @@ def get_transactions_info_aggregation_cursor_for_pan(pan:str, skip=0, limit=20, 
     ])
     return pymongo_cursor
 
-def get_transactions_info_for_equ_obu_id(equ_obu_id:str, skip=0, limit=20, since_dt:datetime.datetime=None, until_dt:datetime.datetime=None):
+def get_transactions_info_for_equ_obu_id(equ_obu_id:str, skip=0, limit=20, since_dt:datetime.datetime|None=None, until_dt:datetime.datetime|None=None):
     since_dt_str = since_dt.isoformat() if type(since_dt) is datetime.datetime else ''
     until_dt_str = until_dt.isoformat() if type(until_dt) is datetime.datetime else '9'
 
@@ -96,7 +96,7 @@ def get_transactions_info_for_equ_obu_id(equ_obu_id:str, skip=0, limit=20, since
         # print(transaction_data)
         yield transaction_info
 
-def get_transactions_info_for_pan(pan:str, skip=0, limit=20, since_dt:datetime.datetime=None, until_dt:datetime.datetime=None):
+def get_transactions_info_for_pan(pan:str, skip=0, limit=20, since_dt:datetime.datetime|None=None, until_dt:datetime.datetime|None=None):
     since_dt_str = since_dt.isoformat() if type(since_dt) is datetime.datetime else ''
     until_dt_str = until_dt.isoformat() if type(until_dt) is datetime.datetime else '9'
 

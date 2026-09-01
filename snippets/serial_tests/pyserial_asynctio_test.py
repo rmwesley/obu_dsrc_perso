@@ -1,10 +1,8 @@
 import asyncio
-import serial.serialutil
 import serial_asyncio
 import threading
 import time
 import serial
-import traceback
 
 class InputChunkProtocolClass(asyncio.Protocol):
     def connection_made(self, transport):
